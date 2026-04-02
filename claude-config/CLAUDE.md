@@ -55,6 +55,29 @@ Research agents: code-researcher, web-researcher, diff-researcher, ui-researcher
 2. Start with simplest capable agent
 3. Mechanical > Junior | Clear specs > Middle | Analysis needed > Senior
 </selection>
+
+<cost-routing>
+Default to the cheapest capable agent.
+
+Use `junior-backend` for:
+- mechanical edits
+- pattern-based propagation
+- focused low-risk fixes
+- boilerplate updates
+
+Use `middle-backend` only for:
+- clear multi-file implementation
+- normal bug fixes with known cause
+- coordinated but straightforward business logic
+
+Use `senior-backend` only for:
+- architectural changes
+- ambiguous root-cause debugging
+- high-risk refactors
+- recovery after failed middle-agent attempts
+
+Never escalate to a more expensive model just because a task touches multiple files.
+</cost-routing>
 </agents>
 
 <task-breakdown>
@@ -75,6 +98,13 @@ Atomic but meaningful - self-contained units of work.
 <cost-awareness>
 Each agent loads: system prompt + instructions + context.
 Batch related changes. Minimize switching.
+
+Budget defaults:
+- Prefer 1 capable implementation agent over several overlapping agents.
+- Use Haiku first for executor work when the spec is concrete and local.
+- Add Sonnet only when coordination or reasoning is actually needed.
+- Add Opus only for ambiguity, architecture, or failed prior attempts.
+- Keep research short and question-driven to avoid paying for broad scans.
 </cost-awareness>
 </task-breakdown>
 
@@ -90,6 +120,13 @@ Batch related changes. Minimize switching.
 <handling>
 Minor > note, continue | Major > same agent, fix | Critical > stop, report
 </handling>
+
+<cost-policy>
+- Do not launch senior validation by default.
+- Use one middle validator for routine changes.
+- Add a second validator only when it checks a different risk surface.
+- Escalate to senior validation only for security-sensitive, architectural, or interdependent changes.
+</cost-policy>
 </validation>
 
 <workflow-rules>

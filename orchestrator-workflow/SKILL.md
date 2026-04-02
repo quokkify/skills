@@ -14,6 +14,13 @@ This skill is orchestration-first, not delegation-dogmatic:
 - Do synthesis, scoping, integration, small unblockers, and cross-agent reconciliation yourself
 - In Codex, do not stall the workflow just because a perfect sub-agent mapping is unavailable
 
+Default tempo matters. In Codex, prefer a fast execution loop over ceremony:
+- Plan quickly from targeted evidence
+- Delegate execution when file ownership is clear
+- Build a compact handoff packet before each delegated task
+- Validate after the implementation group completes
+- Avoid turning Phase 2 into a mandatory long-form research session
+
 Sub-agents should NOT use this skill. It is for the parent orchestrator only.
 
 ## Role Resolution Priority
@@ -90,14 +97,27 @@ When the target repository uses Everything Claude Code:
 - Security review for sensitive paths and before commits
 - Validation should include build, typecheck, lint, tests, and security-oriented checks as appropriate
 - Prefer skills-first and project-local workflow surfaces
+- Preserve ECC's practical tempo: brief planning, focused execution, and validation without unnecessary orchestration overhead
 
 ### ECC Capability Mapping
 
 - Planning and decomposition -> ECC `planner` / `architect`, or orchestrator synthesis if no planner backend exists
 - Research and docs lookup -> ECC `docs-lookup`, `documentation-lookup`, Codex `docs_researcher`, or equivalent
 - Implementation guidance -> ECC `tdd-guide`, language reviewers, project rules
+- Implementation execution in Codex -> orchestrator-selected worker agents with explicit ownership and handoff packets
 - Review -> ECC `code-reviewer`, `security-reviewer`, Codex `reviewer`
 - Validation -> ECC `verification-loop` conventions plus project-local commands
+
+### Cost-Aware Selection
+
+Preserve ECC's cheapest-capable-agent behavior:
+- Mechanical, pattern-based, low-risk implementation -> cheapest capable executor
+- Clear, scoped, multi-file implementation -> mid-tier executor
+- High-ambiguity, architectural, or recovery work -> strongest executor
+- Standard validation -> mid-tier validator
+- Architecture-heavy or interdependent validation -> strongest validator
+
+Do not spend a stronger model on work that a cheaper executor can complete safely.
 
 ## Delegation Backend Resolution
 
@@ -123,6 +143,18 @@ You MUST follow this flow. Keep all 5 phases. Adapt how each phase is executed t
 3. Planning (orchestrator synthesis)
 4. Execution (mixed mode: orchestrator + delegated workers)
 5. Validation (orchestrator-run verification plus delegated review where useful)
+
+### Default Execution Bias
+
+Unless the task is tiny, tightly coupled, or blocked on immediate integration, prefer this default in Codex:
+1. Minimal assessment
+2. Focused research only where uncertainty is real
+3. Fast plan
+4. Delegate plan items to executor agents with explicit ownership
+5. Re-synthesize results between items using a compact handoff packet
+6. Run validation at the end of the implementation batch
+
+Do not require a separate deep-research pass when the next implementation step is already clear.
 
 ---
 
@@ -161,6 +193,8 @@ Prefer delegating deep research to the best available backend. However, the orch
 - the environment lacks a fitting research role
 - Codex would otherwise stall on unnecessary delegation overhead
 
+This phase is conditional in spirit, even though it remains explicit in the workflow. If the task is already well-scoped after Phase 1, keep Phase 2 short and move on.
+
 Use the environment's native mechanism first. Prefer project-local role docs when they exist, and otherwise use portable fallback guidance. Use roles appropriate for:
 - Code analysis and pattern investigation
 - Web documentation and best practices
@@ -187,6 +221,7 @@ Use the environment's native mechanism first. Prefer project-local role docs whe
 - Do not use delegation as ceremony; every delegated researcher should have a concrete question
 - Launch independent researchers in parallel when possible
 - Wait for the minimum findings needed to unblock planning, not for unnecessary perfection
+- If planning is already unblocked, stop research and proceed
 
 Your job as orchestrator is to:
 1. Decide which researchers to deploy
@@ -210,6 +245,7 @@ Synthesize findings into an implementation plan that aligns with local conventio
 - Identify risks and edge cases
 - Define required tests and verification commands
 - Decide where documentation updates belong if knowledge capture is needed
+- For each executable item, prepare the minimum handoff packet needed by the next executor
 
 For substantial or high-risk work, present the plan before execution. For clearly scoped tasks where the user asked for end-to-end implementation, you may proceed after stating the plan succinctly.
 
@@ -220,6 +256,7 @@ For substantial or high-risk work, present the plan before execution. For clearl
 3. Mechanical tasks > simpler agents | Complex analysis > advanced agents
 4. Use delegated writers only when file ownership is clean and parallelism is real
 5. Reserve the orchestrator for cross-cutting integration and unblockers
+6. Optimize for cost as well as capability; cheapest capable agent wins by default
 
 ### ECC Planning Expectations
 
@@ -228,7 +265,20 @@ For substantial or high-risk work, present the plan before execution. For clearl
 - Include security review for sensitive code paths
 - Keep documentation capture in the project's existing docs surface
 
-**Output**: Executable plan with groups, backend assignments, tests, and validation gates.
+### Handoff Packet
+
+Before any delegated execution task, prepare a compact handoff packet containing:
+- Goal of the current item
+- Relevant files and ownership boundaries
+- Facts established by prior research or prior agents
+- Constraints to preserve
+- Expected output
+- Required tests or checks for that item
+- Any unresolved risk the executor must watch
+
+Do not dump raw history. Pass only the context needed to complete the next step correctly.
+
+**Output**: Executable plan with groups, backend assignments, handoff packets, tests, and validation gates.
 
 ---
 
@@ -244,15 +294,20 @@ Execution is not Claude-only. Choose the backend that fits the environment and t
 
 Use subagents / Task tool for independent implementation tracks. Prefer ECC development and review roles where available.
 
+When Claude/ECC-style model tiers are available, use this bias:
+- Mechanical changes, rote propagation, pattern application, focused edits -> junior / haiku-class
+- Normal implementation with clear specs -> middle / sonnet-class
+- Complex refactoring, ambiguous recovery, architecture-sensitive execution -> senior / opus-class
+
 #### Codex
 
-Use built-in agent roles for research/review/docs work. The orchestrator may execute code changes directly, especially for:
+Use built-in agent roles for research/review/docs work. For implementation, prefer delegated executor agents whenever ownership is clear and the task is not purely integrative. The orchestrator may execute code changes directly only for:
 - small or tightly coupled edits
 - integration work
 - fixes that immediately unblock validation
 - tasks with no strong writer-role mapping
 
-Do not force a "main orchestrator never edits" rule in Codex.
+Do not force a "main orchestrator never edits" rule in Codex. However, do not let the main orchestrator absorb routine executor work by default.
 
 #### `dmux` / worktrees
 
@@ -263,6 +318,7 @@ Use for independent parallel writers or cross-harness tasks that need isolation.
 - Within a group, run independent file owners in parallel
 - Between groups, run sequentially when dependencies exist
 - If file ownership is ambiguous, keep work on the orchestrator or isolate with worktrees
+- After each group, synthesize outputs into fresh handoff packets before starting the next dependent group
 
 ### Instructions for Delegated Writers MUST Include
 
@@ -271,6 +327,7 @@ Use for independent parallel writers or cross-harness tasks that need isolation.
 - Relevant local rules to follow (`AGENTS.md`, `.agents/skills/`, `.codex/agents/`, repo conventions)
 - Expected outcome
 - Context from research findings
+- The current handoff packet
 - File ownership boundaries
 - Whether tests/docs are part of the assignment
 - A reminder not to revert unrelated work from other agents or the user
@@ -281,8 +338,10 @@ Use for independent parallel writers or cross-harness tasks that need isolation.
 - Use ECC reviewers or equivalent immediately after meaningful modifications
 - Use stack-specific ECC capabilities when the task is domain-sensitive
 - Preserve local architecture and workflow conventions instead of replacing them with generic patterns
+- When the backend supports model selection, prefer the lowest-cost executor that can safely complete the task
 
 You SHOULD maximize real parallel execution, not artificial parallelism.
+You SHOULD prefer `plan -> executor -> handoff -> next executor -> validation` over repeated orchestration loops when dependencies are straightforward.
 
 ---
 
@@ -296,6 +355,8 @@ The orchestrator runs the most relevant local verification commands for the targ
 
 In ECC-style repos, validation should follow the spirit of `verification-loop`: build, typecheck, lint, tests, security-oriented checks, and diff review as appropriate.
 
+Run validation after the implementation batch or after a major dependency group completes. Do not repeatedly re-open long research loops unless validation reveals a real unknown.
+
 ### Step 2: Delegate to Validators
 
 If the code is in a reviewable state, delegate to validators/reviewers:
@@ -304,6 +365,10 @@ If the code is in a reviewable state, delegate to validators/reviewers:
 - Fallback: separate `dmux` review panes or independent review passes
 
 Validators can run in PARALLEL if they check different parts.
+
+Apply the same cheapest-capable rule here:
+- Routine verification and correctness review -> mid-tier validator/reviewer
+- Security-sensitive or architecture-heavy review -> strongest reviewer
 
 ### Step 3: Handle Results
 
@@ -354,6 +419,8 @@ Portability rules:
 - You MUST delegate broad research, independent implementation, and independent review when that adds value
 - You MUST allow the orchestrator to do bounded critical-path work directly, especially in Codex
 - You MUST run in parallel whenever ownership is clean and dependencies allow it
+- You MUST prepare a compact handoff packet before delegated execution steps
+- You MUST prefer fast plan-to-execution flow in Codex unless uncertainty or risk justifies deeper research
 - You MUST validate after execution
 - You MUST use ECC conventions when the target repo is ECC-based
 - You MUST ask the user when a decision has non-obvious product, architecture, or risk consequences
