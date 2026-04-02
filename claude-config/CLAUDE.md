@@ -91,3 +91,7 @@ Batch related changes. Minimize switching.
 Minor > note, continue | Major > same agent, fix | Critical > stop, report
 </handling>
 </validation>
+
+<workflow-rules>
+Before running any custom skill or plugin command, verify it is installed and available by checking `.claude/skills/` or running `claude skills list`.
+</workflow-rules>
