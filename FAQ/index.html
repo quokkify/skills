@@ -556,6 +556,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-can-codex-cost-more-than-my-previous-claudeecc-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why can Codex cost more than my previous Claude/ECC setup?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-the-cheapest-default-behavior-i-should-expect-in-codex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is the cheapest default behavior I should expect in Codex?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#can-my-target-project-still-have-its-own-local-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -657,6 +679,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-can-codex-cost-more-than-my-previous-claudeecc-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why can Codex cost more than my previous Claude/ECC setup?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-the-cheapest-default-behavior-i-should-expect-in-codex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is the cheapest default behavior I should expect in Codex?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#can-my-target-project-still-have-its-own-local-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -717,6 +761,21 @@
 <h2 id="what-does-install-codex-agentssh-actually-do">What does <code>install-codex-agents.sh</code> actually do?<a class="headerlink" href="#what-does-install-codex-agentssh-actually-do" title="Permanent link">&para;</a></h2>
 <p>It copies the repository file <code>codex/AGENTS.md</code> into your target repo as <code>AGENTS.md</code>.</p>
 <p>That file tells Codex how to use this orchestration workflow.</p>
+<h2 id="why-can-codex-cost-more-than-my-previous-claudeecc-setup">Why can Codex cost more than my previous Claude/ECC setup?<a class="headerlink" href="#why-can-codex-cost-more-than-my-previous-claudeecc-setup" title="Permanent link">&para;</a></h2>
+<p>Because the two environments do not expose the same routing model.</p>
+<ul>
+<li>Claude + ECC has an explicit cost ladder with junior, middle, and senior roles, which makes cheapest-capable selection more predictable.</li>
+<li>Codex can follow the same workflow shape, but cost control is often achieved through fewer delegations, shorter handoffs, and a tighter <code>plan -&gt; executor -&gt; validation</code> loop.</li>
+</ul>
+<p>If Codex starts feeling expensive, the first thing to check is not only model choice but also whether the workflow is spawning unnecessary research or review steps.</p>
+<h2 id="what-is-the-cheapest-default-behavior-i-should-expect-in-codex">What is the cheapest default behavior I should expect in Codex?<a class="headerlink" href="#what-is-the-cheapest-default-behavior-i-should-expect-in-codex" title="Permanent link">&para;</a></h2>
+<p>The intended cheap default is:</p>
+<ul>
+<li>quick plan</li>
+<li>one executor</li>
+<li>validation at the end</li>
+</ul>
+<p>Research agents should be added only when missing facts block execution. Review agents should usually be added after implementation reaches a stable state.</p>
 <h2 id="can-my-target-project-still-have-its-own-local-rules">Can my target project still have its own local rules?<a class="headerlink" href="#can-my-target-project-still-have-its-own-local-rules" title="Permanent link">&para;</a></h2>
 <p>Yes.</p>
 <p>This repo is the shared orchestration layer. Your target project can still define its own local roles and rules in <code>AGENTS.md</code> or <code>.agents/**/SKILL.md</code>.</p>
