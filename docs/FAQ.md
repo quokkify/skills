@@ -49,6 +49,25 @@ It copies the repository file `codex/AGENTS.md` into your target repo as `AGENTS
 
 That file tells Codex how to use this orchestration workflow.
 
+## Why can Codex cost more than my previous Claude/ECC setup?
+
+Because the two environments do not expose the same routing model.
+
+- Claude + ECC has an explicit cost ladder with junior, middle, and senior roles, which makes cheapest-capable selection more predictable.
+- Codex can follow the same workflow shape, but cost control is often achieved through fewer delegations, shorter handoffs, and a tighter `plan -> executor -> validation` loop.
+
+If Codex starts feeling expensive, the first thing to check is not only model choice but also whether the workflow is spawning unnecessary research or review steps.
+
+## What is the cheapest default behavior I should expect in Codex?
+
+The intended cheap default is:
+
+- quick plan
+- one executor
+- validation at the end
+
+Research agents should be added only when missing facts block execution. Review agents should usually be added after implementation reaches a stable state.
+
 ## Can my target project still have its own local rules?
 
 Yes.

@@ -42,6 +42,12 @@ npx skills add <your-git-url-or-owner/repo> --skill '*' -g -a codex -y
 
 Done: Codex gets the reusable skills, and your target repo gets an `AGENTS.md` file for this workflow.
 
+### Cost Expectations
+
+- Claude + ECC has the most predictable cost ladder because the Claude config includes explicit junior/middle/senior routing aligned to Haiku, Sonnet, and Opus style usage.
+- Codex is cost-aware too, but usually controls cost through fewer delegations, shorter handoffs, and tighter execution loops rather than the same fine-grained per-role model ladder.
+- In practice, expect Claude/ECC to be better at cheapest-capable model routing, and Codex to be better when you keep execution compact: `plan -> one executor -> validation`.
+
 ### If You Use Both Claude and Codex
 
 Install both skill targets at once:
@@ -88,6 +94,7 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 - Installing the skills and installing the Claude config are different steps.
 - For Claude, the skills alone are not the full setup. You also need `./scripts/install-claude-config.sh`.
 - For Codex, `claude-config/` is not required. The Codex flow uses the skills plus `AGENTS.md` in the target repo.
+- If cost predictability matters most, keep in mind that Claude and Codex do not expose the exact same routing controls. This repo now documents both paths separately.
 
 ## Adapting This To Your Project
 
@@ -115,6 +122,22 @@ If your target repo uses [Everything Claude Code](https://github.com/disler/ever
 - ECC validation conventions (`verification-loop`) are applied in Phase 5
 
 No additional setup is needed. The orchestrator reads local role docs and ECC config during Phase 1.
+
+### Cost and Tempo by Environment
+
+The execution model is intentionally different between environments:
+
+- Claude + ECC:
+  - favors explicit cheapest-capable routing
+  - mechanical work should fall to junior/Haiku-class agents
+  - normal implementation should fall to middle/Sonnet-class agents
+  - senior/Opus-class agents should be reserved for ambiguity, architecture, and recovery
+
+- Codex + ECC-style orchestration:
+  - favors a compact execution shape over many agents
+  - default shape should be `plan -> one executor -> validation`
+  - research and review agents should be added only when they remove real uncertainty or cover a distinct risk
+  - cost control comes mostly from fewer delegations and smaller handoff packets
 
 ## Skill Layout
 
