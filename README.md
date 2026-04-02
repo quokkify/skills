@@ -61,6 +61,8 @@ Use this when:
 - you want Claude to get the global config from `claude-config/`
 - you want Codex to get `AGENTS.md` inside a working project
 
+The `orchestrator-workflow` skill detects the active environment automatically and selects the appropriate delegation backend — no manual configuration needed.
+
 ## What Each Script Does
 
 `./scripts/install-claude-config.sh`
@@ -75,7 +77,7 @@ Use this when:
 
 ## What Is In This Repo
 
-- `orchestrator-workflow/` - main orchestration skill for complex tasks
+- `orchestrator-workflow/` - main orchestration skill for complex tasks. Environment-aware: resolves delegation backend from the active environment (Claude Code + ECC agents, Codex built-in roles, or `dmux`/worktrees as fallback). Integrates with Everything Claude Code when present.
 - `refactor-workflow/` - orchestration skill for refactoring tasks
 - `claude-config/` - Claude-specific global config
 - `codex/AGENTS.md` - Codex project instructions
@@ -102,6 +104,17 @@ Example local roles:
 - frontend role -> React / TypeScript / Vite
 - domain reviewer -> `DOMAIN_RULES.md`
 - plan reviewer -> final check against the approved plan
+
+### Everything Claude Code (ECC) Integration
+
+If your target repo uses [Everything Claude Code](https://github.com/disler/everything-claude-code), the `orchestrator-workflow` skill integrates with it automatically:
+
+- ECC project-local guidance takes priority over portable defaults
+- ECC agent roles (`planner`, `tdd-guide`, `code-reviewer`, `security-reviewer`, `doc-updater`, etc.) are used for delegation in Claude
+- Codex ECC roles (`explorer`, `docs_researcher`, `reviewer`) are used in Codex
+- ECC validation conventions (`verification-loop`) are applied in Phase 5
+
+No additional setup is needed. The orchestrator reads local role docs and ECC config during Phase 1.
 
 ## Skill Layout
 
