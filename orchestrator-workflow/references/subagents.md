@@ -7,7 +7,7 @@ These role profiles are portable defaults. They are not the top priority when th
 2. This bundled portable catalog
 3. Legacy Claude-only profiles in `~/.claude/agents/`
 
-## Project-local roles example
+## Project-local roles example: `car-service-platform`
 - `planner`: turns the task into a short executable plan.
 - `architect`: checks architecture fit, boundaries, and dependency impact.
 - `backend-developer`: owns `backend/**`, API contracts, business logic, permissions, and data access for a Django/DRF stack.
