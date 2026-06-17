@@ -131,4 +131,9 @@ Minor > note, continue | Major > same agent, fix | Critical > stop, report
 
 <workflow-rules>
 Before running any custom skill or plugin command, verify it is installed and available by checking `.claude/skills/` or running `claude skills list`.
+
+Follow these global rules in `~/.claude/rules/common/`:
+- [investigation-discipline.md](rules/common/investigation-discipline.md) — evidence-first debugging, no fabricated hypotheses
+- [project-conventions.md](rules/common/project-conventions.md) — Java idioms, skill placement, Renovate presets, busybox shell portability
+- [workflow-boundaries.md](rules/common/workflow-boundaries.md) — respect orchestrator phases, no unrequested features or configs
 </workflow-rules>
