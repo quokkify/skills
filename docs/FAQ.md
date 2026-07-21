@@ -55,7 +55,7 @@ The agents expose different routing controls. The optional Claude adapter define
 
 ## How do I migrate from the old root-level layout?
 
-Change Hermes `skills.external_dirs` from the repository root to `<checkout>/skills`. The adapter installer commands stay the same even though their source files moved under `adapters/`. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.
+Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point `skills.external_dirs` at `<checkout>/skills` if you want discovery limited to the canonical directory. The adapter installer commands stay the same even though their source files moved under `adapters/`. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.
 
 ## Can a target project have its own rules?
 

@@ -97,7 +97,7 @@ Copied Claude or Codex adapter files are not refreshed by this command. Rerun th
 
 ### Migrating From 0.3.x
 
-- Change the Hermes external directory from the repository root to `<checkout>/skills`.
+- Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point it at `<checkout>/skills` to narrow discovery to the canonical directory.
 - Keep using the same installer commands; their source files moved from `claude-config/` and `codex/` to `adapters/`.
 - Reinstall or update skills managed by the skills CLI so its recorded source paths use the new layout.
 
