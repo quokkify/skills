@@ -46,6 +46,14 @@ Hermes uses the repository root as a `skills.external_dirs` entry. Each top-leve
 
 External directories are mutable when filesystem permissions allow writes, so shared-skill promotion still goes through a Git branch or worktree and a pull request. A same-named local Hermes skill takes precedence over the external version.
 
+Update a direct shared checkout from its clean `main` branch with:
+
+```bash
+./scripts/sync-shared-skills.sh
+```
+
+The helper fetches `origin/main`, rejects ahead or diverged histories, validates the fetched snapshot and its CI gate before a fast-forward, and validates again afterward. Start a new Hermes session after it succeeds so the external skill directory is discovered again.
+
 ## Skill Review Flow
 
 After significant work, `skill-review` classifies the lesson, searches for an existing owner, prepares a private candidate, audits privacy and portability, and asks for approval. Approved candidates move through branch, validation, secret scan, and pull request. Routine work and temporary facts are skipped.

@@ -61,6 +61,8 @@ skills:
 
 Hermes external directories are mutable when the process has filesystem write access. Promote shared changes through a Git branch or worktree, not an in-place skill-management edit.
 
+To update this direct shared checkout later, run `./scripts/sync-shared-skills.sh` from its clean `main` branch, then start a new Hermes session so the external skill directory is discovered again.
+
 ## If You Use Claude and Codex
 
 Install both skill targets at once:

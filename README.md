@@ -112,6 +112,12 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 - requires a clean worktree and validates the exact checked-out `HEAD` before pushes
 - refuses to replace an existing `core.hooksPath` unless `--force` is explicitly supplied
 
+`./scripts/sync-shared-skills.sh`
+- updates a clean `main` checkout from `origin/main` using fetch plus fast-forward only
+- validates the fetched tree with the currently trusted validator and its CI gate before moving `main`
+- runs the CI validation gate after the update and refuses ahead or diverged histories
+- prints the new-session step for Hermes; it does not restart an agent or reinstall copied Claude/Codex files
+
 ## Local Validation
 
 Run the full gate before opening a pull request:
@@ -128,6 +134,18 @@ To enable the same checks as repository-local Git hooks:
 
 The validation workflow runs the portable checks on pull requests. The separate Secret Scan workflow remains the authoritative full-history Gitleaks gate in GitHub Actions.
 
+## Updating A Shared Checkout
+
+For a checkout used directly through Hermes `skills.external_dirs`, run:
+
+```bash
+./scripts/sync-shared-skills.sh
+```
+
+The command is fail-closed: it requires a clean `main`, fetches only `origin/main`, rejects non-fast-forward histories, validates the fetched snapshot with both the trusted current validator and the candidate CI gate before moving the branch, and validates again after the update. It never publishes local skills, changes Hermes configuration, or restarts a running agent.
+
+After a successful update, start a new Hermes session so the external skill directory is discovered again. Claude/Codex files installed by copying are not refreshed by this command; use their normal installation flow when those copied adapters change.
+
 ## What Is In This Repo
 
 - `orchestrator-workflow/` - main orchestration skill for complex tasks. Environment-aware: resolves delegation backend from the active environment (Claude Code + ECC agents, Codex built-in roles, or `dmux`/worktrees as fallback). Integrates with Everything Claude Code when present.
@@ -136,8 +154,8 @@ The validation workflow runs the portable checks on pull requests. The separate 
 - `claude-config/` - Claude-specific global config
 - `codex/AGENTS.md` - Codex project instructions
 - `.githooks/` - opt-in staged and pre-push validation hooks
-- `scripts/` - install and validation helpers
-- `tests/` - dependency-free validator regression tests
+- `scripts/` - install, validation, and safe shared-checkout helpers
+- `tests/` - dependency-free validator and sync regression tests
 
 ## Important Notes
 
