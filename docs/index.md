@@ -2,45 +2,31 @@
 title: Skills Docs
 ---
 
-# Skills for Claude Code, Codex, and Hermes
+# Shared Agent Skills
 
-This repo gives you reusable agent workflows for three tools:
+Portable workflows for Claude Code, Codex, and Hermes.
 
-- Claude Code
-- Codex
-- Hermes
+## One Source of Truth
 
-The short version is simple:
+All reusable skills live under `skills/`. Tool-specific configuration lives under `adapters/` and must not duplicate skill content.
 
-1. Install or connect the skills for your tool.
-2. Run the relevant setup script, or add the repository root to Hermes `skills.external_dirs`.
-3. Start working in your tool or target project.
-
-## Choose Your Path
-
-- [Quick Start](quick-start.md) for the shortest setup steps
-- [How to Use These Skills](guides/how-to-use-skills.md) for the longer explanation
-- [Reviewing and Promoting Skills](guides/reviewing-and-promoting-skills.md) for controlled post-task learning
-- [FAQ](FAQ.md) for common setup questions
-
-## What Is In This Repo
-
-- `orchestrator-workflow/` for complex implementation tasks
-- `refactor-workflow/` for refactoring tasks
-- `skill-review/` for safe candidate review and branch/PR promotion
-- `claude-config/` for Claude-specific global config
-- `codex/AGENTS.md` for Codex project instructions
-- `scripts/` for install helpers
-
-## When To Use This Repo
-
-Use this repo when:
-
-- you want the same orchestration style in Claude Code
-- you want Codex to work with a project-level `AGENTS.md`
-- you want Hermes to discover the same shared skills from an external directory
-- you want a shared workflow layer that target projects can extend locally
+```text
+skills/      portable skills
+adapters/    Claude, Codex, and Hermes integration files
+docs/        detailed documentation
+scripts/     install, validation, and sync helpers
+tests/       regression tests
+```
 
 ## Start Here
 
-If you only need the practical steps, go to [Quick Start](quick-start.md).
+1. Follow the [Quick Start](quick-start.md) for your agent.
+2. Read [How to Use These Skills](guides/how-to-use-skills.md) for discovery paths and adapter behavior.
+3. Read [Reviewing and Promoting Skills](guides/reviewing-and-promoting-skills.md) before publishing reusable lessons.
+4. See the [FAQ](FAQ.md) for common setup questions.
+
+## Included Skills
+
+- `orchestrator-workflow` for complex implementation tasks
+- `refactor-workflow` for controlled refactoring
+- `skill-review` for privacy-aware review and promotion

@@ -7,5 +7,5 @@ fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET="$1"
 mkdir -p "$TARGET"
-cp "$ROOT/codex/AGENTS.md" "$TARGET/AGENTS.md"
+cp "$ROOT/adapters/codex/AGENTS.md" "$TARGET/AGENTS.md"
 printf 'Installed Codex AGENTS.md into %s\n' "$TARGET"

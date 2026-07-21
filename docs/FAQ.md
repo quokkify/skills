@@ -4,79 +4,59 @@ title: FAQ
 
 # FAQ
 
-## Do I need Claude, Codex, and Hermes?
+## Do I need all three supported agents?
 
-No. You can choose one path or combine supported paths. Claude and Codex can be installed together, while Hermes is configured separately.
+No. Install or connect only the path you use. Claude Code and Codex can share the same portable skills, while Hermes reads the canonical directory directly.
 
-- If you use Claude Code, install the skills and run `./scripts/install-claude-config.sh`.
-- If you use Codex, install the skills and run `./scripts/install-codex-agents.sh /path/to/your/project`.
-- If you use Hermes, add the repository root to `skills.external_dirs` and start a new session.
+## Why are skills and adapters separate?
+
+They have different responsibilities:
+
+- `skills/` contains portable workflow knowledge shared by every supported agent.
+- `adapters/` contains configuration specific to Claude Code, Codex, or Hermes.
+
+Keeping those layers separate prevents three copies of the same skill from drifting apart.
+
+## Should this repository contain `.claude/skills` and `.codex/skills`?
+
+No. Claude Code uses `.claude/skills` for project-local discovery, but that is a consumer location rather than this repository's canonical store. Codex uses `.agents/skills` for project-local discovery; `.codex/skills` is not its documented project skill path.
+
+Installers can place skills into each agent's supported discovery location without duplicating their source in Git.
+
+## Can Hermes use the new layout directly?
+
+Yes. Point `skills.external_dirs` at the nested canonical directory:
+
+```yaml
+skills:
+  external_dirs:
+    - /absolute/path/to/skills/skills
+```
+
+Start a new session after changing the path.
 
 ## Can Hermes edit an external skill directory?
 
-Yes, when the Hermes process has filesystem write access. External directories are discovery sources, not write-protection boundaries. Shared changes should use an isolated Git branch or worktree and a pull request rather than an in-place skill-management edit.
+Yes, if the process has filesystem write access. External directories are discovery sources, not read-only boundaries. Make shared changes in a separate Git branch or worktree and submit them through review.
 
-If a local Hermes skill has the same name as an external skill, the local version takes precedence.
+A same-named local Hermes skill can take precedence over the shared version.
 
-## Why are skills and Claude config separate steps?
+## What do the adapter installers do?
 
-Because they do different jobs.
+`./scripts/install-claude-config.sh` copies the optional Claude files from `adapters/claude/` into `~/.claude`.
 
-- the skills add reusable workflow logic
-- the Claude config installs Claude-specific files into `~/.claude`
+`./scripts/install-codex-agents.sh /path/to/project` copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`.
 
-For Claude, you usually want both.
+Neither script changes the canonical files under `skills/`.
 
-## Does Codex need `claude-config/`?
+## Why does delegation differ between Claude Code and Codex?
 
-No.
+The agents expose different routing controls. The optional Claude adapter defines explicit junior, middle, and senior model tiers. Codex generally controls cost with fewer delegations and a compact `plan -> executor -> validation` loop. Both still use the same portable workflow from `skills/`.
 
-For Codex, the important pieces are:
+## How do I migrate from the old root-level layout?
 
-- the installed skills
-- `AGENTS.md` inside the target project
+Change Hermes `skills.external_dirs` from the repository root to `<checkout>/skills`. The adapter installer commands stay the same even though their source files moved under `adapters/`. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.
 
-## Do I run the scripts from my target project?
+## Can a target project have its own rules?
 
-No.
-
-Clone this repo and run the scripts from this repo root.
-
-Example:
-
-```bash
-cd /path/to/skills
-./scripts/install-claude-config.sh
-./scripts/install-codex-agents.sh /path/to/your/project
-```
-
-## What does `install-codex-agents.sh` actually do?
-
-It copies the repository file `codex/AGENTS.md` into your target repo as `AGENTS.md`.
-
-That file tells Codex how to use this orchestration workflow.
-
-## Why can Codex cost more than my previous Claude/ECC setup?
-
-Because the two environments do not expose the same routing model.
-
-- Claude + ECC has an explicit cost ladder with junior, middle, and senior roles, which makes cheapest-capable selection more predictable.
-- Codex can follow the same workflow shape, but cost control is often achieved through fewer delegations, shorter handoffs, and a tighter `plan -> executor -> validation` loop.
-
-If Codex starts feeling expensive, the first thing to check is not only model choice but also whether the workflow is spawning unnecessary research or review steps.
-
-## What is the cheapest default behavior I should expect in Codex?
-
-The intended cheap default is:
-
-- quick plan
-- one executor
-- validation at the end
-
-Research agents should be added only when missing facts block execution. Review agents should usually be added after implementation reaches a stable state.
-
-## Can my target project still have its own local rules?
-
-Yes.
-
-This repo is the shared orchestration layer. Your target project can still define its own local roles and rules in `AGENTS.md` or `.agents/**/SKILL.md`.
+Yes. Keep stack- and domain-specific rules in the target project, such as `AGENTS.md`, `CLAUDE.md`, or project-local skills. This repository should remain portable and generic.

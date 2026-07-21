@@ -12,7 +12,7 @@ class RepositoryValidationTests(unittest.TestCase):
     def make_repository(self) -> tuple[tempfile.TemporaryDirectory[str], Path]:
         temporary = tempfile.TemporaryDirectory()
         root = Path(temporary.name)
-        skill = root / "sample-skill" / "SKILL.md"
+        skill = root / "skills" / "sample-skill" / "SKILL.md"
         skill.parent.mkdir(parents=True)
         skill.write_text(
             "---\n"
@@ -32,10 +32,43 @@ class RepositoryValidationTests(unittest.TestCase):
         with temporary:
             self.assertEqual(validate_repository(root), [])
 
+    def test_skill_outside_canonical_skills_directory_is_rejected(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            misplaced = root / "misplaced-skill" / "SKILL.md"
+            misplaced.parent.mkdir()
+            misplaced.write_text(
+                "---\nname: misplaced-skill\ndescription: Misplaced.\n---\n\n# Misplaced\n",
+                encoding="utf-8",
+            )
+            errors = validate_repository(root)
+            self.assertTrue(any("skills/<skill-name>/SKILL.md" in error for error in errors), errors)
+
+    def test_nested_skill_group_is_rejected(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            nested = root / "skills" / "group" / "nested-skill" / "SKILL.md"
+            nested.parent.mkdir(parents=True)
+            nested.write_text(
+                "---\nname: nested-skill\ndescription: Nested.\n---\n\n# Nested\n",
+                encoding="utf-8",
+            )
+            errors = validate_repository(root)
+            self.assertTrue(any("skills/<skill-name>/SKILL.md" in error for error in errors), errors)
+
+    def test_canonical_skill_directory_requires_uppercase_entry_point(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            misplaced = root / "skills" / "lowercase-entry" / "skill.md"
+            misplaced.parent.mkdir()
+            misplaced.write_text("# Not an entry point\n", encoding="utf-8")
+            errors = validate_repository(root)
+            self.assertTrue(any("missing SKILL.md" in error for error in errors), errors)
+
     def test_duplicate_skill_name_is_rejected(self) -> None:
         temporary, root = self.make_repository()
         with temporary:
-            duplicate = root / "other-skill" / "SKILL.md"
+            duplicate = root / "skills" / "other-skill" / "SKILL.md"
             duplicate.parent.mkdir()
             duplicate.write_text(
                 "---\nname: sample-skill\ndescription: Duplicate.\n---\n\n# Duplicate\n",
@@ -76,7 +109,7 @@ class RepositoryValidationTests(unittest.TestCase):
     def test_frontmatter_name_must_match_directory(self) -> None:
         temporary, root = self.make_repository()
         with temporary:
-            skill = root / "sample-skill" / "SKILL.md"
+            skill = root / "skills" / "sample-skill" / "SKILL.md"
             skill.write_text(skill.read_text(encoding="utf-8").replace("name: sample-skill", "name: renamed-skill"), encoding="utf-8")
             errors = validate_repository(root)
             self.assertTrue(any("must match directory" in error for error in errors), errors)
@@ -138,7 +171,7 @@ class RepositoryValidationTests(unittest.TestCase):
     def test_binary_skill_asset_is_allowed(self) -> None:
         temporary, root = self.make_repository()
         with temporary:
-            assets = root / "sample-skill" / "assets"
+            assets = root / "skills" / "sample-skill" / "assets"
             assets.mkdir()
             (assets / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n\xff")
             self.assertEqual(validate_repository(root), [])
@@ -146,7 +179,7 @@ class RepositoryValidationTests(unittest.TestCase):
     def test_invalid_utf8_skill_is_reported(self) -> None:
         temporary, root = self.make_repository()
         with temporary:
-            (root / "sample-skill" / "SKILL.md").write_bytes(b"---\nname: sample-skill\n---\n\xff")
+            (root / "skills" / "sample-skill" / "SKILL.md").write_bytes(b"---\nname: sample-skill\n---\n\xff")
             errors = validate_repository(root)
             self.assertTrue(any("file is not valid UTF-8" in error for error in errors), errors)
 
@@ -171,7 +204,7 @@ class RepositoryValidationTests(unittest.TestCase):
     def test_skill_support_markdown_does_not_collide(self) -> None:
         temporary, root = self.make_repository()
         with temporary:
-            references = root / "sample-skill" / "references"
+            references = root / "skills" / "sample-skill" / "references"
             references.mkdir()
             (references / "sample-skill.md").write_text("# Internal reference\n", encoding="utf-8")
             self.assertEqual(validate_repository(root), [])

@@ -4,84 +4,72 @@ title: How to Use These Skills
 
 # How to Use These Skills
 
-This repo is meant to stay small and reusable.
+This repository has two intentionally separate layers:
 
-It gives you:
+1. `skills/` — portable workflow knowledge and the only source of truth.
+2. `adapters/` — optional integration files for a specific agent.
 
-- shared orchestration skills
-- Claude-specific global config
-- Codex project instructions
-- a controlled skill-review and promotion workflow for Claude, Codex, and Hermes
+## Claude Code
 
-## The Main Idea
+Install the portable skills with the skills CLI. Claude Code supports personal skills under `~/.claude/skills` and project skills under `.claude/skills`.
 
-There are two layers:
+The optional `./scripts/install-claude-config.sh` helper copies the files under `adapters/claude/` into `~/.claude`. These include agent definitions, commands, an output style, and a status line; they are not additional copies of the skills.
 
-1. Shared skills that Claude Code, Codex, and Hermes can use
-2. Tool-specific setup for the tool you actually work with
+## Codex
 
-That is why setup happens in two steps instead of one.
+Install the same portable skills for Codex. Codex discovers repository skills by walking from the current directory to the repository root and looking under `.agents/skills`; personal skills live under `$HOME/.agents/skills`.
 
-## Claude Flow
+The optional `./scripts/install-codex-agents.sh /path/to/project` helper copies `adapters/codex/AGENTS.md` into a target project. The repository deliberately does not maintain a duplicate `.codex/skills` tree.
 
-Claude uses:
+## Hermes
 
-- installed skills from this repo
-- files copied into `~/.claude` by `./scripts/install-claude-config.sh`
+Hermes reads the canonical directory directly:
 
-This gives Claude the reusable workflow plus the Claude-specific global setup.
+```yaml
+skills:
+  external_dirs:
+    - /absolute/path/to/skills/skills
+```
 
-## Codex Flow
+Start a new session after changing the path or updating the checkout. External directories remain writable when filesystem permissions allow it, so use a Git branch or worktree for shared changes rather than editing the stable checkout through skill-management tools.
 
-Codex uses:
+A same-named local Hermes skill can take precedence over an external one. Resolve collisions before assuming the shared copy is active.
 
-- installed skills from this repo
-- `AGENTS.md` inside the target repo
+## Safe Checkout Updates
 
-This gives Codex the reusable workflow plus project-level instructions.
-
-## Hermes Flow
-
-Hermes uses the repository root as a `skills.external_dirs` entry. Each top-level skill directory then appears in the Hermes skill index and as a slash command.
-
-External directories are mutable when filesystem permissions allow writes, so shared-skill promotion still goes through a Git branch or worktree and a pull request. A same-named local Hermes skill takes precedence over the external version.
-
-Update a direct shared checkout from its clean `main` branch with:
+From a clean direct checkout on `main`:
 
 ```bash
 ./scripts/sync-shared-skills.sh
 ```
 
-The helper fetches trusted `origin/main`, rejects ahead or diverged histories, and uses a preserved copy of the current validator before and after an exact fast-forward. It rechecks the branch, revision, and clean state around the update, disables Git hooks, and never executes scripts from the fetched tree. Concurrent checkout changes return an error rather than a success report. Start a new Hermes session after it succeeds so the external skill directory is discovered again.
+The helper validates one exact fetched commit with a preserved copy of the current validator, rejects ahead or diverged history, disables Git hooks during the fast-forward, and never executes fetched scripts. Concurrent branch or worktree changes cause an error rather than a false success report.
 
-## Skill Review Flow
+The helper updates the repository only. If you copied adapter files into another location, rerun the relevant installer when `adapters/` changes.
 
-After significant work, `skill-review` classifies the lesson, searches for an existing owner, prepares a private candidate, audits privacy and portability, and asks for approval. Approved candidates move through branch, validation, secret scan, and pull request. Routine work and temporary facts are skipped.
+## Environment-Aware Orchestration
 
-## How To Adapt This To Your Own Project
+The portable orchestration skills prefer instructions from the target project before their bundled defaults. When a project provides Everything Claude Code or another local role catalog, those project-local roles remain authoritative.
 
-Keep this repo focused on orchestration.
+The execution shape intentionally differs by agent:
 
-Put stack-specific roles in the target project, for example:
+- Claude's optional adapter provides explicit junior, middle, and senior model routing.
+- Codex defaults to a compact `plan -> executor -> validation` flow and adds research or review roles only for distinct risks.
 
-- `AGENTS.md`
-- `.agents/**/SKILL.md`
-- project-specific rules files
+The workflow remains shared; only delegation mechanics and tool-specific configuration belong in an adapter or target project.
 
-The target repo should describe its own stack and domain. This repo should stay generic.
+## Project-Specific Rules
 
-## Recommended Reading Order
+Keep stack- and domain-specific instructions in the target project, for example:
 
-If you are new to this repo:
+- `AGENTS.md` for Codex or other compatible agents
+- `CLAUDE.md` for Claude Code
+- `.agents/skills/<name>/SKILL.md` or `.claude/skills/<name>/SKILL.md` for truly project-local skills
 
-1. Read [Quick Start](../quick-start.md)
-2. Use the Claude, Codex, or Hermes path
-3. Read [Reviewing and Promoting Skills](reviewing-and-promoting-skills.md) before promoting agent-generated knowledge
-4. Come back here only if you need the longer explanation
+Do not copy shared skills into multiple tracked directories in this repository.
 
 ## Related Pages
 
-- [Home](../index.md)
 - [Quick Start](../quick-start.md)
 - [Reviewing and Promoting Skills](reviewing-and-promoting-skills.md)
 - [FAQ](../FAQ.md)
