@@ -3,16 +3,15 @@
 These role profiles are portable defaults. They are not the top priority when the target repo already defines its own roles.
 
 ## Selection priority
-1. Project-local role docs such as `AGENTS.md` or `.agents/**/SKILL.md`
+1. Project-local role and configuration metadata such as `AGENTS.md` or the active environment's supported role registry
 2. This bundled portable catalog
-3. Legacy Claude-only profiles in `~/.claude/agents/`
 
 ## Project-local roles example
 - `planner`: turns the task into a short executable plan.
 - `architect`: checks architecture fit, boundaries, and dependency impact.
-- `backend-developer`: owns `backend/**`, API contracts, business logic, permissions, and data access for a Django/DRF stack.
-- `frontend-developer`: owns `frontend/**`, routes, components, forms, state, and API integration for a React/Vite/TypeScript stack.
-- `domain-rules-reviewer`: verifies that domain rules, statuses, and calculations still match the source of truth.
+- `backend-developer`: owns the target project's server-side paths, API contracts, business logic, permissions, and data access.
+- `frontend-developer`: owns the target project's client-side paths, routes, components, forms, state, and API integration.
+- `domain-rules-reviewer`: verifies that domain rules, statuses, and calculations still match the target project's documented source of truth.
 - `plan-reviewer`: checks that delivery matches the approved plan and highlights gaps or residual risk.
 
 ## Portable fallback roles

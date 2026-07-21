@@ -53,7 +53,7 @@ See the repository [SECURITY.md](https://github.com/ylazakovich/skills/blob/main
 
 ### Claude Code and Codex
 
-Install the repository skills normally. The Claude and Codex adapters prompt a post-task review only after significant work. The review still requires approval before a branch or pull request is created.
+Install the repository skills normally. In Claude Code, invoke the installed `skill-review` skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex `AGENTS.md` adapter adds a post-task review prompt. In both cases, promotion still requires approval before a branch or pull request is created.
 
 ### Hermes
 
@@ -62,10 +62,10 @@ Hermes can discover this repository through `skills.external_dirs`:
 ```yaml
 skills:
   external_dirs:
-    - /path/to/skills
+    - /absolute/path/to/skills/skills
 ```
 
-Point the setting at the repository root because each skill is a top-level directory. Restart Hermes or begin a new session after changing skill discovery settings.
+Point the setting at the canonical `skills/` directory. Restart Hermes or begin a new session after changing skill discovery settings.
 
 External directories are not read-only. If the Hermes process can write to the checkout, skill-management tools can modify it. Treat the checkout as a shared Git source: inspect skills with `skills_list` and `skill_view`, but make approved updates in an isolated branch or worktree rather than patching the external directory in place.
 
@@ -73,7 +73,7 @@ If a local Hermes skill and an external skill have the same name, the local skil
 
 ## Candidate format
 
-The bundled `skill-review/templates/candidate.md` template records:
+The bundled `skills/skill-review/templates/candidate.md` template records:
 
 - the reusable trigger;
 - the target skill or proposed name;

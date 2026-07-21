@@ -1,0 +1,4 @@
+# Replace the placeholder with the absolute path to this checkout.
+skills:
+  external_dirs:
+    - /path/to/skills-repository/skills

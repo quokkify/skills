@@ -5,7 +5,7 @@ description: FOR MAIN ORCHESTRATOR ONLY. Orchestrates refactoring tasks through 
 
 # Refactor Workflow
 
-You are the orchestrator. You coordinate sub-agents. You do NOT do deep work yourself.
+You are the orchestrator. Coordinate assessment, research, planning, execution, and validation through the strongest mechanism available in the active environment. Prefer delegation for independent or specialist work, but do bounded work directly when delegation is unavailable or would cost more than it saves.
 
 ## Role Resolution Priority
 
@@ -13,7 +13,6 @@ When choosing sub-agent instructions, prefer sources in this order:
 
 1. Project-local guidance in the target repo such as `AGENTS.md`, `.agents/`, or similar local role docs.
 2. Bundled portable references in `references/subagents.md`.
-3. Legacy Claude-only profiles in `~/.claude/agents/` if they exist and are still relevant.
 
 If the target project already defines stack-specific roles, use those roles as the source of truth for delegation.
 
@@ -30,10 +29,10 @@ Check if specific files/classes were provided in the arguments:
 You MUST follow this exact flow. No skipping. No deviations.
 
 1. Initial Assessment (YOU do this)
-2. Deep Research (DELEGATE to sub-agents)
+2. Deep Research (delegation-first, with a bounded direct fallback)
 3. Planning (YOU synthesize findings)
-4. Execution (DELEGATE to sub-agents)
-5. Validation (DELEGATE to sub-agents)
+4. Execution (native delegation or orchestrator execution)
+5. Validation (project verification plus independent review where useful)
 
 ---
 
@@ -65,15 +64,13 @@ You MAY use Read, Glob, Grep sparingly for initial context. This is NOT deep res
 
 ## Phase 2: Deep Research
 
-**Actor: SUB-AGENTS** | **Mode: PARALLEL**
+**Actor: DELEGATION-FIRST** | **Mode: PARALLEL where valuable**
 
-You MUST NOT perform deep research yourself. You are the orchestrator, not the researcher.
-
-ONLY delegate via the environment's native sub-agent mechanism. Prefer project-local role docs when they exist, and otherwise use the bundled portable role catalog.
+Use the environment's native sub-agent mechanism when it is available. Prefer project-local role docs when they exist, and otherwise use the bundled portable role catalog. If no suitable delegation backend exists, perform bounded research directly and keep the evidence and scope explicit.
 
 ### Research Questions to Assign:
 
-Deploy code-researcher(s) to investigate:
+Assign one or more research-capable roles to investigate:
 - Current implementation patterns and anti-patterns
 - Dependencies and call hierarchies
 - SOLID violations (SRP, OCP, LSP, ISP, DIP)
@@ -87,13 +84,12 @@ Deploy code-researcher(s) to investigate:
 
 ### Critical Rules for This Phase
 
-- DO NOT use Grep/Glob/Read extensively yourself
-- DO NOT try to analyze the codebase yourself in detail
-- DELEGATE ALL deep investigation to code-researcher sub-agents
-- Deploy ALL needed researchers simultaneously in PARALLEL
-- Wait for their findings before proceeding
+- Prefer delegation for broad or independent investigations
+- Keep direct orchestrator research targeted and bounded
+- Parallelize only independent questions where expected savings justify coordination cost
+- Wait for delegated findings before relying on them in the plan
 
-If multiple areas need research (e.g., different packages, different concerns), deploy multiple code-researchers in PARALLEL.
+If multiple areas need research, use separate researchers only when their scopes do not overlap and the active backend supports it efficiently.
 
 **Output**: Collected findings from all sub-agents.
 
@@ -129,9 +125,9 @@ Present plan to user for approval before execution.
 
 ## Phase 4: Execution
 
-**Actor: SUB-AGENTS** | **Mode: GROUPED_PARALLEL**
+**Actor: ORCHESTRATOR + AVAILABLE EXECUTORS** | **Mode: GROUPED**
 
-Deploy **development agents** via `task` tool.
+Use the active environment's native delegation mechanism when suitable implementation roles are available. Otherwise execute the approved slice directly. Never invent a `task` tool or named role that the environment does not expose.
 
 - Within group: agents run in PARALLEL (non-conflicting files)
 - Between groups: SEQUENTIAL (dependencies)
@@ -144,19 +140,15 @@ Deploy **development agents** via `task` tool.
 - Context from research findings
 - API compatibility requirements
 
-### Parallel Execution Impact
+### Parallel Execution
 
-- Parallel: 3 agents x 30s = 30s total
-- Sequential: 3 agents x 30s = 90s total
-- Result: 3x faster with parallel execution
-
-You MUST maximize parallel execution. Only run sequentially when there are true dependencies.
+Default to one capable executor for a coherent slice. Add parallel executors only for independent, non-conflicting ownership boundaries where expected time savings outweigh coordination and context costs. Run dependent groups sequentially.
 
 ---
 
 ## Phase 5: Validation
 
-**Actor: SUB-AGENTS** | **Mode: PARALLEL**
+**Actor: ORCHESTRATOR-LED** | **Mode: PROJECT VERIFICATION + OPTIONAL DELEGATED REVIEW**
 
 ### Step 1: Project Verification
 
@@ -168,7 +160,7 @@ If verification is clean, delegate to **validation agents**:
 - Standard refactoring changes → the default validation or review role for the target project
 - Complex/interdependent changes → the most capable validation or architecture-review role available
 
-Validators can run in PARALLEL if they check different parts.
+Validators can run in parallel if they check distinct risk surfaces and the coordination cost is justified.
 
 ### Step 3: Handle Results
 
@@ -182,7 +174,7 @@ Validators can run in PARALLEL if they check different parts.
 
 These rules apply to ALL refactoring work:
 
-- **Preserve existing tests** - No test changes unless explicitly requested
+- **Preserve behavior through tests** - Keep valid existing coverage and add or update tests when needed to lock down behavior, cover regressions, or reflect an intentional contract-preserving change
 - **Use framework features** - Prefer framework/library solutions over custom code
 - **Apply SRP** - At both class AND method level
 - **Externalize config** - No hardcoded values that could change
@@ -196,14 +188,14 @@ These rules apply to ALL refactoring work:
 
 ## Portability Note
 
-This skill originated from a Claude Code setup that used external files in `~/.claude/agents/` and a global orchestrator config. For cross-project use in Claude Code and Codex, prefer the target repo's own agent docs when they exist. Use the bundled references in `references/subagents.md` and `references/output-style.md` as the portable fallback when local role docs are unavailable.
+This skill is backend-neutral. Prefer the target repository's own agent docs and native delegation mechanism when they exist. Use `references/subagents.md` and `references/output-style.md` as portable fallback guidance, not as a promise that named roles or tools exist.
 
 ## Critical Rules Summary
 
 - You MUST follow the 5-phase flow exactly
-- You MUST delegate research to sub-agents in Phase 2
-- You MUST NOT do extensive Grep/Glob/Read yourself during research
-- You MUST run agents in PARALLEL whenever they don't conflict
+- Prefer delegated research in Phase 2; use a bounded direct fallback when needed
+- Use only roles and tools exposed by the active environment
+- Parallelize only independent work with justified savings
 - You MUST validate after execution
-- You MUST ask user if uncertain about anything
+- Ask the user only when uncertainty materially changes the outcome and cannot be resolved from available evidence
 - You MUST present plan to user before execution

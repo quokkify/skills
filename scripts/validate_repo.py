@@ -15,6 +15,7 @@ EXCLUDED_PARTS = {".git", ".venv", "node_modules", "public", "__pycache__"}
 FORBIDDEN_NAMES = {name.casefold() for name in ("MEMORY.md", "USER.md", "SOUL.md", "auth.json", "credentials.json", "settings.local.json")}
 FORBIDDEN_DIRECTORIES = {"sessions", "transcripts", "snapshot", "snapshots", "backups"}
 SKILL_SUPPORT_DIRECTORIES = {"assets", "references", "scripts", "templates"}
+SKILLS_DIRECTORY = "skills"
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MACHINE_HOME_RE = re.compile(
     r"(?<![A-Za-z0-9])(?:/(?:home|Users)/[A-Za-z0-9._-]+|/root)(?:/|$)"
@@ -164,9 +165,32 @@ def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[st
     skills: list[Skill] = []
     names: dict[str, Path] = {}
 
-    skill_files = [path for path in files if path.name == "SKILL.md" and not path.is_symlink()]
+    skill_directories = {
+        path.relative_to(root).parts[1]
+        for path in files
+        if len(path.relative_to(root).parts) >= 3
+        and path.relative_to(root).parts[0] == SKILLS_DIRECTORY
+    }
+    repository_paths = {path.relative_to(root) for path in files}
+    for directory in sorted(skill_directories):
+        entry_point = Path(SKILLS_DIRECTORY) / directory / "SKILL.md"
+        if entry_point not in repository_paths:
+            errors.append(f"{entry_point}: canonical skill directory is missing SKILL.md")
+
+    discovered_skill_files = [
+        path for path in files if path.name == "SKILL.md" and not path.is_symlink()
+    ]
+    skill_files: list[Path] = []
+    for path in discovered_skill_files:
+        rel = path.relative_to(root)
+        if len(rel.parts) != 3 or rel.parts[0] != SKILLS_DIRECTORY:
+            errors.append(
+                f"{rel}: skills must live at {SKILLS_DIRECTORY}/<skill-name>/SKILL.md"
+            )
+            continue
+        skill_files.append(path)
     if not skill_files:
-        errors.append("repository contains no SKILL.md files")
+        errors.append(f"repository contains no skills under {SKILLS_DIRECTORY}/")
         return skills, errors
 
     for path in skill_files:

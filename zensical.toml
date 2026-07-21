@@ -1,5 +1,5 @@
 [project]
-site_name = "Skills"
+site_name = "Shared Agent Skills"
 site_description = "Reusable workflows for Claude Code, Codex, and Hermes."
 docs_dir = "docs"
 site_dir = "public"

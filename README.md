@@ -1,232 +1,136 @@
-# cc-subagents-repo
+# Shared Agent Skills
 
-This repo adds reusable agent workflows for Claude Code, Codex, and Hermes.
-If you want the short version: choose your tool below, connect the skills, and start working.
+Reusable agent workflows for **Claude Code**, **Codex**, and **Hermes**.
+
+The repository keeps every portable skill in one canonical directory: [`skills/`](skills). Tool-specific files live separately in [`adapters/`](adapters), so workflow instructions are not duplicated or allowed to drift between agents.
+
+## Repository Layout
+
+```text
+skills/
+├── orchestrator-workflow/   # complex implementation workflow
+├── refactor-workflow/       # controlled refactoring workflow
+└── skill-review/            # review and promotion of reusable lessons
+
+adapters/
+├── claude/README.md         # Claude Code connection notes
+├── codex/AGENTS.md          # optional Codex project instructions
+└── hermes/                  # Hermes configuration example
+
+docs/                        # detailed guides
+scripts/                     # install, validation, and safe-sync helpers
+tests/                       # dependency-free regression tests
+```
+
+`skills/` is the only source of truth for skills. Claude Code can discover project skills from `.claude/skills`, while Codex uses `.agents/skills`; this repository does not duplicate the same skills into those consumer-specific locations. Codex does not use `.codex/skills` as its project skill directory.
 
 ## Quick Start
 
-Clone this repo first, then run the commands below from the repo root.
-Choose one path below.
-
-### Claude
-
-1. Install Claude Code.
-2. Install the skills from this repo:
+Clone the repository:
 
 ```bash
-npx skills add <your-git-url-or-owner/repo> --skill '*' -g -a claude-code -y
+git clone https://github.com/ylazakovich/skills.git
+cd skills
 ```
 
-3. Run the Claude setup script:
+### Claude Code
+
+Install all portable skills:
 
 ```bash
-./scripts/install-claude-config.sh
+npx skills add ylazakovich/skills --skill '*' -g -a claude-code -y
 ```
 
-Done: Claude Code gets the reusable skills, and the Claude config is copied into `~/.claude`.
+Claude Code needs no copied global adapter. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.
 
 ### Codex
 
-1. Install Codex.
-2. Install the skills from this repo:
+Install all portable skills:
 
 ```bash
-npx skills add <your-git-url-or-owner/repo> --skill '*' -g -a codex -y
+npx skills add ylazakovich/skills --skill '*' -g -a codex -y
 ```
 
-3. Copy the Codex project instructions into the repo where you want to work:
+Optional: copy the shared Codex instructions into a target project:
 
 ```bash
 ./scripts/install-codex-agents.sh /path/to/your/project
 ```
 
-Done: Codex gets the reusable skills, and your target repo gets an `AGENTS.md` file for this workflow.
+This creates `/path/to/your/project/AGENTS.md` from [`adapters/codex/AGENTS.md`](adapters/codex/AGENTS.md).
 
 ### Hermes
 
-1. Clone this repository.
-2. Add its root directory to the `skills.external_dirs` list in your Hermes configuration:
+Point Hermes directly at the canonical skill directory:
 
 ```yaml
 skills:
   external_dirs:
-    - /path/to/skills
+    - /absolute/path/to/skills/skills
 ```
 
-3. Start a new Hermes session; after significant work, load `/skill-review` to decide whether a reusable lesson should be proposed.
+The same example is available at [`adapters/hermes/config.example.yaml`](adapters/hermes/config.example.yaml). Start a new Hermes session after adding or updating the directory.
 
-Hermes external skill directories are mutable when filesystem permissions allow writes. Inspect shared skills normally, but promote approved changes through a Git branch or worktree instead of editing the shared checkout in place.
+A same-named skill under the local Hermes skill directory can take precedence over the shared copy. Keep shared changes in a Git branch or worktree rather than editing the stable checkout through skill-management tools.
 
-### Cost Expectations
+## Available Skills
 
-- Claude + ECC has the most predictable cost ladder because the Claude config includes explicit junior/middle/senior routing aligned to Haiku, Sonnet, and Opus style usage.
-- Codex is cost-aware too, but usually controls cost through fewer delegations, shorter handoffs, and tighter execution loops rather than the same fine-grained per-role model ladder.
-- In practice, expect Claude/ECC to be better at cheapest-capable model routing, and Codex to be better when you keep execution compact: `plan -> one executor -> validation`.
+- [`orchestrator-workflow`](skills/orchestrator-workflow/SKILL.md) — plans and coordinates complex implementation tasks across supported agent environments.
+- [`refactor-workflow`](skills/refactor-workflow/SKILL.md) — performs refactoring with explicit discovery, implementation, and verification phases.
+- [`skill-review`](skills/skill-review/SKILL.md) — audits reusable lessons and promotes approved changes through a branch and pull request.
 
-### If You Use Claude and Codex
+## Update A Shared Checkout
 
-Install both skill targets at once:
-
-```bash
-npx skills add <your-git-url-or-owner/repo> --skill '*' -g -a claude-code -a codex -y
-```
-
-Then run:
-
-```bash
-./scripts/install-claude-config.sh
-./scripts/install-codex-agents.sh /path/to/your/project
-```
-
-Use this when:
-- you want Claude to get the global config from `claude-config/`
-- you want Codex to get `AGENTS.md` inside a working project
-
-The `orchestrator-workflow` skill detects the active environment automatically and selects the appropriate delegation backend — no manual configuration needed.
-
-## What Each Script Does
-
-`./scripts/install-claude-config.sh`
-- creates `~/.claude`
-- copies `CLAUDE.md`
-- copies `agents/`, `commands/`, and `output-styles/`
-- installs `statusline-command.sh`
-
-`./scripts/install-codex-agents.sh /path/to/your/project`
-- creates the target directory if needed
-- copies `codex/AGENTS.md` into that repo as `AGENTS.md`
-
-`./scripts/validate.sh --fast`
-- validates skill frontmatter and directory names
-- detects duplicate skill names and Markdown filenames that would shadow a skill in Hermes
-- checks documentation links and targeted public-boundary rules
-
-`./scripts/validate.sh --full`
-- runs the fast checks, validator unit tests, and a Zensical documentation build
-- rejects shallow clones and scans the complete Git history with Gitleaks
-- requires Gitleaks 8.30.1 or newer on `PATH`, or in `GITLEAKS_BIN`
-
-`./scripts/install-git-hooks.sh`
-- configures this checkout to use the tracked `.githooks/` directory
-- validates the staged snapshot before commits
-- requires a clean worktree and validates the exact checked-out `HEAD` before pushes
-- refuses to replace an existing `core.hooksPath` unless `--force` is explicitly supplied
-
-`./scripts/sync-shared-skills.sh`
-- updates a clean `main` checkout from `origin/main` using fetch plus fast-forward only
-- validates the fetched tree with a preserved copy of the currently trusted validator before and after moving `main`
-- disables Git hooks for the fast-forward and never executes scripts from the fetched tree
-- refuses ahead or diverged histories and verifies the exact branch, revision, and clean state before reporting success
-- prints the new-session step for Hermes; it does not restart an agent or reinstall copied Claude/Codex files
-
-## Local Validation
-
-Run the full gate before opening a pull request:
-
-```bash
-./scripts/validate.sh --full
-```
-
-To enable the same checks as repository-local Git hooks:
-
-```bash
-./scripts/install-git-hooks.sh
-```
-
-The validation workflow runs the portable checks on pull requests. The separate Secret Scan workflow remains the authoritative full-history Gitleaks gate in GitHub Actions.
-
-## Updating A Shared Checkout
-
-For a checkout used directly through Hermes `skills.external_dirs`, run:
+From a clean checkout on `main`:
 
 ```bash
 ./scripts/sync-shared-skills.sh
 ```
 
-The command is fail-closed: it requires a clean `main`, fetches only `origin/main`, rejects non-fast-forward histories, and validates the fetched snapshot with a preserved copy of the trusted current validator before and after moving the branch. It rechecks that the checkout still matches the expected clean `main` immediately before the fast-forward, immediately after it, and after post-update validation. Concurrent changes produce an error instead of a success report; the helper does not roll back work performed by another process. It disables Git hooks for the exact fast-forward and does not execute scripts from the fetched tree. It never publishes local skills, changes Hermes configuration, or restarts a running agent.
+The helper fetches only `origin/main`, validates the exact fetched snapshot with the currently trusted validator, allows fast-forward updates only, disables Git hooks during branch movement, and rejects concurrent checkout changes. It never executes scripts from the fetched tree.
 
-Treat `origin/main` as a trusted, protected source. Repository CI remains responsible for tests, documentation builds, and full-history secret scanning before changes reach that branch; the sync helper deliberately avoids running newly fetched code on the host.
+Copied Codex adapter files are not refreshed by this command. Rerun its installer when `adapters/codex/AGENTS.md` changes.
 
-After a successful update, start a new Hermes session so the external skill directory is discovered again. Claude/Codex files installed by copying are not refreshed by this command; use their normal installation flow when those copied adapters change.
+### Migrating From 0.3.x
 
-## What Is In This Repo
+- Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point it at `<checkout>/skills` to narrow discovery to the canonical directory.
+- The former global Claude configuration bundle is intentionally no longer published; the Codex installer source moved from `codex/` to `adapters/codex/`.
+- Reinstall or update skills managed by the skills CLI so its recorded source paths use the new layout.
 
-- `orchestrator-workflow/` - main orchestration skill for complex tasks. Environment-aware: resolves delegation backend from the active environment (Claude Code + ECC agents, Codex built-in roles, or `dmux`/worktrees as fallback). Integrates with Everything Claude Code when present.
-- `refactor-workflow/` - orchestration skill for refactoring tasks
-- `skill-review/` - controlled post-task review and branch/PR promotion workflow for reusable lessons
-- `claude-config/` - Claude-specific global config
-- `codex/AGENTS.md` - Codex project instructions
-- `.githooks/` - opt-in staged and pre-push validation hooks
-- `scripts/` - install, validation, and safe shared-checkout helpers
-- `tests/` - dependency-free validator and sync regression tests
+## Validate Changes
 
-## Important Notes
+Run the portable CI-equivalent checks:
 
-- Installing the skills and installing the Claude config are different steps.
-- For Claude, the skills alone are not the full setup. You also need `./scripts/install-claude-config.sh`.
-- For Codex, `claude-config/` is not required. The Codex flow uses the skills plus `AGENTS.md` in the target repo.
-- For Hermes, point `skills.external_dirs` at the repository root. A same-named local Hermes skill takes precedence over the shared version.
-- If cost predictability matters most, keep in mind that Claude and Codex do not expose the exact same routing controls. This repo now documents both paths separately.
+```bash
+./scripts/validate.sh --ci
+```
 
-## Security and Privacy
+Run the complete local gate, including full-history Gitleaks scanning:
 
-This repository is public and should contain only portable, redacted agent instructions. Keep credentials, memories, transcripts, snapshots, runtime databases, personal context, and private project rules outside this repository. Read [SECURITY.md](SECURITY.md) before promoting a locally generated skill or configuration change.
+```bash
+./scripts/validate.sh --full
+```
 
-Every pull request runs a full-history Gitleaks scan. Scanner success complements manual review; it does not make personal or proprietary data safe to publish.
+Gitleaks `8.30.1` or newer must be available on `PATH` or through `GITLEAKS_BIN` for `--full`.
 
-## Releases and Dependency Updates
+Optional repository-local Git hooks:
 
-Release Please creates version and changelog pull requests from Conventional Commit titles. Renovate maintains pinned GitHub Actions dependencies, and its configuration is validated on changes and weekly. See [Releases and dependency updates](docs/guides/releases-and-dependencies.md) for the complete workflow.
+```bash
+./scripts/install-git-hooks.sh
+```
 
-## Adapting This To Your Project
+The validator requires every skill entry point to live at `skills/<skill-name>/SKILL.md`. It also checks frontmatter, duplicate names, Markdown links, symlinks, machine-specific paths, and public/private boundaries.
 
-This repo is the shared orchestration layer. Your target project can still define its own local roles and rules.
+## Security
 
-Recommended approach:
+This is a public repository. Do not commit credentials, memories, transcripts, sessions, runtime databases, private project context, or machine-specific configuration. Read [SECURITY.md](SECURITY.md) before promoting locally generated material.
 
-1. Keep these shared skills focused on orchestration.
-2. Put stack-specific roles inside the target repo, for example in `AGENTS.md` or `.agents/**/SKILL.md`.
-3. Let Codex prefer project-local instructions first and use the shared references here as fallback.
+Every pull request runs repository validation and Gitleaks. Scanner success complements manual privacy review; it does not prove that content is appropriate to publish.
 
-Example local roles:
-- backend role -> Django / DRF / PostgreSQL
-- frontend role -> React / TypeScript / Vite
-- domain reviewer -> `DOMAIN_RULES.md`
-- plan reviewer -> final check against the approved plan
+## Documentation
 
-### Everything Claude Code (ECC) Integration
-
-If your target repo uses [Everything Claude Code](https://github.com/disler/everything-claude-code), the `orchestrator-workflow` skill integrates with it automatically:
-
-- ECC project-local guidance takes priority over portable defaults
-- ECC agent roles (`planner`, `tdd-guide`, `code-reviewer`, `security-reviewer`, `doc-updater`, etc.) are used for delegation in Claude
-- Codex ECC roles (`explorer`, `docs_researcher`, `reviewer`) are used in Codex
-- ECC validation conventions (`verification-loop`) are applied in Phase 5
-
-No additional setup is needed. The orchestrator reads local role docs and ECC config during Phase 1.
-
-### Cost and Tempo by Environment
-
-The execution model is intentionally different between environments:
-
-- Claude + ECC:
-  - favors explicit cheapest-capable routing
-  - mechanical work should fall to junior/Haiku-class agents
-  - normal implementation should fall to middle/Sonnet-class agents
-  - senior/Opus-class agents should be reserved for ambiguity, architecture, and recovery
-
-- Codex + ECC-style orchestration:
-  - favors a compact execution shape over many agents
-  - default shape should be `plan -> one executor -> validation`
-  - research and review agents should be added only when they remove real uncertainty or cover a distinct risk
-  - cost control comes mostly from fewer delegations and smaller handoff packets
-
-## Skill Layout
-
-The reusable skills live at the repo root:
-
-- `orchestrator-workflow/SKILL.md`
-- `refactor-workflow/SKILL.md`
-- `skill-review/SKILL.md`
-
-Each skill also includes bundled reference files, so it still works even when Claude-specific global files are not present.
+- [Quick start](docs/quick-start.md)
+- [Using the skills](docs/guides/how-to-use-skills.md)
+- [Reviewing and promoting skills](docs/guides/reviewing-and-promoting-skills.md)
+- [Releases and dependency updates](docs/guides/releases-and-dependencies.md)
+- [FAQ](docs/FAQ.md)

@@ -27,10 +27,9 @@ Sub-agents should NOT use this skill. It is for the parent orchestrator only.
 
 When choosing sub-agent instructions, prefer sources in this order:
 
-1. Project-local guidance in the target repo such as `AGENTS.md`, `.agents/skills/`, `.codex/agents/`, `.codex/config.toml`, or similar local role docs
+1. Project-local role and configuration metadata such as `AGENTS.md`, `.codex/agents/`, `.codex/config.toml`, or the active environment's supported role registry
 2. If the target repo uses Everything Claude Code, treat ECC project-local guidance as the primary role and workflow source of truth
 3. Bundled portable references in `references/subagents.md`
-4. Legacy Claude-only profiles in `~/.claude/agents/` if they exist and are still relevant
 
 If the target project already defines stack-specific roles, use those roles as the source of truth for delegation.
 
@@ -47,7 +46,7 @@ Resolve the orchestration backend before Phase 2:
 
 #### Claude Code
 
-Use native subagents / Task tool first.
+Use native subagents through the Agent tool first (`Task(...)` is a legacy compatibility alias).
 
 If the target repo uses ECC, prefer ECC roles such as:
 - `planner`
@@ -292,7 +291,7 @@ Execution is not Claude-only. Choose the backend that fits the environment and t
 
 #### Claude
 
-Use subagents / Task tool for independent implementation tracks. Prefer ECC development and review roles where available.
+Use subagents through the Agent tool for independent implementation tracks. Prefer ECC development and review roles where available.
 
 When Claude/ECC-style model tiers are available, use this bias:
 - Mechanical changes, rote propagation, pattern application, focused edits -> junior / haiku-class
@@ -324,7 +323,7 @@ Use for independent parallel writers or cross-harness tasks that need isolation.
 
 - Specific files to modify
 - Exact changes to make
-- Relevant local rules to follow (`AGENTS.md`, `.agents/skills/`, `.codex/agents/`, repo conventions)
+- Relevant local rules to follow (`AGENTS.md`, explicitly approved local skills, supported role configuration, and repository conventions)
 - Expected outcome
 - Context from research findings
 - The current handoff packet
