@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNBOOK = ROOT / "skills" / "vps-reverse-proxy-operations" / "references" / "caddy-vps-reverse-proxy-runbook.md"
+RUNBOOK = ROOT / "skills" / "devops" / "vps-reverse-proxy-operations" / "references" / "caddy-vps-reverse-proxy-runbook.md"
 
 
 class CaddyRunbookSafetyTests(unittest.TestCase):

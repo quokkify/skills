@@ -1,6 +1,6 @@
 # Codex sub-agent orchestration profile
 
-This repository contains portable skills under `skills/<name>/SKILL.md`. Treat that directory as the canonical index; do not hard-code a fixed skill count in project instructions.
+This repository contains portable skills under `skills/<category>/<name>/SKILL.md`. Treat that directory as the canonical index; do not hard-code a fixed skill count in project instructions.
 
 ## How Codex should use this repo
 

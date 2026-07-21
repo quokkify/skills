@@ -16,6 +16,7 @@ FORBIDDEN_NAMES = {name.casefold() for name in ("MEMORY.md", "USER.md", "SOUL.md
 FORBIDDEN_DIRECTORIES = {"sessions", "transcripts", "snapshot", "snapshots", "backups"}
 SKILL_SUPPORT_DIRECTORIES = {"assets", "references", "scripts", "templates"}
 SKILLS_DIRECTORY = "skills"
+SKILL_PATH_DEPTH = 4
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MACHINE_HOME_RE = re.compile(
     r"(?<![A-Za-z0-9])(?:/(?:home|Users)/[A-Za-z0-9._-]+|/root)(?:/|$)"
@@ -166,14 +167,14 @@ def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[st
     names: dict[str, Path] = {}
 
     skill_directories = {
-        path.relative_to(root).parts[1]
+        rel.parts[:SKILL_PATH_DEPTH - 1]
         for path in files
-        if len(path.relative_to(root).parts) >= 3
-        and path.relative_to(root).parts[0] == SKILLS_DIRECTORY
+        if (rel := path.relative_to(root)).parts[0] == SKILLS_DIRECTORY
+        and len(rel.parts) >= SKILL_PATH_DEPTH
     }
     repository_paths = {path.relative_to(root) for path in files}
     for directory in sorted(skill_directories):
-        entry_point = Path(SKILLS_DIRECTORY) / directory / "SKILL.md"
+        entry_point = Path(*directory) / "SKILL.md"
         if entry_point not in repository_paths:
             errors.append(f"{entry_point}: canonical skill directory is missing SKILL.md")
 
@@ -183,10 +184,13 @@ def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[st
     skill_files: list[Path] = []
     for path in discovered_skill_files:
         rel = path.relative_to(root)
-        if len(rel.parts) != 3 or rel.parts[0] != SKILLS_DIRECTORY:
+        if len(rel.parts) != SKILL_PATH_DEPTH or rel.parts[0] != SKILLS_DIRECTORY:
             errors.append(
-                f"{rel}: skills must live at {SKILLS_DIRECTORY}/<skill-name>/SKILL.md"
+                f"{rel}: skills must live at {SKILLS_DIRECTORY}/<category>/<skill-name>/SKILL.md"
             )
+            continue
+        if not SKILL_NAME_RE.fullmatch(rel.parts[1]):
+            errors.append(f"{rel}: category '{rel.parts[1]}' must use lowercase kebab-case")
             continue
         skill_files.append(path)
     if not skill_files:

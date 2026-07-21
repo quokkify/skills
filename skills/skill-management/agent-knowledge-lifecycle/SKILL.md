@@ -19,7 +19,7 @@ Manage reusable agent knowledge as a curated software artifact rather than an un
 
 ## Core Model
 
-Use one canonical repository for the **shared skill system**, with portable skills in a neutral `skills/<name>/SKILL.md` tree and tool-specific adapters alongside them. Treat `.claude/skills`, `.agents/skills`, Hermes external directories, and similar runtime paths as consumer discovery locations—not additional tracked sources of truth. Keep a second private repository only when it has a genuinely different role: disaster recovery for the full agent installation.
+Use one canonical repository for the **shared skill system**, with portable skills in a neutral `skills/<category>/<name>/SKILL.md` tree and tool-specific adapters alongside them. Treat `.claude/skills`, `.agents/skills`, Hermes external directories, and similar runtime paths as consumer discovery locations—not additional tracked sources of truth. Keep a second private repository only when it has a genuinely different role: disaster recovery for the full agent installation.
 
 This distinction avoids two opposite failures:
 

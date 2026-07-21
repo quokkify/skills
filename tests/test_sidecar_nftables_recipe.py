@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REFERENCE = ROOT / "skills" / "vps-reverse-proxy-operations" / "references" / "restrict-sidecar-api-ports.md"
+REFERENCE = ROOT / "skills" / "devops" / "vps-reverse-proxy-operations" / "references" / "restrict-sidecar-api-ports.md"
 
 
 class SidecarNftablesRecipeTests(unittest.TestCase):
