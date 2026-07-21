@@ -5,7 +5,7 @@
 
 ### ✨ Features
 
-* **sync:** add safe shared-skill sync ([#20](https://github.com/ylazakovich/skills/issues/20)) ([3ae5653](https://github.com/ylazakovich/skills/commit/3ae565355c2dfa921031b8c97fa74f8fc4f0efeb))
+* **sync:** add safe shared-skill sync ([#20](https://github.com/ylazakovich/skills/pull/20)) ([3ae5653](https://github.com/ylazakovich/skills/commit/3ae565355c2dfa921031b8c97fa74f8fc4f0efeb))
 
 ## [0.2.2](https://github.com/ylazakovich/skills/compare/skills-v0.2.1...skills-v0.2.2) (2026-07-21)
 
