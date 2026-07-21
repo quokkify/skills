@@ -35,6 +35,7 @@ FORBIDDEN_PARTS = {
     "user.md",
 }
 COMMAND_TIMEOUT_SECONDS = 300.0
+VALIDATION_TIMEOUT_SECONDS = 900.0
 
 
 class QueueError(RuntimeError):
@@ -291,7 +292,11 @@ def ensure_repository_state(
 
 def validate_exact_head(root: Path, expected_head: str) -> None:
     """Run the repository CI-equivalent and prove it did not change HEAD or files."""
-    run(["bash", "scripts/validate.sh", "--ci"], cwd=root)
+    run(
+        ["bash", "scripts/validate.sh", "--ci"],
+        cwd=root,
+        timeout=VALIDATION_TIMEOUT_SECONDS,
+    )
     if git(root, "rev-parse", "HEAD") != expected_head:
         raise QueueError("HEAD changed during validation")
     if git(root, "status", "--porcelain", "--untracked-files=normal"):
@@ -452,6 +457,7 @@ def publish(
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse the explicit repository, lane, and pull-request title inputs."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repository", required=True, help="GitHub owner/repository")
     parser.add_argument("--lane", required=True, help="lowercase device or agent lane")
@@ -464,6 +470,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Run the fail-closed queue publisher and emit one machine-readable result."""
     arguments = parse_args()
     try:
         result = publish(

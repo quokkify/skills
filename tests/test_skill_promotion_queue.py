@@ -128,6 +128,18 @@ class SkillPromotionQueueTests(unittest.TestCase):
         self.assertNotIn("credential.helper=", normal)
         self.assertIn("credential.helper=", askpass)
 
+    def test_repository_validation_uses_extended_timeout(self) -> None:
+        expected_head = "a" * 40
+        with (
+            patch.object(publish_queue, "run") as mocked_run,
+            patch.object(publish_queue, "git", side_effect=[expected_head, ""]),
+        ):
+            publish_queue.validate_exact_head(REPOSITORY_ROOT, expected_head)
+        self.assertEqual(
+            mocked_run.call_args.kwargs["timeout"],
+            publish_queue.VALIDATION_TIMEOUT_SECONDS,
+        )
+
     def test_empty_and_disallowed_diffs_fail_closed(self) -> None:
         with self.assertRaisesRegex(publish_queue.QueueError, "no changed paths"):
             publish_queue.ensure_public_paths([])
