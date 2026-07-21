@@ -2,12 +2,13 @@
 title: Skills Docs
 ---
 
-# Skills for Claude Code and Codex
+# Skills for Claude Code, Codex, and Hermes
 
-This repo gives you a reusable sub-agent workflow for two tools:
+This repo gives you reusable agent workflows for three tools:
 
 - Claude Code
 - Codex
+- Hermes
 
 The short version is simple:
 
@@ -19,12 +20,14 @@ The short version is simple:
 
 - [Quick Start](quick-start.md) for the shortest setup steps
 - [How to Use These Skills](guides/how-to-use-skills.md) for the longer explanation
+- [Reviewing and Promoting Skills](guides/skill-review.md) for controlled post-task learning
 - [FAQ](FAQ.md) for common setup questions
 
 ## What Is In This Repo
 
 - `orchestrator-workflow/` for complex implementation tasks
 - `refactor-workflow/` for refactoring tasks
+- `skill-review/` for safe candidate review and branch/PR promotion
 - `claude-config/` for Claude-specific global config
 - `codex/AGENTS.md` for Codex project instructions
 - `scripts/` for install helpers
@@ -35,6 +38,7 @@ Use this repo when:
 
 - you want the same orchestration style in Claude Code
 - you want Codex to work with a project-level `AGENTS.md`
+- you want Hermes to discover the same shared skills from an external directory
 - you want a shared workflow layer that target projects can extend locally
 
 ## Start Here

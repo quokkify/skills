@@ -1,8 +1,9 @@
 # Codex sub-agent orchestration profile
 
-This repository contains two portable skills adapted from a Claude Code sub-agent setup:
+This repository contains three portable skills:
 - `orchestrator-workflow`
 - `refactor-workflow`
+- `skill-review`
 
 ## How Codex should use this repo
 
@@ -16,6 +17,12 @@ This repository contains two portable skills adapted from a Claude Code sub-agen
    - implementation
    - validation
    - test engineering
+
+## Post-task skill review
+
+After significant work, use `skill-review` to decide whether a reusable procedure, correction, workaround, or missing instruction should become a skill change. Skip routine work, temporary state, and one-off facts.
+
+The review produces a private candidate first. Do not copy local agent state into the shared repository, edit public `main`, create a promotion branch, push, or open a pull request until the user approves the candidate. Approved shared changes must use the repository's branch, validation, secret-scan, and pull-request flow.
 
 ## Default Codex Tempo
 

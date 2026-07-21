@@ -132,3 +132,9 @@ Minor > note, continue | Major > same agent, fix | Critical > stop, report
 <workflow-rules>
 Before running any custom skill or plugin command, verify it is installed and available by checking `.claude/skills/` or running `claude skills list`.
 </workflow-rules>
+
+<skill-review>
+After significant work, use the installed `skill-review` skill to decide whether a reusable procedure, correction, workaround, or missing instruction should become a skill change. Skip routine work, temporary state, and one-off facts.
+
+The review produces a private candidate first. Do not copy local agent state into the shared repository, edit public `main`, create a promotion branch, push, or open a pull request until the user approves the candidate. Approved shared changes must use the repository's branch, validation, secret-scan, and pull-request flow.
+</skill-review>
