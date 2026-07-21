@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Reusable documentation for Claude Code and Codex sub-agent workflows.">
+        <meta name="description" content="Reusable workflows for Claude Code, Codex, and Hermes.">
       
       
       
@@ -14,7 +14,7 @@
         <link rel="prev" href="../../quick-start/">
       
       
-        <link rel="next" href="../../FAQ/">
+        <link rel="next" href="../skill-review/">
       
       
         
@@ -506,6 +506,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hermes-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hermes Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skill-review-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill Review Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-to-adapt-this-to-your-own-project" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -542,6 +564,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skill-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviewing and Promoting Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -642,6 +692,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hermes-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hermes Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skill-review-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill Review Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-to-adapt-this-to-your-own-project" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -699,11 +771,12 @@
 <li>shared orchestration skills</li>
 <li>Claude-specific global config</li>
 <li>Codex project instructions</li>
+<li>a controlled skill-review and promotion workflow for Claude, Codex, and Hermes</li>
 </ul>
 <h2 id="the-main-idea">The Main Idea<a class="headerlink" href="#the-main-idea" title="Permanent link">&para;</a></h2>
 <p>There are two layers:</p>
 <ol>
-<li>Shared skills that both Claude Code and Codex can use</li>
+<li>Shared skills that Claude Code, Codex, and Hermes can use</li>
 <li>Tool-specific setup for the tool you actually work with</li>
 </ol>
 <p>That is why setup happens in two steps instead of one.</p>
@@ -721,6 +794,11 @@
 <li><code>AGENTS.md</code> inside the target repo</li>
 </ul>
 <p>This gives Codex the reusable workflow plus project-level instructions.</p>
+<h2 id="hermes-flow">Hermes Flow<a class="headerlink" href="#hermes-flow" title="Permanent link">&para;</a></h2>
+<p>Hermes uses the repository root as a <code>skills.external_dirs</code> entry. Each top-level skill directory then appears in the Hermes skill index and as a slash command.</p>
+<p>External directories are mutable when filesystem permissions allow writes, so shared-skill promotion still goes through a Git branch or worktree and a pull request. A same-named local Hermes skill takes precedence over the external version.</p>
+<h2 id="skill-review-flow">Skill Review Flow<a class="headerlink" href="#skill-review-flow" title="Permanent link">&para;</a></h2>
+<p>After significant work, <code>skill-review</code> classifies the lesson, searches for an existing owner, prepares a private candidate, audits privacy and portability, and asks for approval. Approved candidates move through branch, validation, secret scan, and pull request. Routine work and temporary facts are skipped.</p>
 <h2 id="how-to-adapt-this-to-your-own-project">How To Adapt This To Your Own Project<a class="headerlink" href="#how-to-adapt-this-to-your-own-project" title="Permanent link">&para;</a></h2>
 <p>Keep this repo focused on orchestration.</p>
 <p>Put stack-specific roles in the target project, for example:</p>
@@ -734,13 +812,15 @@
 <p>If you are new to this repo:</p>
 <ol>
 <li>Read <a href="../../quick-start/">Quick Start</a></li>
-<li>Use the Claude or Codex path</li>
+<li>Use the Claude, Codex, or Hermes path</li>
+<li>Read <a href="../skill-review/">Reviewing and Promoting Skills</a> before promoting agent-generated knowledge</li>
 <li>Come back here only if you need the longer explanation</li>
 </ol>
 <h2 id="related-pages">Related Pages<a class="headerlink" href="#related-pages" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../">Home</a></li>
 <li><a href="../../quick-start/">Quick Start</a></li>
+<li><a href="../skill-review/">Reviewing and Promoting Skills</a></li>
 <li><a href="../../FAQ/">FAQ</a></li>
 </ul>
 
@@ -800,13 +880,13 @@
         
         
           
-          <a href="../../FAQ/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
+          <a href="../skill-review/" class="md-footer__link md-footer__link--next" aria-label="Next: Reviewing and Promoting Skills">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                FAQ
+                Reviewing and Promoting Skills
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -6,12 +6,12 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Reusable documentation for Claude Code and Codex sub-agent workflows.">
+        <meta name="description" content="Reusable workflows for Claude Code, Codex, and Hermes.">
       
       
       
       
-        <link rel="prev" href="../guides/how-to-use-skills/">
+        <link rel="prev" href="../guides/skill-review/">
       
       
       
@@ -426,6 +426,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/skill-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviewing and Promoting Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -501,10 +529,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#do-i-need-both-claude-and-codex" class="md-nav__link">
+  <a href="#do-i-need-claude-codex-and-hermes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Do I need both Claude and Codex?
+        Do I need Claude, Codex, and Hermes?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#can-hermes-edit-an-external-skill-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can Hermes edit an external skill directory?
       
     </span>
   </a>
@@ -624,10 +663,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#do-i-need-both-claude-and-codex" class="md-nav__link">
+  <a href="#do-i-need-claude-codex-and-hermes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Do I need both Claude and Codex?
+        Do I need Claude, Codex, and Hermes?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#can-hermes-edit-an-external-skill-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can Hermes edit an external skill directory?
       
     </span>
   </a>
@@ -730,12 +780,16 @@
 
 
 <h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
-<h2 id="do-i-need-both-claude-and-codex">Do I need both Claude and Codex?<a class="headerlink" href="#do-i-need-both-claude-and-codex" title="Permanent link">&para;</a></h2>
-<p>No. You can use only one path.</p>
+<h2 id="do-i-need-claude-codex-and-hermes">Do I need Claude, Codex, and Hermes?<a class="headerlink" href="#do-i-need-claude-codex-and-hermes" title="Permanent link">&para;</a></h2>
+<p>No. You can choose one path or combine supported paths. Claude and Codex can be installed together, while Hermes is configured separately.</p>
 <ul>
 <li>If you use Claude Code, install the skills and run <code>./scripts/install-claude-config.sh</code>.</li>
 <li>If you use Codex, install the skills and run <code>./scripts/install-codex-agents.sh /path/to/your/project</code>.</li>
+<li>If you use Hermes, add the repository root to <code>skills.external_dirs</code> and start a new session.</li>
 </ul>
+<h2 id="can-hermes-edit-an-external-skill-directory">Can Hermes edit an external skill directory?<a class="headerlink" href="#can-hermes-edit-an-external-skill-directory" title="Permanent link">&para;</a></h2>
+<p>Yes, when the Hermes process has filesystem write access. External directories are discovery sources, not write-protection boundaries. Shared changes should use an isolated Git branch or worktree and a pull request rather than an in-place skill-management edit.</p>
+<p>If a local Hermes skill has the same name as an external skill, the local version takes precedence.</p>
 <h2 id="why-are-skills-and-claude-config-separate-steps">Why are skills and Claude config separate steps?<a class="headerlink" href="#why-are-skills-and-claude-config-separate-steps" title="Permanent link">&para;</a></h2>
 <p>Because they do different jobs.</p>
 <ul>
@@ -819,7 +873,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../guides/how-to-use-skills/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How to Use These Skills">
+          <a href="../guides/skill-review/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Reviewing and Promoting Skills">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -829,7 +883,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                How to Use These Skills
+                Reviewing and Promoting Skills
               </div>
             </div>
           </a>

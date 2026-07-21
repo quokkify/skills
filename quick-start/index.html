@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Reusable documentation for Claude Code and Codex sub-agent workflows.">
+        <meta name="description" content="Reusable workflows for Claude Code, Codex, and Hermes.">
       
       
       
@@ -467,10 +467,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#if-you-use-both" class="md-nav__link">
+  <a href="#hermes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        If You Use Both
+        Hermes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#if-you-use-claude-and-codex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        If You Use Claude and Codex
       
     </span>
   </a>
@@ -512,6 +523,34 @@
     
   
     How to Use These Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/skill-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviewing and Promoting Skills
   
 
     
@@ -609,10 +648,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#if-you-use-both" class="md-nav__link">
+  <a href="#hermes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        If You Use Both
+        Hermes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#if-you-use-claude-and-codex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        If You Use Claude and Codex
       
     </span>
   </a>
@@ -684,7 +734,20 @@
 <li>Codex gets the reusable skills</li>
 <li>your target repo gets an <code>AGENTS.md</code> file for this workflow</li>
 </ul>
-<h2 id="if-you-use-both">If You Use Both<a class="headerlink" href="#if-you-use-both" title="Permanent link">&para;</a></h2>
+<h2 id="hermes">Hermes<a class="headerlink" href="#hermes" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Clone this repository.</li>
+<li>Add the repository root to <code>skills.external_dirs</code> in your Hermes configuration:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">skills</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">external_dirs</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/skills</span>
+</code></pre></div>
+<ol>
+<li>Start a new session; after significant work, load <code>/skill-review</code> to decide whether a reusable lesson should be proposed.</li>
+</ol>
+<p>Hermes external directories are mutable when the process has filesystem write access. Promote shared changes through a Git branch or worktree, not an in-place skill-management edit.</p>
+<h2 id="if-you-use-claude-and-codex">If You Use Claude and Codex<a class="headerlink" href="#if-you-use-claude-and-codex" title="Permanent link">&para;</a></h2>
 <p>Install both skill targets at once:</p>
 <div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>&lt;your-git-url-or-owner/repo&gt;<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
 </code></pre></div>
