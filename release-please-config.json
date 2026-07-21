@@ -4,48 +4,20 @@
   "packages": {
     ".": {
       "release-type": "simple",
+      "package-name": "skills",
+      "include-component-in-tag": true,
       "changelog-path": "CHANGELOG.md",
       "changelog-sections": [
-        {
-          "type": "feat",
-          "section": "✨ Features"
-        },
-        {
-          "type": "fix",
-          "section": "🐛 Bug Fixes"
-        },
-        {
-          "type": "deps",
-          "section": "📦 Dependencies"
-        },
-        {
-          "type": "docs",
-          "section": "📚 Documentation"
-        },
-        {
-          "type": "ci",
-          "section": "⚙️ CI"
-        },
-        {
-          "type": "build",
-          "section": "🛠 Build System"
-        },
-        {
-          "type": "perf",
-          "section": "🚀 Performance Improvements"
-        },
-        {
-          "type": "refactor",
-          "section": "♻️ Code Refactoring"
-        },
-        {
-          "type": "test",
-          "section": "🧪 Tests"
-        },
-        {
-          "type": "chore",
-          "section": "🧹 Chores"
-        }
+        { "type": "feat", "section": "✨ Features" },
+        { "type": "fix", "section": "🐛 Bug Fixes" },
+        { "type": "deps", "section": "📦 Dependencies" },
+        { "type": "docs", "section": "📚 Documentation" },
+        { "type": "ci", "section": "⚙️ CI" },
+        { "type": "build", "section": "🛠 Build System" },
+        { "type": "perf", "section": "🚀 Performance Improvements" },
+        { "type": "refactor", "section": "♻️ Code Refactoring" },
+        { "type": "test", "section": "🧪 Tests" },
+        { "type": "chore", "section": "🧹 Chores" }
       ]
     }
   }

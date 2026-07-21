@@ -1,4 +1,4 @@
-name: PR Title
+name: PR Title Check
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: pr-title-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -17,33 +17,24 @@ jobs:
     name: Validate conventional PR title
     runs-on: ubuntu-latest
     steps:
-      - name: Check PR title
+      - name: Check PR title follows Conventional Commits
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          set -euo pipefail
-
-          pattern='^(feat|fix|perf|refactor|docs|test|ci|chore|build|style|revert)\([a-z0-9][a-z0-9.-]*\)!?: .+'
-
+          pattern='^(feat|fix|perf|refactor|docs|test|ci|chore|build|style|revert)(\([a-z0-9][a-z0-9.-]*\))?!?: .+'
           if [[ "$PR_TITLE" =~ $pattern ]]; then
-            echo "PR title is conventional: $PR_TITLE"
-            exit 0
+            echo "PR title '$PR_TITLE' follows Conventional Commits."
+          else
+            echo "::error::PR title does not follow Conventional Commits."
+            echo ""
+            echo "PR title: '$PR_TITLE'"
+            echo ""
+            echo "Expected format: <type>(optional-scope): <description>"
+            echo "Allowed types: feat, fix, perf, refactor, docs, test, ci, chore, build, style, revert"
+            echo ""
+            echo "Examples:"
+            echo "  feat: add a reusable validation skill"
+            echo "  fix(installer): preserve existing agent configuration"
+            echo "  chore(deps): update pinned GitHub Actions"
+            exit 1
           fi
-
-          cat <<'MSG' >&2
-          PR title must follow Conventional Commits because Release Please uses merged PR titles to decide release notes.
-
-          Required format:
-            type(scope): short summary
-
-          Examples:
-            feat(orchestrator): add environment-aware delegation
-            fix(installer): preserve existing agent configuration
-            docs(workflows): clarify validation steps
-            ci(release): update release automation
-
-          Allowed types:
-            feat, fix, perf, refactor, docs, test, ci, chore, build, style, revert
-          MSG
-          echo "Actual title: $PR_TITLE" >&2
-          exit 1

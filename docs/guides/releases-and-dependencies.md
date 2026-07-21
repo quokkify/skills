@@ -4,16 +4,16 @@ This repository uses Release Please for versioning and changelog generation, and
 
 ## Release flow
 
-1. Open pull requests with a Conventional Commit title:
+1. Open pull requests with a Conventional Commit title. The scope is optional:
 
    ```text
-   type(scope): short summary
+   type(optional-scope): short summary
    ```
 
 2. Merge the pull request into `main`. The squash commit title must remain conventional.
 3. Release Please updates or opens a release pull request containing the next version and `CHANGELOG.md` entries.
 4. Merge the release pull request after its checks pass.
-5. Release Please creates the `vX.Y.Z` Git tag and GitHub release.
+5. Release Please creates the component-scoped `skills-vX.Y.Z` Git tag and GitHub release.
 
 The repository starts from a `0.0.0` release baseline at the commit recorded as `bootstrap-sha` in `release-please-config.json`. Earlier repository history is intentionally excluded from the first generated changelog.
 
@@ -28,15 +28,15 @@ The `PR Title` workflow enforces the title format before merge. When squash merg
 
 ## Renovate flow
 
-`renovate.json` enables only the `github-actions` manager and extends the shared public GitHub Actions preset. Renovate keeps immutable action SHAs current while preserving readable version comments.
+`.github/renovate.json` uses semantic `chore(deps)` commits, enables only the `github-actions` manager, and extends the shared public GitHub Actions preset. Renovate keeps immutable action SHAs current while preserving readable version comments.
 
 The `Renovate Config` workflow runs:
 
-- when `renovate.json` or its validation workflow changes;
+- when `.github/renovate.json` or its validation workflow changes;
 - weekly, to detect incompatibility with newer Renovate versions;
 - manually through `workflow_dispatch`.
 
-It executes `renovate-config-validator --strict renovate.json`. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.
+It executes `renovate-config-validator --strict .github/renovate.json`. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.
 
 ## Configuration files
 
@@ -44,5 +44,5 @@ It executes `renovate-config-validator --strict renovate.json`. Renovate pull re
 - `.release-please-manifest.json` — last released version tracked by Release Please;
 - `.github/workflows/release-please.yml` — release PR and GitHub release automation;
 - `.github/workflows/pr-title.yml` — Conventional Commit title validation;
-- `renovate.json` — enabled Renovate managers and shared preset;
+- `.github/renovate.json` — semantic commit settings, enabled managers, grouping, and shared preset;
 - `.github/workflows/renovate-config.yml` — strict Renovate configuration validation.

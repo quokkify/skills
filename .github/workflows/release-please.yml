@@ -1,4 +1,4 @@
-name: Release Please
+name: release-please
 
 on:
   push:
@@ -10,12 +10,12 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release-please:
-    name: Create release PR or GitHub release
+    name: Release Please
     runs-on: ubuntu-latest
     steps:
       - name: Run release-please
