@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import string
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -80,27 +81,27 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, str], str] | tuple[None, No
     return metadata, "\n".join(lines[closing + 1 :]).strip()
 
 
-def markdown_link_destinations(line: str) -> list[str]:
-    """Extract inline-link destinations while preserving balanced parentheses."""
-    destinations: list[str] = []
+def markdown_link_destinations(text: str) -> list[tuple[int, str]]:
+    """Extract inline-link destinations and their source lines from a document."""
+    destinations: list[tuple[int, str]] = []
     cursor = 0
-    while cursor < len(line):
-        label_start = line.find("[", cursor)
+    while cursor < len(text):
+        label_start = text.find("[", cursor)
         if label_start < 0:
             break
-        if label_start > 0 and line[label_start - 1] == "!":
+        if label_start > 0 and text[label_start - 1] == "!":
             cursor = label_start + 1
             continue
-        label_end = line.find("]", label_start + 1)
-        if label_end < 0 or label_end + 1 >= len(line) or line[label_end + 1] != "(":
+        label_end = text.find("]", label_start + 1)
+        if label_end < 0 or label_end + 1 >= len(text) or text[label_end + 1] != "(":
             cursor = label_start + 1
             continue
 
         destination_start = label_end + 2
         depth = 1
         index = destination_start
-        while index < len(line):
-            character = line[index]
+        while index < len(text):
+            character = text[index]
             if character == "\\":
                 index += 2
                 continue
@@ -109,7 +110,8 @@ def markdown_link_destinations(line: str) -> list[str]:
             elif character == ")":
                 depth -= 1
                 if depth == 0:
-                    destinations.append(line[destination_start:index])
+                    line_number = text.count("\n", 0, label_start) + 1
+                    destinations.append((line_number, text[destination_start:index]))
                     cursor = index + 1
                     break
             index += 1
@@ -140,6 +142,20 @@ def markdown_destination(raw_destination: str) -> str:
             return value[:index]
         index += 1
     return value
+
+
+def unescape_markdown_punctuation(value: str) -> str:
+    """Decode CommonMark backslash escapes while preserving other backslashes."""
+    result: list[str] = []
+    index = 0
+    while index < len(value):
+        if value[index] == "\\" and index + 1 < len(value) and value[index + 1] in string.punctuation:
+            result.append(value[index + 1])
+            index += 2
+            continue
+        result.append(value[index])
+        index += 1
+    return "".join(result)
 
 
 def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[str]]:
@@ -250,23 +266,22 @@ def validate_markdown_links(root: Path, files: list[Path]) -> list[str]:
         except UnicodeDecodeError:
             errors.append(f"{path.relative_to(root)}: file is not valid UTF-8")
             continue
-        for line_number, line in enumerate(text.splitlines(), start=1):
-            for raw_target in markdown_link_destinations(line):
-                target = markdown_destination(raw_target)
-                if not target or target.startswith(("#", "/", "mailto:", "http://", "https://")):
-                    continue
-                target = unquote(target.split("#", 1)[0].split("?", 1)[0])
-                if not target or any(marker in target for marker in ("<", ">", "*")):
-                    continue
-                resolved = (path.parent / target).resolve()
-                candidates = [resolved]
-                if resolved.suffix == "":
-                    candidates.extend([resolved.with_suffix(".md"), resolved / "index.md"])
-                if any(not candidate.is_relative_to(root) for candidate in candidates):
-                    errors.append(f"{path.relative_to(root)}:{line_number}: local link escapes repository")
-                    continue
-                if not any(candidate.exists() for candidate in candidates):
-                    errors.append(f"{path.relative_to(root)}:{line_number}: broken local link")
+        for line_number, raw_target in markdown_link_destinations(text):
+            target = unescape_markdown_punctuation(markdown_destination(raw_target))
+            if not target or target.startswith(("#", "/", "mailto:", "http://", "https://")):
+                continue
+            target = unquote(target.split("#", 1)[0].split("?", 1)[0])
+            if not target or any(marker in target for marker in ("<", ">", "*")):
+                continue
+            resolved = (path.parent / target).resolve()
+            candidates = [resolved]
+            if resolved.suffix == "":
+                candidates.extend([resolved.with_suffix(".md"), resolved / "index.md"])
+            if any(not candidate.is_relative_to(root) for candidate in candidates):
+                errors.append(f"{path.relative_to(root)}:{line_number}: local link escapes repository")
+                continue
+            if not any(candidate.exists() for candidate in candidates):
+                errors.append(f"{path.relative_to(root)}:{line_number}: broken local link")
     return errors
 
 

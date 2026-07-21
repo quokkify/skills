@@ -94,11 +94,23 @@ class RepositoryValidationTests(unittest.TestCase):
             docs = root / "docs"
             (docs / "foo(bar).md").write_text("# Parentheses\n", encoding="utf-8")
             (docs / "my guide.md").write_text("# Spaces\n", encoding="utf-8")
+            preserved_backslash = "foo" + chr(92) + "q.md"
+            (docs / preserved_backslash).write_text("# Backslash\n", encoding="utf-8")
             (docs / "index.md").write_text(
-                "[Nested](foo(bar).md) and [spaced](<my guide.md>)\n",
+                "[Nested](foo(bar).md), [escaped](foo\\(bar\\).md), "
+                f"[preserved]({preserved_backslash}), and [spaced](<my guide.md>)\n",
                 encoding="utf-8",
             )
             self.assertEqual(validate_repository(root), [])
+
+    def test_multiline_broken_markdown_link_is_rejected(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            (root / "docs" / "index.md").write_text(
+                "[Missing](\nmissing.md)\n", encoding="utf-8"
+            )
+            errors = validate_repository(root)
+            self.assertTrue(any("docs/index.md:1: broken local link" in error for error in errors), errors)
 
     def test_forbidden_agent_state_filename_is_rejected(self) -> None:
         temporary, root = self.make_repository()
