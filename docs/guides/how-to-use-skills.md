@@ -53,7 +53,7 @@ The portable orchestration skills prefer instructions from the target project be
 
 The execution shape intentionally differs by agent:
 
-- Claude's optional adapter provides explicit junior, middle, and senior model routing.
+- Claude Code may use user- or project-owned routing when available; this repository publishes no global personas or model-routing adapter.
 - Codex defaults to a compact `plan -> executor -> validation` flow and adds research or review roles only for distinct risks.
 
 The workflow remains shared; only delegation mechanics and tool-specific configuration belong in an adapter or target project.

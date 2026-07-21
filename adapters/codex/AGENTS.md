@@ -121,9 +121,6 @@ Do not enter this mode unless the task risk justifies the cost.
 
 Copy or symlink this file into a target repo as `AGENTS.md` when you want Codex to apply the same sub-agent orchestration style inside that project.
 
-For a full-stack target repo, prefer the repo's own local role docs and stack constraints:
-- backend: `Python 3.12`, `Django`, `Django REST Framework`
-- frontend: `React`, `TypeScript`, `Vite`
-- domain rules: `DOMAIN_RULES.md`
+For a target repository, prefer its own local role docs, paths, stack constraints, verification commands, and documented domain source of truth.
 
 The shared skills in this repository should act as orchestration glue, not as a replacement for project-local agent definitions.
