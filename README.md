@@ -112,6 +112,13 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 - requires a clean worktree and validates the exact checked-out `HEAD` before pushes
 - refuses to replace an existing `core.hooksPath` unless `--force` is explicitly supplied
 
+`./scripts/sync-shared-skills.sh`
+- updates a clean `main` checkout from `origin/main` using fetch plus fast-forward only
+- validates the fetched tree with a preserved copy of the currently trusted validator before and after moving `main`
+- disables Git hooks for the fast-forward and never executes scripts from the fetched tree
+- refuses ahead or diverged histories and verifies the exact branch, revision, and clean state before reporting success
+- prints the new-session step for Hermes; it does not restart an agent or reinstall copied Claude/Codex files
+
 ## Local Validation
 
 Run the full gate before opening a pull request:
@@ -128,6 +135,20 @@ To enable the same checks as repository-local Git hooks:
 
 The validation workflow runs the portable checks on pull requests. The separate Secret Scan workflow remains the authoritative full-history Gitleaks gate in GitHub Actions.
 
+## Updating A Shared Checkout
+
+For a checkout used directly through Hermes `skills.external_dirs`, run:
+
+```bash
+./scripts/sync-shared-skills.sh
+```
+
+The command is fail-closed: it requires a clean `main`, fetches only `origin/main`, rejects non-fast-forward histories, and validates the fetched snapshot with a preserved copy of the trusted current validator before and after moving the branch. It rechecks that the checkout still matches the expected clean `main` immediately before the fast-forward, immediately after it, and after post-update validation. Concurrent changes produce an error instead of a success report; the helper does not roll back work performed by another process. It disables Git hooks for the exact fast-forward and does not execute scripts from the fetched tree. It never publishes local skills, changes Hermes configuration, or restarts a running agent.
+
+Treat `origin/main` as a trusted, protected source. Repository CI remains responsible for tests, documentation builds, and full-history secret scanning before changes reach that branch; the sync helper deliberately avoids running newly fetched code on the host.
+
+After a successful update, start a new Hermes session so the external skill directory is discovered again. Claude/Codex files installed by copying are not refreshed by this command; use their normal installation flow when those copied adapters change.
+
 ## What Is In This Repo
 
 - `orchestrator-workflow/` - main orchestration skill for complex tasks. Environment-aware: resolves delegation backend from the active environment (Claude Code + ECC agents, Codex built-in roles, or `dmux`/worktrees as fallback). Integrates with Everything Claude Code when present.
@@ -136,8 +157,8 @@ The validation workflow runs the portable checks on pull requests. The separate 
 - `claude-config/` - Claude-specific global config
 - `codex/AGENTS.md` - Codex project instructions
 - `.githooks/` - opt-in staged and pre-push validation hooks
-- `scripts/` - install and validation helpers
-- `tests/` - dependency-free validator regression tests
+- `scripts/` - install, validation, and safe shared-checkout helpers
+- `tests/` - dependency-free validator and sync regression tests
 
 ## Important Notes
 
