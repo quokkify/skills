@@ -88,6 +88,18 @@ class RepositoryValidationTests(unittest.TestCase):
             errors = validate_repository(root)
             self.assertTrue(any("broken local link" in error for error in errors), errors)
 
+    def test_commonmark_destinations_with_parentheses_and_spaces_are_valid(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            docs = root / "docs"
+            (docs / "foo(bar).md").write_text("# Parentheses\n", encoding="utf-8")
+            (docs / "my guide.md").write_text("# Spaces\n", encoding="utf-8")
+            (docs / "index.md").write_text(
+                "[Nested](foo(bar).md) and [spaced](<my guide.md>)\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(validate_repository(root), [])
+
     def test_forbidden_agent_state_filename_is_rejected(self) -> None:
         temporary, root = self.make_repository()
         with temporary:

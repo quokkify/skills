@@ -15,7 +15,6 @@ FORBIDDEN_NAMES = {name.casefold() for name in ("MEMORY.md", "USER.md", "SOUL.md
 FORBIDDEN_DIRECTORIES = {"sessions", "transcripts", "snapshot", "snapshots", "backups"}
 SKILL_SUPPORT_DIRECTORIES = {"assets", "references", "scripts", "templates"}
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 MACHINE_HOME_RE = re.compile(
     r"(?<![A-Za-z0-9])(?:/(?:home|Users)/[A-Za-z0-9._-]+|/root)(?:/|$)"
 )
@@ -79,6 +78,68 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, str], str] | tuple[None, No
             value = value[1:-1]
         metadata[match.group(1)] = value
     return metadata, "\n".join(lines[closing + 1 :]).strip()
+
+
+def markdown_link_destinations(line: str) -> list[str]:
+    """Extract inline-link destinations while preserving balanced parentheses."""
+    destinations: list[str] = []
+    cursor = 0
+    while cursor < len(line):
+        label_start = line.find("[", cursor)
+        if label_start < 0:
+            break
+        if label_start > 0 and line[label_start - 1] == "!":
+            cursor = label_start + 1
+            continue
+        label_end = line.find("]", label_start + 1)
+        if label_end < 0 or label_end + 1 >= len(line) or line[label_end + 1] != "(":
+            cursor = label_start + 1
+            continue
+
+        destination_start = label_end + 2
+        depth = 1
+        index = destination_start
+        while index < len(line):
+            character = line[index]
+            if character == "\\":
+                index += 2
+                continue
+            if character == "(":
+                depth += 1
+            elif character == ")":
+                depth -= 1
+                if depth == 0:
+                    destinations.append(line[destination_start:index])
+                    cursor = index + 1
+                    break
+            index += 1
+        else:
+            break
+    return destinations
+
+
+def markdown_destination(raw_destination: str) -> str:
+    """Return a destination without an optional CommonMark link title."""
+    value = raw_destination.strip()
+    if value.startswith("<"):
+        closing = value.find(">", 1)
+        return value[1:closing] if closing >= 0 else value
+
+    depth = 0
+    index = 0
+    while index < len(value):
+        character = value[index]
+        if character == "\\":
+            index += 2
+            continue
+        if character == "(":
+            depth += 1
+        elif character == ")" and depth:
+            depth -= 1
+        elif character.isspace() and depth == 0:
+            return value[:index]
+        index += 1
+    return value
 
 
 def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[str]]:
@@ -190,8 +251,8 @@ def validate_markdown_links(root: Path, files: list[Path]) -> list[str]:
             errors.append(f"{path.relative_to(root)}: file is not valid UTF-8")
             continue
         for line_number, line in enumerate(text.splitlines(), start=1):
-            for raw_target in MARKDOWN_LINK_RE.findall(line):
-                target = raw_target.strip().split(maxsplit=1)[0].strip("<>\"'")
+            for raw_target in markdown_link_destinations(line):
+                target = markdown_destination(raw_target)
                 if not target or target.startswith(("#", "/", "mailto:", "http://", "https://")):
                     continue
                 target = unquote(target.split("#", 1)[0].split("?", 1)[0])
