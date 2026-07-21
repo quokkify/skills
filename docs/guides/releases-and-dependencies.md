@@ -15,7 +15,7 @@ This repository uses Release Please for versioning and changelog generation, and
 4. Merge the release pull request after its checks pass.
 5. Release Please creates the component-scoped `skills-vX.Y.Z` Git tag and GitHub release.
 
-The repository starts from a `0.0.0` release baseline at the commit recorded as `bootstrap-sha` in `release-please-config.json`. Earlier repository history is intentionally excluded from the first generated changelog. The `simple` release type is used because this repository has no package manifest; `package-name` and `include-component-in-tag` still provide component-scoped tags.
+The manifest starts from a `0.0.0` baseline, while `initial-version` explicitly makes the first public release `0.1.0`. The commit recorded as `bootstrap-sha` excludes earlier repository history from the first generated changelog. The `simple` release type is used because this repository has no package manifest; `package-name` and `include-component-in-tag` still provide component-scoped tags.
 
 Release impact follows Conventional Commits:
 
