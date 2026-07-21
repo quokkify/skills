@@ -25,7 +25,7 @@
     
     
       
-        <title>Reviewing and Promoting Skills - Skills</title>
+        <title>Reviewing and Promoting Skills - Shared Agent Skills</title>
       
     
     
@@ -97,7 +97,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Skills" class="md-header__button md-logo" aria-label="Skills" data-md-component="logo">
+    <a href="../.." title="Shared Agent Skills" class="md-header__button md-logo" aria-label="Shared Agent Skills" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Skills
+            Shared Agent Skills
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -270,13 +270,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Skills" class="md-nav__button md-logo" aria-label="Skills" data-md-component="logo">
+    <a href="../.." title="Shared Agent Skills" class="md-nav__button md-logo" aria-label="Shared Agent Skills" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
 
     </a>
-    Skills
+    Shared Agent Skills
   </label>
   
     <div class="md-nav__source">
@@ -813,18 +813,18 @@
 <p>See the repository <a href="https://github.com/ylazakovich/skills/blob/main/SECURITY.md">SECURITY.md</a> for the complete public-content policy.</p>
 <h2 id="tool-behavior">Tool behavior<a class="headerlink" href="#tool-behavior" title="Permanent link">&para;</a></h2>
 <h3 id="claude-code-and-codex">Claude Code and Codex<a class="headerlink" href="#claude-code-and-codex" title="Permanent link">&para;</a></h3>
-<p>Install the repository skills normally. The Claude and Codex adapters prompt a post-task review only after significant work. The review still requires approval before a branch or pull request is created.</p>
+<p>Install the repository skills normally. In Claude Code, invoke the installed <code>skill-review</code> skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex <code>AGENTS.md</code> adapter adds a post-task review prompt. In both cases, promotion still requires approval before a branch or pull request is created.</p>
 <h3 id="hermes">Hermes<a class="headerlink" href="#hermes" title="Permanent link">&para;</a></h3>
 <p>Hermes can discover this repository through <code>skills.external_dirs</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">skills</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">external_dirs</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/skills</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/absolute/path/to/skills/skills</span>
 </code></pre></div>
-<p>Point the setting at the repository root because each skill is a top-level directory. Restart Hermes or begin a new session after changing skill discovery settings.</p>
+<p>Point the setting at the canonical <code>skills/</code> directory. Restart Hermes or begin a new session after changing skill discovery settings.</p>
 <p>External directories are not read-only. If the Hermes process can write to the checkout, skill-management tools can modify it. Treat the checkout as a shared Git source: inspect skills with <code>skills_list</code> and <code>skill_view</code>, but make approved updates in an isolated branch or worktree rather than patching the external directory in place.</p>
 <p>If a local Hermes skill and an external skill have the same name, the local skill takes precedence. Resolve that conflict before assuming the shared version is active.</p>
 <h2 id="candidate-format">Candidate format<a class="headerlink" href="#candidate-format" title="Permanent link">&para;</a></h2>
-<p>The bundled <code>skill-review/templates/candidate.md</code> template records:</p>
+<p>The bundled <code>skills/skill-review/templates/candidate.md</code> template records:</p>
 <ul>
 <li>the reusable trigger;</li>
 <li>the target skill or proposed name;</li>

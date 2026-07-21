@@ -25,7 +25,7 @@
     
     
       
-        <title>Quick Start - Skills</title>
+        <title>Quick Start - Shared Agent Skills</title>
       
     
     
@@ -97,7 +97,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="Skills" class="md-header__button md-logo" aria-label="Skills" data-md-component="logo">
+    <a href="./.." title="Shared Agent Skills" class="md-header__button md-logo" aria-label="Shared Agent Skills" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Skills
+            Shared Agent Skills
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -270,13 +270,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="Skills" class="md-nav__button md-logo" aria-label="Skills" data-md-component="logo">
+    <a href="./.." title="Shared Agent Skills" class="md-nav__button md-logo" aria-label="Shared Agent Skills" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
 
     </a>
-    Skills
+    Shared Agent Skills
   </label>
   
     <div class="md-nav__source">
@@ -445,10 +445,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#claude" class="md-nav__link">
+  <a href="#claude-code" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Claude
+        Claude Code
       
     </span>
   </a>
@@ -478,10 +478,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#if-you-use-claude-and-codex" class="md-nav__link">
+  <a href="#claude-code-and-codex-together" class="md-nav__link">
     <span class="md-ellipsis">
       
-        If You Use Claude and Codex
+        Claude Code and Codex Together
       
     </span>
   </a>
@@ -489,10 +489,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-the-scripts-do" class="md-nav__link">
+  <a href="#update-the-shared-checkout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What The Scripts Do
+        Update the Shared Checkout
       
     </span>
   </a>
@@ -626,10 +626,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#claude" class="md-nav__link">
+  <a href="#claude-code" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Claude
+        Claude Code
       
     </span>
   </a>
@@ -659,10 +659,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#if-you-use-claude-and-codex" class="md-nav__link">
+  <a href="#claude-code-and-codex-together" class="md-nav__link">
     <span class="md-ellipsis">
       
-        If You Use Claude and Codex
+        Claude Code and Codex Together
       
     </span>
   </a>
@@ -670,10 +670,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-the-scripts-do" class="md-nav__link">
+  <a href="#update-the-shared-checkout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What The Scripts Do
+        Update the Shared Checkout
       
     </span>
   </a>
@@ -699,81 +699,39 @@
 
 
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>Clone this repo first. Run the commands below from the repo root.</p>
-<h2 id="claude">Claude<a class="headerlink" href="#claude" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Install Claude Code.</li>
-<li>Install the skills from this repo:</li>
-</ol>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>&lt;your-git-url-or-owner/repo&gt;<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-y
+<p>Clone the repository and run commands from its root:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ylazakovich/skills.git
+<span class="nb">cd</span><span class="w"> </span>skills
 </code></pre></div>
-<ol>
-<li>Run:</li>
-</ol>
-<div class="highlight"><pre><span></span><code>./scripts/install-claude-config.sh
+<h2 id="claude-code">Claude Code<a class="headerlink" href="#claude-code" title="Permanent link">&para;</a></h2>
+<p>Install the portable skills:</p>
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>ylazakovich/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-y
 </code></pre></div>
-<p>Done:</p>
-<ul>
-<li>Claude Code gets the reusable skills</li>
-<li>the Claude config is copied into <code>~/.claude</code></li>
-</ul>
+<p>No global Claude configuration is copied. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.</p>
 <h2 id="codex">Codex<a class="headerlink" href="#codex" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Install Codex.</li>
-<li>Install the skills from this repo:</li>
-</ol>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>&lt;your-git-url-or-owner/repo&gt;<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
+<p>Install the portable skills:</p>
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>ylazakovich/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
 </code></pre></div>
-<ol>
-<li>Run:</li>
-</ol>
+<p>Optionally copy <code>adapters/codex/AGENTS.md</code> into a target project:</p>
 <div class="highlight"><pre><span></span><code>./scripts/install-codex-agents.sh<span class="w"> </span>/path/to/your/project
 </code></pre></div>
-<p>Done:</p>
-<ul>
-<li>Codex gets the reusable skills</li>
-<li>your target repo gets an <code>AGENTS.md</code> file for this workflow</li>
-</ul>
+<p>Codex discovers project-local skills from <code>.agents/skills</code>, not <code>.codex/skills</code>.</p>
 <h2 id="hermes">Hermes<a class="headerlink" href="#hermes" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Clone this repository.</li>
-<li>Add the repository root to <code>skills.external_dirs</code> in your Hermes configuration:</li>
-</ol>
+<p>Add the canonical skill directory—not the repository root—to the Hermes configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">skills</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">external_dirs</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/skills</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/absolute/path/to/skills/skills</span>
 </code></pre></div>
-<ol>
-<li>Start a new session; after significant work, load <code>/skill-review</code> to decide whether a reusable lesson should be proposed.</li>
-</ol>
-<p>Hermes external directories are mutable when the process has filesystem write access. Promote shared changes through a Git branch or worktree, not an in-place skill-management edit.</p>
-<p>To update this direct shared checkout later, run <code>./scripts/sync-shared-skills.sh</code> from its clean <code>main</code> branch, then start a new Hermes session so the external skill directory is discovered again.</p>
-<h2 id="if-you-use-claude-and-codex">If You Use Claude and Codex<a class="headerlink" href="#if-you-use-claude-and-codex" title="Permanent link">&para;</a></h2>
-<p>Install both skill targets at once:</p>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>&lt;your-git-url-or-owner/repo&gt;<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
-</code></pre></div>
-<p>Then run:</p>
-<div class="highlight"><pre><span></span><code>./scripts/install-claude-config.sh
+<p>Start a new Hermes session after changing the discovery path. Keep shared edits on an isolated Git branch or worktree; an external directory is not a write-protection boundary.</p>
+<h2 id="claude-code-and-codex-together">Claude Code and Codex Together<a class="headerlink" href="#claude-code-and-codex-together" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>ylazakovich/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
 ./scripts/install-codex-agents.sh<span class="w"> </span>/path/to/your/project
 </code></pre></div>
-<p>Use this when:</p>
-<ul>
-<li>you want Claude to get the global config from <code>claude-config/</code></li>
-<li>you want Codex to get <code>AGENTS.md</code> inside a working project</li>
-</ul>
-<h2 id="what-the-scripts-do">What The Scripts Do<a class="headerlink" href="#what-the-scripts-do" title="Permanent link">&para;</a></h2>
-<p><code>./scripts/install-claude-config.sh</code></p>
-<ul>
-<li>creates <code>~/.claude</code></li>
-<li>copies <code>CLAUDE.md</code></li>
-<li>copies <code>agents/</code>, <code>commands/</code>, and <code>output-styles/</code></li>
-<li>installs <code>statusline-command.sh</code></li>
-</ul>
-<p><code>./scripts/install-codex-agents.sh /path/to/your/project</code></p>
-<ul>
-<li>creates the target directory if needed</li>
-<li>copies <code>codex/AGENTS.md</code> into that repo as <code>AGENTS.md</code></li>
-</ul>
+<h2 id="update-the-shared-checkout">Update the Shared Checkout<a class="headerlink" href="#update-the-shared-checkout" title="Permanent link">&para;</a></h2>
+<p>From its clean <code>main</code> branch:</p>
+<div class="highlight"><pre><span></span><code>./scripts/sync-shared-skills.sh
+</code></pre></div>
+<p>The sync helper updates the Git checkout. Rerun the Codex adapter installer when its copied <code>AGENTS.md</code> changes.</p>
 
 
 

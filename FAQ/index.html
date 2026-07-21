@@ -23,7 +23,7 @@
     
     
       
-        <title>FAQ - Skills</title>
+        <title>FAQ - Shared Agent Skills</title>
       
     
     
@@ -95,7 +95,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="Skills" class="md-header__button md-logo" aria-label="Skills" data-md-component="logo">
+    <a href="./.." title="Shared Agent Skills" class="md-header__button md-logo" aria-label="Shared Agent Skills" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -109,7 +109,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Skills
+            Shared Agent Skills
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -268,13 +268,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="Skills" class="md-nav__button md-logo" aria-label="Skills" data-md-component="logo">
+    <a href="./.." title="Shared Agent Skills" class="md-nav__button md-logo" aria-label="Shared Agent Skills" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
 
     </a>
-    Skills
+    Shared Agent Skills
   </label>
   
     <div class="md-nav__source">
@@ -529,10 +529,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#do-i-need-claude-codex-and-hermes" class="md-nav__link">
+  <a href="#do-i-need-all-three-supported-agents" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Do I need Claude, Codex, and Hermes?
+        Do I need all three supported agents?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-are-skills-and-adapters-separate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why are skills and adapters separate?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#should-this-repository-contain-claudeskills-and-codexskills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Should this repository contain .claude/skills and .codex/skills?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#can-hermes-use-the-new-layout-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can Hermes use the new layout directly?
       
     </span>
   </a>
@@ -551,10 +584,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-are-skills-and-claude-config-separate-steps" class="md-nav__link">
+  <a href="#what-do-the-adapter-installers-do" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why are skills and Claude config separate steps?
+        What do the adapter installers do?
       
     </span>
   </a>
@@ -562,10 +595,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#does-codex-need-claude-config" class="md-nav__link">
+  <a href="#where-should-claude-code-sub-agents-live" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does Codex need claude-config/?
+        Where should Claude Code sub-agents live?
       
     </span>
   </a>
@@ -573,10 +606,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#do-i-run-the-scripts-from-my-target-project" class="md-nav__link">
+  <a href="#how-do-i-migrate-from-the-old-root-level-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Do I run the scripts from my target project?
+        How do I migrate from the old root-level layout?
       
     </span>
   </a>
@@ -584,43 +617,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-does-install-codex-agentssh-actually-do" class="md-nav__link">
+  <a href="#can-a-target-project-have-its-own-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What does install-codex-agents.sh actually do?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-can-codex-cost-more-than-my-previous-claudeecc-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why can Codex cost more than my previous Claude/ECC setup?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-is-the-cheapest-default-behavior-i-should-expect-in-codex" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What is the cheapest default behavior I should expect in Codex?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#can-my-target-project-still-have-its-own-local-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Can my target project still have its own local rules?
+        Can a target project have its own rules?
       
     </span>
   </a>
@@ -663,10 +663,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#do-i-need-claude-codex-and-hermes" class="md-nav__link">
+  <a href="#do-i-need-all-three-supported-agents" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Do I need Claude, Codex, and Hermes?
+        Do I need all three supported agents?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-are-skills-and-adapters-separate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why are skills and adapters separate?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#should-this-repository-contain-claudeskills-and-codexskills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Should this repository contain .claude/skills and .codex/skills?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#can-hermes-use-the-new-layout-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can Hermes use the new layout directly?
       
     </span>
   </a>
@@ -685,10 +718,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-are-skills-and-claude-config-separate-steps" class="md-nav__link">
+  <a href="#what-do-the-adapter-installers-do" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why are skills and Claude config separate steps?
+        What do the adapter installers do?
       
     </span>
   </a>
@@ -696,10 +729,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#does-codex-need-claude-config" class="md-nav__link">
+  <a href="#where-should-claude-code-sub-agents-live" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does Codex need claude-config/?
+        Where should Claude Code sub-agents live?
       
     </span>
   </a>
@@ -707,10 +740,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#do-i-run-the-scripts-from-my-target-project" class="md-nav__link">
+  <a href="#how-do-i-migrate-from-the-old-root-level-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Do I run the scripts from my target project?
+        How do I migrate from the old root-level layout?
       
     </span>
   </a>
@@ -718,43 +751,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-does-install-codex-agentssh-actually-do" class="md-nav__link">
+  <a href="#can-a-target-project-have-its-own-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What does install-codex-agents.sh actually do?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-can-codex-cost-more-than-my-previous-claudeecc-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why can Codex cost more than my previous Claude/ECC setup?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-is-the-cheapest-default-behavior-i-should-expect-in-codex" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What is the cheapest default behavior I should expect in Codex?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#can-my-target-project-still-have-its-own-local-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Can my target project still have its own local rules?
+        Can a target project have its own rules?
       
     </span>
   </a>
@@ -780,59 +780,38 @@
 
 
 <h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
-<h2 id="do-i-need-claude-codex-and-hermes">Do I need Claude, Codex, and Hermes?<a class="headerlink" href="#do-i-need-claude-codex-and-hermes" title="Permanent link">&para;</a></h2>
-<p>No. You can choose one path or combine supported paths. Claude and Codex can be installed together, while Hermes is configured separately.</p>
+<h2 id="do-i-need-all-three-supported-agents">Do I need all three supported agents?<a class="headerlink" href="#do-i-need-all-three-supported-agents" title="Permanent link">&para;</a></h2>
+<p>No. Install or connect only the path you use. Claude Code and Codex can share the same portable skills, while Hermes reads the canonical directory directly.</p>
+<h2 id="why-are-skills-and-adapters-separate">Why are skills and adapters separate?<a class="headerlink" href="#why-are-skills-and-adapters-separate" title="Permanent link">&para;</a></h2>
+<p>They have different responsibilities:</p>
 <ul>
-<li>If you use Claude Code, install the skills and run <code>./scripts/install-claude-config.sh</code>.</li>
-<li>If you use Codex, install the skills and run <code>./scripts/install-codex-agents.sh /path/to/your/project</code>.</li>
-<li>If you use Hermes, add the repository root to <code>skills.external_dirs</code> and start a new session.</li>
+<li><code>skills/</code> contains portable workflow knowledge shared by every supported agent.</li>
+<li><code>adapters/</code> contains configuration specific to Claude Code, Codex, or Hermes.</li>
 </ul>
-<h2 id="can-hermes-edit-an-external-skill-directory">Can Hermes edit an external skill directory?<a class="headerlink" href="#can-hermes-edit-an-external-skill-directory" title="Permanent link">&para;</a></h2>
-<p>Yes, when the Hermes process has filesystem write access. External directories are discovery sources, not write-protection boundaries. Shared changes should use an isolated Git branch or worktree and a pull request rather than an in-place skill-management edit.</p>
-<p>If a local Hermes skill has the same name as an external skill, the local version takes precedence.</p>
-<h2 id="why-are-skills-and-claude-config-separate-steps">Why are skills and Claude config separate steps?<a class="headerlink" href="#why-are-skills-and-claude-config-separate-steps" title="Permanent link">&para;</a></h2>
-<p>Because they do different jobs.</p>
-<ul>
-<li>the skills add reusable workflow logic</li>
-<li>the Claude config installs Claude-specific files into <code>~/.claude</code></li>
-</ul>
-<p>For Claude, you usually want both.</p>
-<h2 id="does-codex-need-claude-config">Does Codex need <code>claude-config/</code>?<a class="headerlink" href="#does-codex-need-claude-config" title="Permanent link">&para;</a></h2>
-<p>No.</p>
-<p>For Codex, the important pieces are:</p>
-<ul>
-<li>the installed skills</li>
-<li><code>AGENTS.md</code> inside the target project</li>
-</ul>
-<h2 id="do-i-run-the-scripts-from-my-target-project">Do I run the scripts from my target project?<a class="headerlink" href="#do-i-run-the-scripts-from-my-target-project" title="Permanent link">&para;</a></h2>
-<p>No.</p>
-<p>Clone this repo and run the scripts from this repo root.</p>
-<p>Example:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/path/to/skills
-./scripts/install-claude-config.sh
-./scripts/install-codex-agents.sh<span class="w"> </span>/path/to/your/project
+<p>Keeping those layers separate prevents three copies of the same skill from drifting apart.</p>
+<h2 id="should-this-repository-contain-claudeskills-and-codexskills">Should this repository contain <code>.claude/skills</code> and <code>.codex/skills</code>?<a class="headerlink" href="#should-this-repository-contain-claudeskills-and-codexskills" title="Permanent link">&para;</a></h2>
+<p>No. Claude Code uses <code>.claude/skills</code> for project-local discovery, but that is a consumer location rather than this repository's canonical store. Codex uses <code>.agents/skills</code> for project-local discovery; <code>.codex/skills</code> is not its documented project skill path.</p>
+<p>Installers can place skills into each agent's supported discovery location without duplicating their source in Git.</p>
+<h2 id="can-hermes-use-the-new-layout-directly">Can Hermes use the new layout directly?<a class="headerlink" href="#can-hermes-use-the-new-layout-directly" title="Permanent link">&para;</a></h2>
+<p>Yes. Point <code>skills.external_dirs</code> at the nested canonical directory:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">skills</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">external_dirs</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/absolute/path/to/skills/skills</span>
 </code></pre></div>
-<h2 id="what-does-install-codex-agentssh-actually-do">What does <code>install-codex-agents.sh</code> actually do?<a class="headerlink" href="#what-does-install-codex-agentssh-actually-do" title="Permanent link">&para;</a></h2>
-<p>It copies the repository file <code>codex/AGENTS.md</code> into your target repo as <code>AGENTS.md</code>.</p>
-<p>That file tells Codex how to use this orchestration workflow.</p>
-<h2 id="why-can-codex-cost-more-than-my-previous-claudeecc-setup">Why can Codex cost more than my previous Claude/ECC setup?<a class="headerlink" href="#why-can-codex-cost-more-than-my-previous-claudeecc-setup" title="Permanent link">&para;</a></h2>
-<p>Because the two environments do not expose the same routing model.</p>
-<ul>
-<li>Claude + ECC has an explicit cost ladder with junior, middle, and senior roles, which makes cheapest-capable selection more predictable.</li>
-<li>Codex can follow the same workflow shape, but cost control is often achieved through fewer delegations, shorter handoffs, and a tighter <code>plan -&gt; executor -&gt; validation</code> loop.</li>
-</ul>
-<p>If Codex starts feeling expensive, the first thing to check is not only model choice but also whether the workflow is spawning unnecessary research or review steps.</p>
-<h2 id="what-is-the-cheapest-default-behavior-i-should-expect-in-codex">What is the cheapest default behavior I should expect in Codex?<a class="headerlink" href="#what-is-the-cheapest-default-behavior-i-should-expect-in-codex" title="Permanent link">&para;</a></h2>
-<p>The intended cheap default is:</p>
-<ul>
-<li>quick plan</li>
-<li>one executor</li>
-<li>validation at the end</li>
-</ul>
-<p>Research agents should be added only when missing facts block execution. Review agents should usually be added after implementation reaches a stable state.</p>
-<h2 id="can-my-target-project-still-have-its-own-local-rules">Can my target project still have its own local rules?<a class="headerlink" href="#can-my-target-project-still-have-its-own-local-rules" title="Permanent link">&para;</a></h2>
-<p>Yes.</p>
-<p>This repo is the shared orchestration layer. Your target project can still define its own local roles and rules in <code>AGENTS.md</code> or <code>.agents/**/SKILL.md</code>.</p>
+<p>Start a new session after changing the path.</p>
+<h2 id="can-hermes-edit-an-external-skill-directory">Can Hermes edit an external skill directory?<a class="headerlink" href="#can-hermes-edit-an-external-skill-directory" title="Permanent link">&para;</a></h2>
+<p>Yes, if the process has filesystem write access. External directories are discovery sources, not read-only boundaries. Make shared changes in a separate Git branch or worktree and submit them through review.</p>
+<p>A same-named local Hermes skill can take precedence over the shared version.</p>
+<h2 id="what-do-the-adapter-installers-do">What do the adapter installers do?<a class="headerlink" href="#what-do-the-adapter-installers-do" title="Permanent link">&para;</a></h2>
+<p>Claude Code needs no repository-owned global configuration: install the canonical skills through the skills CLI.</p>
+<p><code>./scripts/install-codex-agents.sh /path/to/project</code> copies <code>adapters/codex/AGENTS.md</code> into the target project as <code>AGENTS.md</code>.</p>
+<p>The Codex script does not change the canonical files under <code>skills/</code>.</p>
+<h2 id="where-should-claude-code-sub-agents-live">Where should Claude Code sub-agents live?<a class="headerlink" href="#where-should-claude-code-sub-agents-live" title="Permanent link">&para;</a></h2>
+<p>Keep global personas under your own <code>~/.claude/agents/</code> and project-specific personas with the project that owns them. This repository does not publish them because agent roles, model names, tools, and project assumptions are not portable skills.</p>
+<h2 id="how-do-i-migrate-from-the-old-root-level-layout">How do I migrate from the old root-level layout?<a class="headerlink" href="#how-do-i-migrate-from-the-old-root-level-layout" title="Permanent link">&para;</a></h2>
+<p>Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point <code>skills.external_dirs</code> at <code>&lt;checkout&gt;/skills</code> if you want discovery limited to the canonical directory. The former global Claude configuration bundle is intentionally removed; the Codex installer command stays the same. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.</p>
+<h2 id="can-a-target-project-have-its-own-rules">Can a target project have its own rules?<a class="headerlink" href="#can-a-target-project-have-its-own-rules" title="Permanent link">&para;</a></h2>
+<p>Yes. Keep stack- and domain-specific rules in the target project, such as <code>AGENTS.md</code>, <code>CLAUDE.md</code>, or project-local skills. This repository should remain portable and generic.</p>
 
 
 
