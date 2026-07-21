@@ -27,6 +27,6 @@ tests/       regression tests
 
 ## Included Skills
 
-- `orchestrator-workflow` for complex implementation tasks
-- `refactor-workflow` for controlled refactoring
-- `skill-review` for privacy-aware review and promotion
+The library currently contains 11 portable skills across agent workflows, repository safety, infrastructure, and game troubleshooting/reconnaissance.
+
+Browse the complete [skill catalog](skill-catalog.md).
