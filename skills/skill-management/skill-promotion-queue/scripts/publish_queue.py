@@ -34,6 +34,7 @@ FORBIDDEN_PARTS = {
     "transcripts",
     "user.md",
 }
+COMMAND_TIMEOUT_SECONDS = 300.0
 
 
 class QueueError(RuntimeError):
@@ -46,15 +47,20 @@ def run(
     cwd: Path,
     environment: dict[str, str] | None = None,
     check: bool = True,
+    timeout: float = COMMAND_TIMEOUT_SECONDS,
 ) -> subprocess.CompletedProcess[str]:
     """Run a command without a shell and capture its text output."""
-    result = subprocess.run(
-        list(arguments),
-        cwd=cwd,
-        env=environment,
-        text=True,
-        capture_output=True,
-    )
+    try:
+        result = subprocess.run(
+            list(arguments),
+            cwd=cwd,
+            env=environment,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise QueueError(f"{arguments[0]} command timed out after {timeout:g}s") from error
     if check and result.returncode != 0:
         detail = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"
         raise QueueError(f"{arguments[0]} command failed: {detail}")
@@ -97,7 +103,7 @@ def path_is_allowed(raw_path: str) -> bool:
     return path.parts[0] in ALLOWED_DIRECTORIES
 
 
-def changed_paths(root: Path, base_ref: str = "origin/main") -> list[str]:
+def changed_paths(root: Path, base_ref: str) -> list[str]:
     """Return the lane diff from its merge base with the current default branch."""
     output = git(root, "diff", "--name-only", "--diff-filter=ACMRTUXB", f"{base_ref}...HEAD")
     return [line for line in output.splitlines() if line]
@@ -106,7 +112,7 @@ def changed_paths(root: Path, base_ref: str = "origin/main") -> list[str]:
 def ensure_public_paths(paths: Sequence[str]) -> None:
     """Reject empty or out-of-bound queue diffs."""
     if not paths:
-        raise QueueError("the lane has no changed paths relative to origin/main")
+        raise QueueError("the lane has no changed paths relative to the default branch")
     rejected = [path for path in paths if not path_is_allowed(path)]
     if rejected:
         raise QueueError("queue contains disallowed paths: " + ", ".join(rejected))
@@ -210,9 +216,35 @@ def ensure_remote_is_github(root: Path, repository: str) -> None:
         raise QueueError("origin does not match the requested GitHub repository")
 
 
-def fetch_refs(root: Path, branch: str) -> str | None:
-    """Fetch main and an existing queue branch without changing the worktree."""
-    git(root, "fetch", "--no-tags", "origin", "refs/heads/main:refs/remotes/origin/main")
+def resolve_default_branch(root: Path, repository: str) -> str:
+    """Resolve and validate the target repository's current default branch."""
+    branch = gh(
+        root,
+        repository,
+        "repo",
+        "view",
+        "--json",
+        "defaultBranchRef",
+        "--jq",
+        ".defaultBranchRef.name",
+    )
+    if not branch or branch.startswith("-") or any(character.isspace() for character in branch):
+        raise QueueError("GitHub returned an invalid default branch")
+    valid = run(["git", "check-ref-format", f"refs/heads/{branch}"], cwd=root, check=False)
+    if valid.returncode != 0:
+        raise QueueError("GitHub returned an invalid default branch")
+    return branch
+
+
+def fetch_refs(root: Path, branch: str, default_branch: str) -> str | None:
+    """Fetch the default and existing queue branches without changing the worktree."""
+    git(
+        root,
+        "fetch",
+        "--no-tags",
+        "origin",
+        f"refs/heads/{default_branch}:refs/remotes/origin/{default_branch}",
+    )
     probe = run(
         ["git", "ls-remote", "--heads", "origin", f"refs/heads/{branch}"], cwd=root
     ).stdout.strip()
@@ -228,7 +260,12 @@ def fetch_refs(root: Path, branch: str) -> str | None:
     return f"origin/{branch}"
 
 
-def ensure_repository_state(root: Path, branch: str, remote_branch: str | None) -> str:
+def ensure_repository_state(
+    root: Path,
+    branch: str,
+    remote_branch: str | None,
+    base_ref: str,
+) -> str:
     """Check branch identity, cleanliness, ancestry, and unpublished commits."""
     actual_root = Path(git(root, "rev-parse", "--show-toplevel")).resolve()
     if actual_root != root.resolve():
@@ -246,9 +283,9 @@ def ensure_repository_state(root: Path, branch: str, remote_branch: str | None) 
         )
         if ancestor.returncode != 0:
             raise QueueError("remote queue branch is not an ancestor of local HEAD; refusing force-push")
-    ahead = int(git(root, "rev-list", "--count", "origin/main..HEAD"))
+    ahead = int(git(root, "rev-list", "--count", f"{base_ref}..HEAD"))
     if ahead < 1:
-        raise QueueError("queue branch has no commits ahead of origin/main")
+        raise QueueError("queue branch has no commits ahead of the default branch")
     return git(root, "rev-parse", "HEAD")
 
 
@@ -266,6 +303,15 @@ def gh(root: Path, repository: str, *arguments: str) -> str:
     return run(["gh", *arguments, "--repo", repository], cwd=root).stdout.strip()
 
 
+def push_arguments(branch: str, *, temporary_askpass: bool) -> list[str]:
+    """Build a push command without overriding a configured credential helper unnecessarily."""
+    arguments = ["git"]
+    if temporary_askpass:
+        arguments.extend(["-c", "credential.helper="])
+    arguments.extend(["push", "--set-upstream", "origin", f"HEAD:{branch}"])
+    return arguments
+
+
 def publish(
     root: Path,
     *,
@@ -277,19 +323,21 @@ def publish(
     validate_repository(repository)
     branch = validate_lane(lane)
     ensure_remote_is_github(root, repository)
-    remote_branch = fetch_refs(root, branch)
-    head = ensure_repository_state(root, branch, remote_branch)
-    paths = changed_paths(root)
+    default_branch = resolve_default_branch(root, repository)
+    base_ref = f"origin/{default_branch}"
+    remote_branch = fetch_refs(root, branch, default_branch)
+    head = ensure_repository_state(root, branch, remote_branch, base_ref)
+    paths = changed_paths(root, base_ref)
     ensure_public_paths(paths)
     validate_exact_head(root, head)
 
-    commits = git(root, "log", "--format=%s", "origin/main..HEAD").splitlines()
+    commits = git(root, "log", "--format=%s", f"{base_ref}..HEAD").splitlines()
     body = build_body(lane=lane, head=head, commits=commits, paths=paths)
 
     environment, temporary = askpass_environment()
     try:
         run(
-            ["git", "-c", "credential.helper=", "push", "--set-upstream", "origin", f"HEAD:{branch}"],
+            push_arguments(branch, temporary_askpass=temporary is not None),
             cwd=root,
             environment=environment,
         )
@@ -314,7 +362,7 @@ def publish(
             "--head",
             branch,
             "--json",
-            "number,url,isDraft,headRefOid",
+            "number,url,isDraft,headRefOid,baseRefName",
         )
     )
     if len(existing) > 1:
@@ -322,6 +370,8 @@ def publish(
 
     if existing:
         current = existing[0]
+        if current.get("baseRefName") != default_branch:
+            raise QueueError("the existing queue pull request targets a different base branch")
         if not current.get("isDraft"):
             raise QueueError("the existing queue pull request is no longer a draft")
         number = str(current["number"])
@@ -356,7 +406,7 @@ def publish(
                 "create",
                 "--draft",
                 "--base",
-                "main",
+                default_branch,
                 "--head",
                 branch,
                 "--title",
@@ -379,13 +429,14 @@ def publish(
             "--head",
             branch,
             "--json",
-            "number,url,isDraft,headRefOid,body",
+            "number,url,isDraft,headRefOid,body,baseRefName",
         )
     )
     if (
         len(final) != 1
         or not final[0].get("isDraft")
         or final[0].get("headRefOid") != head
+        or final[0].get("baseRefName") != default_branch
         or head not in str(final[0].get("body", ""))
     ):
         raise QueueError("could not verify one draft pull request at the validated HEAD")

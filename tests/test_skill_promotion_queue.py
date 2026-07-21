@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -93,6 +95,38 @@ class SkillPromotionQueueTests(unittest.TestCase):
                 self.assertFalse(
                     publish_queue.remote_matches_repository(remote, "example/skills")
                 )
+
+    def test_run_converts_timeout_to_queue_error(self) -> None:
+        with patch.object(
+            publish_queue.subprocess,
+            "run",
+            side_effect=subprocess.TimeoutExpired(["git", "fetch"], 12),
+        ) as mocked_run:
+            with self.assertRaisesRegex(publish_queue.QueueError, "timed out after 12s"):
+                publish_queue.run(["git", "fetch"], cwd=REPOSITORY_ROOT, timeout=12)
+        self.assertEqual(mocked_run.call_args.kwargs["timeout"], 12)
+
+    def test_default_branch_is_resolved_and_ref_validated(self) -> None:
+        valid = subprocess.CompletedProcess(["git", "check-ref-format"], 0, "", "")
+        with (
+            patch.object(publish_queue, "gh", return_value="trunk"),
+            patch.object(publish_queue, "run", return_value=valid) as mocked_run,
+        ):
+            self.assertEqual(
+                publish_queue.resolve_default_branch(REPOSITORY_ROOT, "example/skills"),
+                "trunk",
+            )
+        self.assertIn("refs/heads/trunk", mocked_run.call_args.args[0])
+
+        with patch.object(publish_queue, "gh", return_value="-unsafe"):
+            with self.assertRaisesRegex(publish_queue.QueueError, "invalid default branch"):
+                publish_queue.resolve_default_branch(REPOSITORY_ROOT, "example/skills")
+
+    def test_push_preserves_normal_helper_without_temporary_askpass(self) -> None:
+        normal = publish_queue.push_arguments("automation/skill-improvements/lane", temporary_askpass=False)
+        askpass = publish_queue.push_arguments("automation/skill-improvements/lane", temporary_askpass=True)
+        self.assertNotIn("credential.helper=", normal)
+        self.assertIn("credential.helper=", askpass)
 
     def test_empty_and_disallowed_diffs_fail_closed(self) -> None:
         with self.assertRaisesRegex(publish_queue.QueueError, "no changed paths"):
