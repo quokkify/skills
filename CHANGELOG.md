@@ -5,7 +5,7 @@
 
 ### 🐛 Bug Fixes
 
-* **skill-review:** avoid Hermes guide name collision ([#16](https://github.com/ylazakovich/skills/issues/16)) ([1ddb8ac](https://github.com/ylazakovich/skills/commit/1ddb8acda449b61f9045faf23ed382b1cb369eb7))
+* **skill-review:** avoid Hermes guide name collision ([#16](https://github.com/ylazakovich/skills/pull/16)) ([1ddb8ac](https://github.com/ylazakovich/skills/commit/1ddb8acda449b61f9045faf23ed382b1cb369eb7))
 
 ## [0.2.0](https://github.com/ylazakovich/skills/compare/skills-v0.1.0...skills-v0.2.0) (2026-07-21)
 
