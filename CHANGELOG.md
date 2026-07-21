@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/ylazakovich/skills/compare/skills-v0.2.1...skills-v0.2.2) (2026-07-21)
+
+
+### ⚙️ CI
+
+* **validation:** add local skill validation gates ([#18](https://github.com/ylazakovich/skills/pull/18)) ([7f11c5e](https://github.com/ylazakovich/skills/commit/7f11c5ed64a01c3856c5c20a4a5979c0daed86e5))
+
 ## [0.2.1](https://github.com/ylazakovich/skills/compare/skills-v0.2.0...skills-v0.2.1) (2026-07-21)
 
 
