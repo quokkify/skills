@@ -76,7 +76,7 @@ A same-named skill under the local Hermes skill directory can take precedence ov
 
 ## Available Skills
 
-The repository contains **11 portable skills** covering agent orchestration, repository safety, infrastructure operations, and game troubleshooting/reconnaissance.
+The repository contains **18 portable skills** covering agent orchestration, repository and software-development workflows, infrastructure operations, and game troubleshooting/reconnaissance.
 
 See the [skill catalog](docs/skill-catalog.md) for the complete linked list and concise descriptions.
 
@@ -135,3 +135,4 @@ Every pull request runs repository validation and Gitleaks. Scanner success comp
 - [Reviewing and promoting skills](docs/guides/reviewing-and-promoting-skills.md)
 - [Releases and dependency updates](docs/guides/releases-and-dependencies.md)
 - [FAQ](docs/FAQ.md)
+- [Third-party notices](THIRD_PARTY_NOTICES.md)
