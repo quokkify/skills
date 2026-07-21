@@ -1,4 +1,44 @@
 .DS_Store
 public/
 .obsidian/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+auth.json
+credentials.json
+settings.local.json
+
+# Agent-local state
 .claude/settings.local.json
+.claude/projects/
+.hermes/
+
+# Personal context must stay outside this public repository
+/MEMORY.md
+/USER.md
+/SOUL.md
+/sessions/
+/transcripts/
+/snapshot/
+/snapshots/
+/backups/
+/logs/
+/cache/
+/tmp/
+
+# Runtime databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal

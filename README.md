@@ -96,6 +96,12 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 - For Codex, `claude-config/` is not required. The Codex flow uses the skills plus `AGENTS.md` in the target repo.
 - If cost predictability matters most, keep in mind that Claude and Codex do not expose the exact same routing controls. This repo now documents both paths separately.
 
+## Security and Privacy
+
+This repository is public and should contain only portable, redacted agent instructions. Keep credentials, memories, transcripts, snapshots, runtime databases, personal context, and private project rules outside this repository. Read [SECURITY.md](SECURITY.md) before promoting a locally generated skill or configuration change.
+
+Every pull request runs a full-history Gitleaks scan. Scanner success complements manual review; it does not make personal or proprietary data safe to publish.
+
 ## Adapting This To Your Project
 
 This repo is the shared orchestration layer. Your target project can still define its own local roles and rules.
