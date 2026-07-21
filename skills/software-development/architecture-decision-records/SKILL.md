@@ -38,7 +38,8 @@ Use the project's template when one exists. Otherwise use:
 ```markdown
 # ADR-NNNN: <decision in a short active phrase>
 
-- Status: proposed | accepted | deprecated | superseded by ADR-NNNN
+- Status: proposed | accepted | deprecated | superseded
+- Superseded by: ADR-NNNN  <!-- only when Status is superseded -->
 - Date: YYYY-MM-DD
 - Deciders: <people or roles, only when known>
 
@@ -87,7 +88,7 @@ Keep the record concise enough to scan quickly. Link detailed benchmarks, threat
 - `proposed`: under discussion and not yet authoritative;
 - `accepted`: current decision;
 - `deprecated`: retained for history but no longer recommended;
-- `superseded`: replaced by a specific newer ADR, with links in both directions where practical.
+- `superseded`: replaced by a specific newer ADR; record the replacement in a separate `Superseded by: ADR-NNNN` field and link both records where practical.
 
 Never rewrite an accepted ADR to pretend the original decision was different. Add a new record that supersedes it or append a clearly dated clarification according to project policy.
 

@@ -71,7 +71,7 @@ Never claim to reset agent state, repair configuration, change models, or restar
 
 ### 5. Verify And Resume
 
-Repeat the discriminating probe, then the smallest affected verification. Resume the original plan only after the result materially changes the diagnosis.
+Repeat the discriminating probe, then the smallest affected verification. Resume the original plan after the result confirms or materially changes the diagnosis and the smallest affected verification passes.
 
 If two recovery cycles fail to reduce uncertainty, stop broad retries and escalate or redesign the diagnostic approach. A third restatement of the same hypothesis is not progress.
 

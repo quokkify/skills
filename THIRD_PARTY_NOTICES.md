@@ -6,15 +6,15 @@ This repository includes material adapted from third-party projects. The notices
 
 Source: [affaan-m/ECC](https://github.com/affaan-m/ECC) at commit [`5deee34c93395045b985e3baf91550e5f1ab7204`](https://github.com/affaan-m/ECC/tree/5deee34c93395045b985e3baf91550e5f1ab7204)
 
-Adapted source workflows:
+Adapted local skill → ECC source workflow:
 
-- `agent-harness-construction`
-- `agent-introspection-debugging`
-- `ai-regression-testing`
-- `architecture-decision-records`
-- `browser-qa`
-- `click-path-audit`
-- `codebase-onboarding`
+- `skills/orchestration/agent-harness-design/SKILL.md` → `skills/agent-harness-construction/SKILL.md`
+- `skills/orchestration/agent-failure-recovery/SKILL.md` → `skills/agent-introspection-debugging/SKILL.md`
+- `skills/software-development/ai-assisted-regression-testing/SKILL.md` → `skills/ai-regression-testing/SKILL.md`
+- `skills/software-development/architecture-decision-records/SKILL.md` → `skills/architecture-decision-records/SKILL.md`
+- `skills/software-development/browser-qa/SKILL.md` → `skills/browser-qa/SKILL.md`
+- `skills/software-development/interaction-state-audit/SKILL.md` → `skills/click-path-audit/SKILL.md`
+- `skills/repository/codebase-onboarding/SKILL.md` → `skills/codebase-onboarding/SKILL.md`
 
 MIT License
 
