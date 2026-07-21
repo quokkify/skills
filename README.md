@@ -76,7 +76,7 @@ A same-named skill under the local Hermes skill directory can take precedence ov
 
 ## Available Skills
 
-The repository contains **18 portable skills** covering agent orchestration, repository and software-development workflows, infrastructure operations, and game troubleshooting/reconnaissance.
+The repository contains **19 portable skills** covering agent orchestration, skill lifecycle management, repository and software-development workflows, infrastructure operations, and game troubleshooting/reconnaissance.
 
 See the [skill catalog](docs/skill-catalog.md) for the complete linked list and concise descriptions.
 
