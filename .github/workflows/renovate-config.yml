@@ -1,0 +1,37 @@
+name: Renovate Config
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/renovate.json
+      - .github/workflows/renovate-config.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/renovate.json
+      - .github/workflows/renovate-config.yml
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: renovate-config-validator
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+
+      - name: Validate Renovate configuration
+        run: npx --yes --package renovate -- renovate-config-validator --strict .github/renovate.json
