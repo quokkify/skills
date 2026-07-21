@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/ylazakovich/skills/compare/skills-v0.3.0...skills-v0.4.0) (2026-07-21)
+
+
+### ✨ Features
+
+* **layout:** centralize shared skills ([a2b81d0](https://github.com/ylazakovich/skills/commit/a2b81d04dad7bda7b41921ef19c585bd24993479))
+* **skills:** add curated portable operations set ([#24](https://github.com/ylazakovich/skills/issues/24)) ([8ac3c40](https://github.com/ylazakovich/skills/commit/8ac3c40a8ab9234e55c226a4fbe6f346837e7068))
+
 ## [0.3.0](https://github.com/ylazakovich/skills/compare/skills-v0.2.2...skills-v0.3.0) (2026-07-21)
 
 
