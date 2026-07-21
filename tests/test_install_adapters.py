@@ -31,7 +31,17 @@ class AdapterInstallerTests(unittest.TestCase):
                 (installed / "CLAUDE.md").read_bytes(),
                 (REPOSITORY_ROOT / "adapters" / "claude" / "CLAUDE.md").read_bytes(),
             )
-            self.assertTrue((installed / "agents" / "code-researcher.md").is_file())
+            for relative_path in (
+                Path("agents/code-researcher.md"),
+                Path("commands/task.md"),
+                Path("output-styles/task-oriented-orchestrator.md"),
+            ):
+                self.assertEqual(
+                    (installed / relative_path).read_bytes(),
+                    (
+                        REPOSITORY_ROOT / "adapters" / "claude" / relative_path
+                    ).read_bytes(),
+                )
             self.assertTrue(os.access(installed / "statusline-command.sh", os.X_OK))
 
     def test_codex_installer_uses_adapter_directory(self) -> None:

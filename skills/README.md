@@ -2,7 +2,7 @@
 
 This directory is the repository's only source of truth for portable skills.
 
-Each direct child must use this layout:
+Each skill directory must use this layout:
 
 ```text
 skills/<skill-name>/SKILL.md
