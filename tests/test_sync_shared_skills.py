@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -86,12 +88,18 @@ class SharedSkillSyncTests(unittest.TestCase):
         self.run_git("push", "-q", "origin", "main", cwd=publisher)
         return self.run_git("rev-parse", "HEAD", cwd=publisher).stdout.strip()
 
-    def run_sync(self, consumer: Path) -> subprocess.CompletedProcess[str]:
+    def run_sync(
+        self, consumer: Path, extra_environment: dict[str, str] | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        environment = os.environ.copy()
+        if extra_environment:
+            environment.update(extra_environment)
         return subprocess.run(
             ["bash", "scripts/sync-shared-skills.sh"],
             cwd=consumer,
             text=True,
             capture_output=True,
+            env=environment,
         )
 
     def test_fast_forwards_valid_origin_main_and_prints_session_guidance(self) -> None:
@@ -160,6 +168,45 @@ class SharedSkillSyncTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("ahead of or diverged", result.stderr)
             self.assertEqual(self.run_git("rev-parse", "HEAD", cwd=consumer).stdout.strip(), original)
+
+    def test_rejects_concurrent_main_movement_after_candidate_validation(self) -> None:
+        temporary, remote, consumer = self.make_fixture()
+        with temporary:
+            expected = self.publish(remote, "docs/update.md", "# Update\n")
+            wrapper_directory = remote.parent / "bin"
+            wrapper_directory.mkdir()
+            counter = remote.parent / "python-counter"
+            wrapper = wrapper_directory / "python3"
+            wrapper.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "count=0\n"
+                "if [[ -f \"$SYNC_COUNTER\" ]]; then read -r count < \"$SYNC_COUNTER\"; fi\n"
+                "count=$((count + 1))\n"
+                "printf '%s\\n' \"$count\" > \"$SYNC_COUNTER\"\n"
+                "\"$SYNC_REAL_PYTHON\" \"$@\"\n"
+                "if [[ \"$count\" -eq 2 ]]; then\n"
+                "  git -C \"$SYNC_CONSUMER\" reset --hard -q origin/main\n"
+                "  git -C \"$SYNC_CONSUMER\" commit --allow-empty -q -m 'test: concurrent move'\n"
+                "fi\n",
+                encoding="utf-8",
+            )
+            wrapper.chmod(0o755)
+            result = self.run_sync(
+                consumer,
+                {
+                    "PATH": f"{wrapper_directory}:{os.environ['PATH']}",
+                    "SYNC_CONSUMER": str(consumer),
+                    "SYNC_COUNTER": str(counter),
+                    "SYNC_REAL_PYTHON": sys.executable,
+                },
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("main changed", result.stderr)
+            current = self.run_git("rev-parse", "HEAD", cwd=consumer).stdout.strip()
+            self.assertNotEqual(current, expected)
+            self.run_git("merge-base", "--is-ancestor", expected, current, cwd=consumer)
+            self.assertNotIn("Shared skills are synchronized", result.stdout)
 
 
 if __name__ == "__main__":

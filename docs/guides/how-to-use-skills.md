@@ -52,7 +52,7 @@ Update a direct shared checkout from its clean `main` branch with:
 ./scripts/sync-shared-skills.sh
 ```
 
-The helper fetches trusted `origin/main`, rejects ahead or diverged histories, and uses a preserved copy of the current validator before and after an exact fast-forward. It disables Git hooks for the branch update and never executes scripts from the fetched tree. Start a new Hermes session after it succeeds so the external skill directory is discovered again.
+The helper fetches trusted `origin/main`, rejects ahead or diverged histories, and uses a preserved copy of the current validator before and after an exact fast-forward. It rechecks the branch, revision, and clean state around the update, disables Git hooks, and never executes scripts from the fetched tree. Concurrent checkout changes return an error rather than a success report. Start a new Hermes session after it succeeds so the external skill directory is discovered again.
 
 ## Skill Review Flow
 

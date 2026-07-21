@@ -20,6 +20,13 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   exit 1
 fi
 
+checkout_is_exact_and_clean() {
+  local expected_oid="$1"
+  [[ "$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)" == "main" ]] &&
+    [[ "$(git rev-parse 'HEAD^{commit}')" == "$expected_oid" ]] &&
+    [[ -z "$(git status --porcelain --untracked-files=normal)" ]]
+}
+
 TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skills-sync.XXXXXX")"
 TRUSTED_VALIDATOR="$TEMP_ROOT/validate_repo.py"
 CANDIDATE_TREE="$TEMP_ROOT/candidate"
@@ -43,7 +50,16 @@ if [[ "$CURRENT_OID" != "$REMOTE_OID" ]]; then
   mkdir "$CANDIDATE_TREE"
   git archive "$REMOTE_OID" | tar -x -C "$CANDIDATE_TREE"
   python3 "$TRUSTED_VALIDATOR" "$CANDIDATE_TREE"
+  if ! checkout_is_exact_and_clean "$CURRENT_OID"; then
+    echo "Sync refused: main changed while the fetched revision was being validated." >&2
+    exit 1
+  fi
   git -c core.hooksPath=/dev/null merge --ff-only "$REMOTE_OID"
+fi
+
+if ! checkout_is_exact_and_clean "$REMOTE_OID"; then
+  echo "Sync refused: checkout does not exactly match the validated origin/main revision." >&2
+  exit 1
 fi
 
 if ! python3 "$TRUSTED_VALIDATOR" "$ROOT"; then
@@ -51,7 +67,12 @@ if ! python3 "$TRUSTED_VALIDATOR" "$ROOT"; then
   exit 1
 fi
 
-UPDATED_OID="$(git rev-parse 'HEAD^{commit}')"
+if ! checkout_is_exact_and_clean "$REMOTE_OID"; then
+  echo "Sync refused: checkout changed during post-update validation." >&2
+  exit 1
+fi
+
+UPDATED_OID="$REMOTE_OID"
 cleanup
 trap - EXIT
 printf 'Shared skills are synchronized at %s.\n' "$UPDATED_OID"
