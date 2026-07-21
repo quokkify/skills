@@ -13,7 +13,7 @@
 - [ ] Real identities, account data, infrastructure addresses, URLs, and machine-specific paths are removed or replaced with clearly fictional placeholders.
 - [ ] Any configuration examples reference environment-variable names or external secret files, not concrete values.
 - [ ] New or modified skills are portable beyond the task that produced them and were reviewed before promotion from local agent state.
-- [ ] Relevant validation and secret scanning completed successfully.
+- [ ] `./scripts/validate.sh --full` completed successfully, including the full-history secret scan.
 
 ## Additional risk
 

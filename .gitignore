@@ -1,5 +1,8 @@
 .DS_Store
 public/
+.venv/
+__pycache__/
+*.py[cod]
 .obsidian/
 
 # Local environment and credentials
