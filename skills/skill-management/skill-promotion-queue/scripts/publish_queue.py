@@ -325,13 +325,24 @@ def publish(
         if not current.get("isDraft"):
             raise QueueError("the existing queue pull request is no longer a draft")
         number = str(current["number"])
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as body_file:
-            body_file.write(body)
-            body_path = Path(body_file.name)
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as payload_file:
+            json.dump({"title": title, "body": body}, payload_file)
+            payload_path = Path(payload_file.name)
         try:
-            gh(root, repository, "pr", "edit", number, "--title", title, "--body-file", str(body_path))
+            run(
+                [
+                    "gh",
+                    "api",
+                    f"repos/{repository}/pulls/{number}",
+                    "--method",
+                    "PATCH",
+                    "--input",
+                    str(payload_path),
+                ],
+                cwd=root,
+            )
         finally:
-            body_path.unlink(missing_ok=True)
+            payload_path.unlink(missing_ok=True)
         action = "updated"
     else:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as body_file:
@@ -368,10 +379,15 @@ def publish(
             "--head",
             branch,
             "--json",
-            "number,url,isDraft,headRefOid",
+            "number,url,isDraft,headRefOid,body",
         )
     )
-    if len(final) != 1 or not final[0].get("isDraft") or final[0].get("headRefOid") != head:
+    if (
+        len(final) != 1
+        or not final[0].get("isDraft")
+        or final[0].get("headRefOid") != head
+        or head not in str(final[0].get("body", ""))
+    ):
         raise QueueError("could not verify one draft pull request at the validated HEAD")
     return {
         "action": action,
