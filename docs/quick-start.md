@@ -19,11 +19,7 @@ Install the portable skills:
 npx skills add ylazakovich/skills --skill '*' -g -a claude-code -y
 ```
 
-Optionally install the files from `adapters/claude/` into `~/.claude`:
-
-```bash
-./scripts/install-claude-config.sh
-```
+No global Claude configuration is copied. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.
 
 ## Codex
 
@@ -57,7 +53,6 @@ Start a new Hermes session after changing the discovery path. Keep shared edits 
 
 ```bash
 npx skills add ylazakovich/skills --skill '*' -g -a claude-code -a codex -y
-./scripts/install-claude-config.sh
 ./scripts/install-codex-agents.sh /path/to/your/project
 ```
 
@@ -69,4 +64,4 @@ From its clean `main` branch:
 ./scripts/sync-shared-skills.sh
 ```
 
-The sync helper updates the Git checkout. Rerun an adapter installer when copied files under `adapters/` change.
+The sync helper updates the Git checkout. Rerun the Codex adapter installer when its copied `AGENTS.md` changes.

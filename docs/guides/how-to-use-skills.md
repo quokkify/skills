@@ -13,7 +13,7 @@ This repository has two intentionally separate layers:
 
 Install the portable skills with the skills CLI. Claude Code supports personal skills under `~/.claude/skills` and project skills under `.claude/skills`.
 
-The optional `./scripts/install-claude-config.sh` helper copies the files under `adapters/claude/` into `~/.claude`. These include agent definitions, commands, an output style, and a status line; they are not additional copies of the skills.
+No global Claude configuration is copied from this repository. Sub-agent personas, output styles, status lines, and project-specific commands are not portable skills and remain user- or project-owned.
 
 ## Codex
 
@@ -45,7 +45,7 @@ From a clean direct checkout on `main`:
 
 The helper validates one exact fetched commit with a preserved copy of the current validator, rejects ahead or diverged history, disables Git hooks during the fast-forward, and never executes fetched scripts. Concurrent branch or worktree changes cause an error rather than a false success report.
 
-The helper updates the repository only. If you copied adapter files into another location, rerun the relevant installer when `adapters/` changes.
+The helper updates the repository only. If you copied the Codex adapter into another location, rerun its installer when `adapters/codex/AGENTS.md` changes.
 
 ## Environment-Aware Orchestration
 

@@ -13,7 +13,7 @@ skills/
 └── skill-review/            # review and promotion of reusable lessons
 
 adapters/
-├── claude/                  # optional Claude Code configuration
+├── claude/README.md         # Claude Code connection notes
 ├── codex/AGENTS.md          # optional Codex project instructions
 └── hermes/                  # Hermes configuration example
 
@@ -41,11 +41,7 @@ Install all portable skills:
 npx skills add ylazakovich/skills --skill '*' -g -a claude-code -y
 ```
 
-Optional: install the bundled Claude-specific agents, commands, output style, and status line into `~/.claude`:
-
-```bash
-./scripts/install-claude-config.sh
-```
+Claude Code needs no copied global adapter. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.
 
 ### Codex
 
@@ -93,12 +89,12 @@ From a clean checkout on `main`:
 
 The helper fetches only `origin/main`, validates the exact fetched snapshot with the currently trusted validator, allows fast-forward updates only, disables Git hooks during branch movement, and rejects concurrent checkout changes. It never executes scripts from the fetched tree.
 
-Copied Claude or Codex adapter files are not refreshed by this command. Rerun their installer when files under `adapters/` change.
+Copied Codex adapter files are not refreshed by this command. Rerun its installer when `adapters/codex/AGENTS.md` changes.
 
 ### Migrating From 0.3.x
 
 - Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point it at `<checkout>/skills` to narrow discovery to the canonical directory.
-- Keep using the same installer commands; their source files moved from `claude-config/` and `codex/` to `adapters/`.
+- The former global Claude configuration bundle is intentionally no longer published; the Codex installer source moved from `codex/` to `adapters/codex/`.
 - Reinstall or update skills managed by the skills CLI so its recorded source paths use the new layout.
 
 ## Validate Changes

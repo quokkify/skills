@@ -43,19 +43,19 @@ A same-named local Hermes skill can take precedence over the shared version.
 
 ## What do the adapter installers do?
 
-`./scripts/install-claude-config.sh` copies the optional Claude files from `adapters/claude/` into `~/.claude`.
+Claude Code needs no repository-owned global configuration: install the canonical skills through the skills CLI.
 
 `./scripts/install-codex-agents.sh /path/to/project` copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`.
 
-Neither script changes the canonical files under `skills/`.
+The Codex script does not change the canonical files under `skills/`.
 
-## Why does delegation differ between Claude Code and Codex?
+## Where should Claude Code sub-agents live?
 
-The agents expose different routing controls. The optional Claude adapter defines explicit junior, middle, and senior model tiers. Codex generally controls cost with fewer delegations and a compact `plan -> executor -> validation` loop. Both still use the same portable workflow from `skills/`.
+Keep global personas under your own `~/.claude/agents/` and project-specific personas with the project that owns them. This repository does not publish them because agent roles, model names, tools, and project assumptions are not portable skills.
 
 ## How do I migrate from the old root-level layout?
 
-Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point `skills.external_dirs` at `<checkout>/skills` if you want discovery limited to the canonical directory. The adapter installer commands stay the same even though their source files moved under `adapters/`. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.
+Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point `skills.external_dirs` at `<checkout>/skills` if you want discovery limited to the canonical directory. The former global Claude configuration bundle is intentionally removed; the Codex installer command stays the same. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.
 
 ## Can a target project have its own rules?
 

@@ -2,7 +2,7 @@
 
 The reusable skills live once in [`../skills`](../skills). This directory contains only tool-specific instructions and configuration that cannot be expressed as a portable skill.
 
-- `claude/` — optional global Claude Code agents, commands, output style, and status line
+- `claude/README.md` — Claude Code connection notes; no global personas or configuration bundle
 - `codex/AGENTS.md` — optional project instructions for Codex
 - `hermes/config.example.yaml` — example external skill directory configuration
 
