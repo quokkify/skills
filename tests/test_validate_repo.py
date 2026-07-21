@@ -186,7 +186,10 @@ class RepositoryValidationTests(unittest.TestCase):
             ignored = root / "ignored"
             ignored.mkdir()
             (ignored / "MEMORY.md").write_text("local only\n", encoding="utf-8")
-            self.assertEqual(validate_repository(root), [])
+            (root / "memory.md").write_text("must be rejected\n", encoding="utf-8")
+            errors = validate_repository(root)
+            self.assertTrue(any(error.startswith("memory.md:") for error in errors), errors)
+            self.assertFalse(any(error.startswith("ignored/MEMORY.md:") for error in errors), errors)
 
 
 if __name__ == "__main__":

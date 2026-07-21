@@ -57,7 +57,7 @@ PY
     echo "Full validation requires gitleaks 8.30.1 or newer; found '${GITLEAKS_VERSION:-unknown}'." >&2
     exit 1
   fi
-  "$GITLEAKS_COMMAND" git --no-banner --log-opts="--all" .
+  "$GITLEAKS_COMMAND" git --no-banner --redact=100 --log-opts="--all" .
 fi
 
 printf 'Validation mode %s: ok\n' "$MODE"
