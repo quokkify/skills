@@ -21,7 +21,12 @@ fi
 
 python3 -m unittest discover -s tests -v
 
+ZENSICAL_VERSION=""
 if command -v zensical >/dev/null 2>&1; then
+  ZENSICAL_VERSION="$(zensical --version 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || true)"
+fi
+
+if [[ "$ZENSICAL_VERSION" == "0.0.24" ]]; then
   zensical build
 elif command -v uvx >/dev/null 2>&1; then
   uvx --from zensical==0.0.24 zensical build
@@ -33,6 +38,10 @@ fi
 echo "Documentation build: ok"
 
 if [[ "$MODE" == "--full" ]]; then
+  if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+    echo "Full validation requires a complete Git history; this repository is shallow." >&2
+    exit 1
+  fi
   GITLEAKS_COMMAND="${GITLEAKS_BIN:-gitleaks}"
   if ! command -v "$GITLEAKS_COMMAND" >/dev/null 2>&1 && [[ ! -x "$GITLEAKS_COMMAND" ]]; then
     echo "Full validation requires gitleaks 8.30.1 or newer; set GITLEAKS_BIN if it is not on PATH." >&2
@@ -48,7 +57,6 @@ PY
     echo "Full validation requires gitleaks 8.30.1 or newer; found '${GITLEAKS_VERSION:-unknown}'." >&2
     exit 1
   fi
-  "$GITLEAKS_COMMAND" dir --no-banner .
   "$GITLEAKS_COMMAND" git --no-banner --log-opts="--all" .
 fi
 

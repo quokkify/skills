@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -109,6 +110,71 @@ class RepositoryValidationTests(unittest.TestCase):
             (root / "docs" / "index.md").write_text(f"Do not publish {private_path}.\n", encoding="utf-8")
             errors = validate_repository(root)
             self.assertTrue(any("local secret-store path" in error for error in errors), errors)
+
+    def test_binary_skill_asset_is_allowed(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            assets = root / "sample-skill" / "assets"
+            assets.mkdir()
+            (assets / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n\xff")
+            self.assertEqual(validate_repository(root), [])
+
+    def test_invalid_utf8_skill_is_reported(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            (root / "sample-skill" / "SKILL.md").write_bytes(b"---\nname: sample-skill\n---\n\xff")
+            errors = validate_repository(root)
+            self.assertTrue(any("file is not valid UTF-8" in error for error in errors), errors)
+
+    def test_invalid_utf8_markdown_is_reported(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            (root / "docs" / "index.md").write_bytes(b"# Docs\n\xff")
+            errors = validate_repository(root)
+            self.assertTrue(any("file is not valid UTF-8" in error for error in errors), errors)
+
+    def test_escaping_markdown_link_is_rejected_without_echoing_target(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            private_marker = "private-client-token"
+            (root / "docs" / "index.md").write_text(
+                f"[Outside](../../outside.md?token={private_marker})\n", encoding="utf-8"
+            )
+            errors = validate_repository(root)
+            self.assertTrue(any("local link escapes repository" in error for error in errors), errors)
+            self.assertFalse(any(private_marker in error for error in errors), errors)
+
+    def test_skill_support_markdown_does_not_collide(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            references = root / "sample-skill" / "references"
+            references.mkdir()
+            (references / "sample-skill.md").write_text("# Internal reference\n", encoding="utf-8")
+            self.assertEqual(validate_repository(root), [])
+
+    def test_public_boundary_checks_are_case_insensitive_and_cover_root(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            (root / "memory.md").write_text("private state\n", encoding="utf-8")
+            sessions = root / "Sessions"
+            sessions.mkdir()
+            (sessions / "chat.txt").write_text("private transcript\n", encoding="utf-8")
+            root_path = "/" + "root/private-file"
+            (root / "docs" / "index.md").write_text(root_path, encoding="utf-8")
+            errors = validate_repository(root)
+            self.assertTrue(any("agent-local or credential-state filename" in error for error in errors), errors)
+            self.assertTrue(any("private/runtime state directory" in error for error in errors), errors)
+            self.assertTrue(any("machine-specific home path" in error for error in errors), errors)
+
+    def test_gitignored_files_are_not_repository_content(self) -> None:
+        temporary, root = self.make_repository()
+        with temporary:
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            (root / ".gitignore").write_text("ignored/\n", encoding="utf-8")
+            ignored = root / "ignored"
+            ignored.mkdir()
+            (ignored / "MEMORY.md").write_text("local only\n", encoding="utf-8")
+            self.assertEqual(validate_repository(root), [])
 
 
 if __name__ == "__main__":

@@ -103,7 +103,7 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 
 `./scripts/validate.sh --full`
 - runs the fast checks, validator unit tests, and a Zensical documentation build
-- scans the working tree and complete Git history with Gitleaks
+- rejects shallow clones and scans the complete Git history with Gitleaks
 - requires Gitleaks 8.30.1 or newer on `PATH`, or in `GITLEAKS_BIN`
 
 `./scripts/install-git-hooks.sh`

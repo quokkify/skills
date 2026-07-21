@@ -4,28 +4,51 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote
 
 EXCLUDED_PARTS = {".git", ".venv", "node_modules", "public", "__pycache__"}
-FORBIDDEN_NAMES = {"MEMORY.md", "USER.md", "SOUL.md", "auth.json", "credentials.json", "settings.local.json"}
+FORBIDDEN_NAMES = {name.casefold() for name in ("MEMORY.md", "USER.md", "SOUL.md", "auth.json", "credentials.json", "settings.local.json")}
 FORBIDDEN_DIRECTORIES = {"sessions", "transcripts", "snapshot", "snapshots", "backups"}
+SKILL_SUPPORT_DIRECTORIES = {"assets", "references", "scripts", "templates"}
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
-MACHINE_HOME_RE = re.compile(r"(?<![A-Za-z0-9])/(?:home|Users)/[A-Za-z0-9._-]+(?:/|$)")
+MACHINE_HOME_RE = re.compile(
+    r"(?<![A-Za-z0-9])(?:/(?:home|Users)/[A-Za-z0-9._-]+|/root)(?:/|$)"
+)
 WINDOWS_HOME_RE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:\\Users\\[A-Za-z0-9._-]+(?:\\|$)")
 LOCAL_SECRET_RE = re.compile(r"(?<![A-Za-z0-9])~/\.secrets(?:/|\b)")
 
 
 @dataclass(frozen=True)
 class Skill:
+    """A validated skill name and its entry point."""
+
     name: str
     path: Path
 
 
 def repository_files(root: Path) -> list[Path]:
+    """Return repository files while excluding generated and dependency trees."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        pass
+    else:
+        paths = [
+            root / path.decode("utf-8", errors="surrogateescape")
+            for path in result.stdout.split(b"\0")
+            if path
+        ]
+        return sorted(path for path in paths if path.is_file() or path.is_symlink())
     return sorted(
         path
         for path in root.rglob("*")
@@ -35,6 +58,7 @@ def repository_files(root: Path) -> list[Path]:
 
 
 def parse_frontmatter(path: Path) -> tuple[dict[str, str], str] | tuple[None, None]:
+    """Parse the top-level scalars required by a SKILL.md frontmatter block."""
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
@@ -58,6 +82,7 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, str], str] | tuple[None, No
 
 
 def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[str]]:
+    """Validate skill metadata and names, including Hermes filename collisions."""
     errors: list[str] = []
     skills: list[Skill] = []
     names: dict[str, Path] = {}
@@ -69,7 +94,11 @@ def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[st
 
     for path in skill_files:
         rel = path.relative_to(root)
-        metadata, body = parse_frontmatter(path)
+        try:
+            metadata, body = parse_frontmatter(path)
+        except UnicodeDecodeError:
+            errors.append(f"{rel}: file is not valid UTF-8")
+            continue
         if metadata is None:
             errors.append(f"{rel}: missing or unclosed YAML frontmatter")
             continue
@@ -97,9 +126,18 @@ def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[st
             names[key] = path
             skills.append(Skill(name=name, path=path))
 
-    markdown_files = [
-        path for path in files if path.suffix.casefold() == ".md" and not path.is_symlink()
-    ]
+    skill_directories = [skill.path.parent for skill in skills]
+    markdown_files = []
+    for path in files:
+        if path.suffix.casefold() != ".md" or path.is_symlink():
+            continue
+        is_support_file = any(
+            path.is_relative_to(skill_directory)
+            and path.relative_to(skill_directory).parts[0].casefold() in SKILL_SUPPORT_DIRECTORIES
+            for skill_directory in skill_directories
+        )
+        if not is_support_file:
+            markdown_files.append(path)
     for skill in skills:
         for path in markdown_files:
             if path == skill.path:
@@ -114,14 +152,15 @@ def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[st
 
 
 def validate_public_boundary(root: Path, files: list[Path]) -> list[str]:
+    """Reject targeted local-state, symlink, and machine-specific content."""
     errors: list[str] = []
     for path in files:
         rel = path.relative_to(root)
-        parts = set(rel.parts[:-1])
+        parts = {part.casefold() for part in rel.parts[:-1]}
         if path.is_symlink():
             errors.append(f"{rel}: symbolic links are not allowed in the public skills repository")
             continue
-        if path.name in FORBIDDEN_NAMES:
+        if path.name.casefold() in FORBIDDEN_NAMES:
             errors.append(f"{rel}: agent-local or credential-state filename is forbidden")
         if parts & FORBIDDEN_DIRECTORIES:
             errors.append(f"{rel}: private/runtime state directory is forbidden")
@@ -140,11 +179,16 @@ def validate_public_boundary(root: Path, files: list[Path]) -> list[str]:
 
 
 def validate_markdown_links(root: Path, files: list[Path]) -> list[str]:
+    """Validate local Markdown links without allowing host-filesystem escapes."""
     errors: list[str] = []
     for path in files:
         if path.is_symlink() or path.suffix.casefold() != ".md":
             continue
-        text = path.read_text(encoding="utf-8")
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            errors.append(f"{path.relative_to(root)}: file is not valid UTF-8")
+            continue
         for line_number, line in enumerate(text.splitlines(), start=1):
             for raw_target in MARKDOWN_LINK_RE.findall(line):
                 target = raw_target.strip().split(maxsplit=1)[0].strip("<>\"'")
@@ -157,14 +201,16 @@ def validate_markdown_links(root: Path, files: list[Path]) -> list[str]:
                 candidates = [resolved]
                 if resolved.suffix == "":
                     candidates.extend([resolved.with_suffix(".md"), resolved / "index.md"])
+                if any(not candidate.is_relative_to(root) for candidate in candidates):
+                    errors.append(f"{path.relative_to(root)}:{line_number}: local link escapes repository")
+                    continue
                 if not any(candidate.exists() for candidate in candidates):
-                    errors.append(
-                        f"{path.relative_to(root)}:{line_number}: broken local link '{raw_target}'"
-                    )
+                    errors.append(f"{path.relative_to(root)}:{line_number}: broken local link")
     return errors
 
 
 def validate_repository(root: Path) -> list[str]:
+    """Run every portable repository check and return all discovered errors."""
     root = root.resolve()
     files = repository_files(root)
     _, skill_errors = validate_skills(root, files)
@@ -172,6 +218,7 @@ def validate_repository(root: Path) -> list[str]:
 
 
 def main() -> int:
+    """Run validation for the requested root and print a concise result."""
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
     errors = validate_repository(root)
     if errors:
