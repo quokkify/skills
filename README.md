@@ -102,6 +102,10 @@ This repository is public and should contain only portable, redacted agent instr
 
 Every pull request runs a full-history Gitleaks scan. Scanner success complements manual review; it does not make personal or proprietary data safe to publish.
 
+## Releases and Dependency Updates
+
+Release Please creates version and changelog pull requests from Conventional Commit titles. Renovate maintains pinned GitHub Actions dependencies, and its configuration is validated on changes and weekly. See [Releases and dependency updates](docs/guides/releases-and-dependencies.md) for the complete workflow.
+
 ## Adapting This To Your Project
 
 This repo is the shared orchestration layer. Your target project can still define its own local roles and rules.
