@@ -70,6 +70,30 @@ class SkillPromotionQueueTests(unittest.TestCase):
                 with self.assertRaises(publish_queue.QueueError):
                     publish_queue.validate_repository(repository)
 
+    def test_remote_identity_requires_exact_github_hostname_and_path(self) -> None:
+        accepted = [
+            "https://github.com/example/skills.git",
+            "git@github.com:example/skills.git",
+            "ssh://git@github.com/example/skills.git",
+        ]
+        rejected = [
+            "https://evilgithub.com/example/skills.git",
+            "https://github.com/example/other.git",
+            "https://token@github.com/example/skills.git",
+            "git@github.example:example/skills.git",
+            "/tmp/example/skills.git",
+        ]
+        for remote in accepted:
+            with self.subTest(remote=remote):
+                self.assertTrue(
+                    publish_queue.remote_matches_repository(remote, "example/skills")
+                )
+        for remote in rejected:
+            with self.subTest(remote=remote):
+                self.assertFalse(
+                    publish_queue.remote_matches_repository(remote, "example/skills")
+                )
+
     def test_empty_and_disallowed_diffs_fail_closed(self) -> None:
         with self.assertRaisesRegex(publish_queue.QueueError, "no changed paths"):
             publish_queue.ensure_public_paths([])

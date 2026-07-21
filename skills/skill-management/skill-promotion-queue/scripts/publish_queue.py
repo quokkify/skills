@@ -13,6 +13,7 @@ import sys
 import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any, Sequence
+from urllib.parse import urlsplit
 
 LANE_RE = re.compile(r"^[a-z0-9](?:[a-z0-9._-]{0,62})$")
 REPOSITORY_PART_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -183,15 +184,29 @@ def askpass_environment() -> tuple[dict[str, str], tempfile.TemporaryDirectory[s
     return environment, temporary
 
 
+def remote_matches_repository(remote: str, repository: str) -> bool:
+    """Match exact GitHub HTTPS/SSH remotes without hostname suffix confusion."""
+    expected = repository.casefold()
+    if "://" in remote:
+        parsed = urlsplit(remote)
+        if parsed.hostname != "github.com":
+            return False
+        if parsed.scheme in {"http", "https"} and (parsed.username or parsed.password):
+            return False
+        if parsed.scheme not in {"http", "https", "ssh", "git"}:
+            return False
+        return parsed.path.strip("/").removesuffix(".git").casefold() == expected
+
+    match = re.fullmatch(r"(?:[^@/:]+@)?github\.com:(.+)", remote, flags=re.IGNORECASE)
+    if not match:
+        return False
+    return match.group(1).strip("/").removesuffix(".git").casefold() == expected
+
+
 def ensure_remote_is_github(root: Path, repository: str) -> None:
     """Fail if origin is not the requested GitHub repository."""
     remote = git(root, "remote", "get-url", "origin")
-    expected = repository.casefold()
-    normalized = remote.removesuffix(".git").casefold()
-    valid = normalized.endswith(f"github.com/{expected}") or normalized.endswith(
-        f"github.com:{expected}"
-    )
-    if not valid:
+    if not remote_matches_repository(remote, repository):
         raise QueueError("origin does not match the requested GitHub repository")
 
 
