@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+STAGED_TREE="$(mktemp -d "${TMPDIR:-/tmp}/skills-pre-commit.XXXXXX")"
+trap 'rm -rf "$STAGED_TREE"' EXIT
+
+git checkout-index --all --prefix="$STAGED_TREE/"
+python3 "$ROOT/scripts/validate_repo.py" "$STAGED_TREE"

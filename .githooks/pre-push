@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+HEAD_OID="$(git rev-parse HEAD)"
+ZERO_OID="0000000000000000000000000000000000000000"
+
+if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+  echo "Pre-push validation requires a clean working tree, including untracked files." >&2
+  exit 1
+fi
+
+while read -r local_ref local_oid _remote_ref _remote_oid; do
+  if [[ "$local_oid" == "$ZERO_OID" ]]; then
+    continue
+  fi
+  if [[ "$local_oid" != "$HEAD_OID" ]]; then
+    echo "Refusing to validate $local_ref at $local_oid while HEAD is $HEAD_OID." >&2
+    echo "Check out the ref being pushed so full validation runs against its exact tree." >&2
+    exit 1
+  fi
+done
+
+exec "$ROOT/scripts/validate.sh" --full

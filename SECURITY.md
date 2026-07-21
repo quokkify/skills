@@ -29,7 +29,7 @@ All agent-generated changes should use a branch and pull request. Before pushing
 1. Review the complete diff, including generated and untracked files.
 2. Replace real identities, paths, URLs, and account data with neutral placeholders.
 3. Keep credentials outside the repository and reference only their environment-variable names.
-4. Run the repository secret scan and resolve every finding before merge.
+4. Run `./scripts/validate.sh --full` and resolve every validation or secret-scan finding before merge.
 5. Confirm that a new or updated skill remains useful outside the task that produced it.
 
 Do not suppress a scanner finding until the matched value has been inspected and confirmed to be a safe fixture. Prefer changing a realistic credential-like fixture over adding a broad allowlist.

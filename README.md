@@ -96,6 +96,38 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 - creates the target directory if needed
 - copies `codex/AGENTS.md` into that repo as `AGENTS.md`
 
+`./scripts/validate.sh --fast`
+- validates skill frontmatter and directory names
+- detects duplicate skill names and Markdown filenames that would shadow a skill in Hermes
+- checks documentation links and targeted public-boundary rules
+
+`./scripts/validate.sh --full`
+- runs the fast checks, validator unit tests, and a Zensical documentation build
+- scans the working tree and complete Git history with Gitleaks
+- requires Gitleaks 8.30.1 or newer on `PATH`, or in `GITLEAKS_BIN`
+
+`./scripts/install-git-hooks.sh`
+- configures this checkout to use the tracked `.githooks/` directory
+- validates the staged snapshot before commits
+- requires a clean worktree and validates the exact checked-out `HEAD` before pushes
+- refuses to replace an existing `core.hooksPath` unless `--force` is explicitly supplied
+
+## Local Validation
+
+Run the full gate before opening a pull request:
+
+```bash
+./scripts/validate.sh --full
+```
+
+To enable the same checks as repository-local Git hooks:
+
+```bash
+./scripts/install-git-hooks.sh
+```
+
+The validation workflow runs the portable checks on pull requests. The separate Secret Scan workflow remains the authoritative full-history Gitleaks gate in GitHub Actions.
+
 ## What Is In This Repo
 
 - `orchestrator-workflow/` - main orchestration skill for complex tasks. Environment-aware: resolves delegation backend from the active environment (Claude Code + ECC agents, Codex built-in roles, or `dmux`/worktrees as fallback). Integrates with Everything Claude Code when present.
@@ -103,7 +135,9 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 - `skill-review/` - controlled post-task review and branch/PR promotion workflow for reusable lessons
 - `claude-config/` - Claude-specific global config
 - `codex/AGENTS.md` - Codex project instructions
-- `scripts/` - install helpers
+- `.githooks/` - opt-in staged and pre-push validation hooks
+- `scripts/` - install and validation helpers
+- `tests/` - dependency-free validator regression tests
 
 ## Important Notes
 
