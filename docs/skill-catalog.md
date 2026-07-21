@@ -10,6 +10,8 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 
 - [`orchestrator-workflow`](../skills/orchestration/orchestrator-workflow/SKILL.md) — coordinate complex implementation work through discovery, planning, execution, and validation.
 - [`refactor-workflow`](../skills/orchestration/refactor-workflow/SKILL.md) — perform controlled refactoring with explicit evidence and verification.
+- [`agent-failure-recovery`](../skills/orchestration/agent-failure-recovery/SKILL.md) — stop retry loops, re-observe world state, run one discriminating probe, and recover containably.
+- [`agent-harness-design`](../skills/orchestration/agent-harness-design/SKILL.md) — design safe, diagnosable tools, schemas, observations, permissions, and recovery contracts for autonomous agents.
 
 ## skill-management
 
@@ -21,6 +23,14 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 
 - [`repository-quality-gates`](../skills/repository/repository-quality-gates/SKILL.md) — design exact-artifact validators, Git hooks, and CI gates.
 - [`secure-git-checkout-operations`](../skills/repository/secure-git-checkout-operations/SKILL.md) — safely update long-lived Git checkouts consumed by automation.
+- [`codebase-onboarding`](../skills/repository/codebase-onboarding/SKILL.md) — map an unfamiliar repository's architecture, entry points, conventions, data flow, and safe verification commands.
+
+## software-development
+
+- [`architecture-decision-records`](../skills/software-development/architecture-decision-records/SKILL.md) — record and maintain significant architecture decisions with grounded alternatives, consequences, and revisit triggers.
+- [`interaction-state-audit`](../skills/software-development/interaction-state-audit/SKILL.md) — trace UI interactions through shared state, effects, and asynchronous writers to explain incorrect final state.
+- [`ai-assisted-regression-testing`](../skills/software-development/ai-assisted-regression-testing/SKILL.md) — counter shared AI author-review assumptions with executable regression oracles across important boundaries.
+- [`browser-qa`](../skills/software-development/browser-qa/SKILL.md) — collect safe browser-based release evidence for runtime health, interactions, visual baselines, and accessibility.
 
 ## devops
 
