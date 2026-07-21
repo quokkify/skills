@@ -46,7 +46,22 @@ Done:
 - Codex gets the reusable skills
 - your target repo gets an `AGENTS.md` file for this workflow
 
-## If You Use Both
+## Hermes
+
+1. Clone this repository.
+2. Add the repository root to `skills.external_dirs` in your Hermes configuration:
+
+```yaml
+skills:
+  external_dirs:
+    - /path/to/skills
+```
+
+3. Start a new session; after significant work, load `/skill-review` to decide whether a reusable lesson should be proposed.
+
+Hermes external directories are mutable when the process has filesystem write access. Promote shared changes through a Git branch or worktree, not an in-place skill-management edit.
+
+## If You Use Claude and Codex
 
 Install both skill targets at once:
 

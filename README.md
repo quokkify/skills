@@ -1,7 +1,7 @@
 # cc-subagents-repo
 
-This repo adds a reusable sub-agent workflow for Claude Code and Codex.
-If you want the short version: install the skills, run one script from this repo, and start working.
+This repo adds reusable agent workflows for Claude Code, Codex, and Hermes.
+If you want the short version: choose your tool below, connect the skills, and start working.
 
 ## Quick Start
 
@@ -42,13 +42,28 @@ npx skills add <your-git-url-or-owner/repo> --skill '*' -g -a codex -y
 
 Done: Codex gets the reusable skills, and your target repo gets an `AGENTS.md` file for this workflow.
 
+### Hermes
+
+1. Clone this repository.
+2. Add its root directory to the `skills.external_dirs` list in your Hermes configuration:
+
+```yaml
+skills:
+  external_dirs:
+    - /path/to/skills
+```
+
+3. Start a new Hermes session; after significant work, load `/skill-review` to decide whether a reusable lesson should be proposed.
+
+Hermes external skill directories are mutable when filesystem permissions allow writes. Inspect shared skills normally, but promote approved changes through a Git branch or worktree instead of editing the shared checkout in place.
+
 ### Cost Expectations
 
 - Claude + ECC has the most predictable cost ladder because the Claude config includes explicit junior/middle/senior routing aligned to Haiku, Sonnet, and Opus style usage.
 - Codex is cost-aware too, but usually controls cost through fewer delegations, shorter handoffs, and tighter execution loops rather than the same fine-grained per-role model ladder.
 - In practice, expect Claude/ECC to be better at cheapest-capable model routing, and Codex to be better when you keep execution compact: `plan -> one executor -> validation`.
 
-### If You Use Both Claude and Codex
+### If You Use Claude and Codex
 
 Install both skill targets at once:
 
@@ -85,6 +100,7 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 
 - `orchestrator-workflow/` - main orchestration skill for complex tasks. Environment-aware: resolves delegation backend from the active environment (Claude Code + ECC agents, Codex built-in roles, or `dmux`/worktrees as fallback). Integrates with Everything Claude Code when present.
 - `refactor-workflow/` - orchestration skill for refactoring tasks
+- `skill-review/` - controlled post-task review and branch/PR promotion workflow for reusable lessons
 - `claude-config/` - Claude-specific global config
 - `codex/AGENTS.md` - Codex project instructions
 - `scripts/` - install helpers
@@ -94,6 +110,7 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 - Installing the skills and installing the Claude config are different steps.
 - For Claude, the skills alone are not the full setup. You also need `./scripts/install-claude-config.sh`.
 - For Codex, `claude-config/` is not required. The Codex flow uses the skills plus `AGENTS.md` in the target repo.
+- For Hermes, point `skills.external_dirs` at the repository root. A same-named local Hermes skill takes precedence over the shared version.
 - If cost predictability matters most, keep in mind that Claude and Codex do not expose the exact same routing controls. This repo now documents both paths separately.
 
 ## Security and Privacy
@@ -155,5 +172,6 @@ The reusable skills live at the repo root:
 
 - `orchestrator-workflow/SKILL.md`
 - `refactor-workflow/SKILL.md`
+- `skill-review/SKILL.md`
 
 Each skill also includes bundled reference files, so it still works even when Claude-specific global files are not present.

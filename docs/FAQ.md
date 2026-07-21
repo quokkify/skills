@@ -4,12 +4,19 @@ title: FAQ
 
 # FAQ
 
-## Do I need both Claude and Codex?
+## Do I need Claude, Codex, and Hermes?
 
-No. You can use only one path.
+No. You can choose one path or combine supported paths. Claude and Codex can be installed together, while Hermes is configured separately.
 
 - If you use Claude Code, install the skills and run `./scripts/install-claude-config.sh`.
 - If you use Codex, install the skills and run `./scripts/install-codex-agents.sh /path/to/your/project`.
+- If you use Hermes, add the repository root to `skills.external_dirs` and start a new session.
+
+## Can Hermes edit an external skill directory?
+
+Yes, when the Hermes process has filesystem write access. External directories are discovery sources, not write-protection boundaries. Shared changes should use an isolated Git branch or worktree and a pull request rather than an in-place skill-management edit.
+
+If a local Hermes skill has the same name as an external skill, the local version takes precedence.
 
 ## Why are skills and Claude config separate steps?
 
