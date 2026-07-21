@@ -20,7 +20,7 @@ Maintain one canonical portable skill library without turning tool-specific disc
 
 Classify content before moving it:
 
-1. **Portable workflow** → canonical `skills/<name>/SKILL.md` with support files inside that skill.
+1. **Portable workflow** → canonical `skills/<category>/<name>/SKILL.md` with support files inside that skill.
 2. **Thin integration** → `adapters/<tool>/` only when a tool requires configuration that cannot be expressed as a portable skill.
 3. **User-owned state** → global personas, model routing, status lines, output styles, and personal commands stay outside the shared repository.
 4. **Project-owned state** → stack, modules, package names, domain paths, and repository-specific instructions stay in the project that owns them.

@@ -51,7 +51,7 @@ class SharedSkillSyncTests(unittest.TestCase):
         )
         validate_runner.chmod(0o755)
 
-        skill = seed / "skills" / "sample-skill" / "SKILL.md"
+        skill = seed / "skills" / "samples" / "sample-skill" / "SKILL.md"
         skill.parent.mkdir(parents=True)
         skill.write_text(
             "---\nname: sample-skill\ndescription: Portable fixture.\n---\n\n# Sample\n",

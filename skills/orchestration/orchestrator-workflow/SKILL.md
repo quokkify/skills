@@ -77,7 +77,7 @@ Use `dmux` or separate worktrees when:
 - the task benefits from isolation across branches or harnesses
 - cross-harness execution is explicitly useful
 
-When using `dmux`, follow the target repo's local workflow guidance first. In ECC repos, use `.agents/skills/dmux-workflows/SKILL.md` as the fallback orchestration pattern.
+When using `dmux`, follow the target repo's local workflow guidance first. Use a non-skill workflow reference or explicitly approved orchestration documentation as the fallback pattern; do not read another skill's `SKILL.md`.
 
 ## ECC Integration
 

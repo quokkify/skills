@@ -89,6 +89,10 @@ Back up reviewed configuration files before editing. Handle `.env` and other sec
 If another approved Docker container owns `:443`, record only the non-secret state required for rollback:
 
 ```bash
+[[ -n "${B:-}" && -d "$B" ]] || {
+  echo "Set B to the writable backup path printed in step 3 before continuing" >&2
+  exit 1
+}
 CONFLICTING_CONTAINER="${CONFLICTING_CONTAINER:?set CONFLICTING_CONTAINER to the discovered container name}"
 ORIGINAL_RESTART_POLICY=$(docker inspect "$CONFLICTING_CONTAINER" --format '{{.HostConfig.RestartPolicy.Name}}')
 ORIGINAL_RESTART_RETRIES=$(docker inspect "$CONFLICTING_CONTAINER" --format '{{.HostConfig.RestartPolicy.MaximumRetryCount}}')

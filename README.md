@@ -8,10 +8,10 @@ The repository keeps every portable skill in one canonical directory: [`skills/`
 
 ```text
 skills/
-├── <skill-name>/SKILL.md     # one canonical entry point per skill
-├── <skill-name>/references/ # optional supporting guidance
-├── <skill-name>/scripts/    # optional reusable helpers
-└── <skill-name>/templates/  # optional supporting templates
+├── <category>/<skill-name>/SKILL.md     # one canonical entry point per skill
+├── <category>/<skill-name>/references/ # optional supporting guidance
+├── <category>/<skill-name>/scripts/    # optional reusable helpers
+└── <category>/<skill-name>/templates/  # optional supporting templates
 
 adapters/
 ├── claude/README.md         # Claude Code connection notes
@@ -120,7 +120,7 @@ Optional repository-local Git hooks:
 ./scripts/install-git-hooks.sh
 ```
 
-The validator requires every skill entry point to live at `skills/<skill-name>/SKILL.md`. It also checks frontmatter, duplicate names, Markdown links, symlinks, machine-specific paths, and public/private boundaries.
+The validator requires every skill entry point to live at `skills/<category>/<skill-name>/SKILL.md`. It also checks frontmatter, duplicate names, Markdown links, symlinks, machine-specific paths, and public/private boundaries.
 
 ## Security
 

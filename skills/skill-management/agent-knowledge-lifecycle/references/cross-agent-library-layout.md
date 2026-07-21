@@ -6,11 +6,12 @@ Use a neutral canonical directory and keep runtime-specific files outside it:
 
 ```text
 skills/
-  <skill-name>/
-    SKILL.md
-    references/
-    templates/
-    scripts/
+  <category>/
+    <skill-name>/
+      SKILL.md
+      references/
+      templates/
+      scripts/
 adapters/
   claude/
   codex/
@@ -36,9 +37,9 @@ These are consumer discovery locations, not additional tracked sources of truth.
 
 A root-level-to-`skills/` move is an integration migration even when file contents are unchanged:
 
-1. Move each skill to `skills/<name>/SKILL.md` without changing its body in the same commit unless required.
+1. Move each skill to `skills/<category>/<name>/SKILL.md` without changing its body in the same commit unless required.
 2. Move tool-specific files to `adapters/<runtime>/` and update installer source paths.
-3. Make the validator reject `SKILL.md` outside the canonical direct-child layout, nested grouping layers, and canonical directories missing uppercase `SKILL.md`.
+3. Make the validator reject `SKILL.md` outside the canonical `skills/<category>/<name>/SKILL.md` layout (wrong depth, missing category grouping, or extra nesting) and canonical directories missing uppercase `SKILL.md`.
 4. Update test fixtures used by sync/security tests; otherwise the validator change can make unrelated safety tests fail for the wrong reason.
 5. Add installer regression tests using temporary HOME/target directories so real user configuration is untouched.
 6. Run the actual ecosystem discovery command in list-only mode and assert the exact skill count; structural validation alone does not prove installer discovery.

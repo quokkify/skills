@@ -7,6 +7,7 @@
 Export the Git index into a temporary directory:
 
 ```bash
+set -euo pipefail
 staged_tree="$(mktemp -d "${TMPDIR:-/tmp}/repo-pre-commit.XXXXXX")"
 trap 'rm -rf "$staged_tree"' EXIT
 git checkout-index --all --prefix="$staged_tree/"

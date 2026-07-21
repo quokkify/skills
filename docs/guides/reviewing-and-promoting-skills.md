@@ -73,7 +73,7 @@ If a local Hermes skill and an external skill have the same name, the local skil
 
 ## Candidate format
 
-The bundled `skills/skill-review/templates/candidate.md` template records:
+The bundled `skills/skill-management/skill-review/templates/candidate.md` template records:
 
 - the reusable trigger;
 - the target skill or proposed name;

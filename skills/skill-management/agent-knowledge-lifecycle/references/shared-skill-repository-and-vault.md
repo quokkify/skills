@@ -7,9 +7,10 @@ Use one canonical repository for portable skills and runtime adapters:
 ```text
 repository-root/
 ├── skills/
-│   └── <portable-skill>/
-│       ├── SKILL.md
-│       └── references/
+│   └── <category>/
+│       └── <portable-skill>/
+│           ├── SKILL.md
+│           └── references/
 ├── adapters/
 │   ├── claude/
 │   ├── codex/
@@ -66,6 +67,12 @@ umask 077
 : "${SKILL_SECRET_DIR:?set a private directory outside the repositories}"
 : "${EXPECTED_GITHUB_LOGIN:?set the reviewed account login}"
 : "${EXPECTED_REPOSITORY:?set the reviewed OWNER/REPO}"
+SKILL_SECRET_DIR="$(readlink -f -- "$SKILL_SECRET_DIR")"
+if repo_top="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  case "$SKILL_SECRET_DIR/" in
+    "$repo_top"/*) echo "secret directory must live outside the repository" >&2; exit 1 ;;
+  esac
+fi
 install -d -m 0700 "$SKILL_SECRET_DIR"
 
 IFS= read -r -s -p 'Token: ' token
@@ -98,9 +105,25 @@ set -Eeuo pipefail
 : "${EXPECTED_REMOTE_URL:?set the exact reviewed Git remote URL}"
 : "${EXPECTED_BRANCH:?set the reviewed destination branch}"
 REMOTE_NAME="${REMOTE_NAME:-origin}"
-set -a
-. "$SKILL_SECRET_FILE"
-set +a
+
+# Validate the secret file location and mode, then parse only the expected
+# assignment. Never source it: `.` would execute arbitrary shell from a
+# tampered or misconfigured file.
+SKILL_SECRET_FILE="$(readlink -f -- "$SKILL_SECRET_FILE")"
+[[ -f "$SKILL_SECRET_FILE" ]] || { echo "secret file is not a regular file" >&2; exit 1; }
+if repo_top="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  case "$SKILL_SECRET_FILE" in
+    "$repo_top"/*) echo "secret file must live outside the repository" >&2; exit 1 ;;
+  esac
+fi
+[[ "$(stat -c '%u' "$SKILL_SECRET_FILE")" == "$(id -u)" ]] || { echo "secret file must be owned by the current user" >&2; exit 1; }
+[[ "$(stat -c '%a' "$SKILL_SECRET_FILE")" == "600" ]] || { echo "secret file must be mode 600" >&2; exit 1; }
+mapfile -t secret_lines < "$SKILL_SECRET_FILE"
+[[ ${#secret_lines[@]} -eq 1 && "${secret_lines[0]}" =~ ^SKILLS_GITHUB_TOKEN=[[:graph:]]+$ ]] || {
+  echo "secret file must contain exactly one SKILLS_GITHUB_TOKEN assignment" >&2
+  exit 1
+}
+SKILLS_GITHUB_TOKEN="${secret_lines[0]#SKILLS_GITHUB_TOKEN=}"
 : "${SKILLS_GITHUB_TOKEN:?token missing from reviewed secret file}"
 [[ "$(git remote get-url "$REMOTE_NAME")" == "$EXPECTED_REMOTE_URL" ]] || { echo "unexpected Git remote" >&2; exit 1; }
 [[ "$(git symbolic-ref --quiet --short HEAD)" == "$EXPECTED_BRANCH" ]] || { echo "unexpected local branch" >&2; exit 1; }

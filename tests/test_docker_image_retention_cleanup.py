@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "skills" / "linux-storage-maintenance" / "templates" / "docker-image-retention-cleanup.sh"
+SCRIPT = ROOT / "skills" / "devops" / "linux-storage-maintenance" / "templates" / "docker-image-retention-cleanup.sh"
 IMAGE_ID = "sha256:" + "a" * 64
 
 
