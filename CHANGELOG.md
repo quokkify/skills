@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/ylazakovich/skills/compare/skills-v0.5.0...skills-v0.6.0) (2026-07-21)
+
+
+### ✨ Features
+
+* **skills:** queue reusable skill improvements ([#30](https://github.com/ylazakovich/skills/issues/30)) ([5d6c023](https://github.com/ylazakovich/skills/commit/5d6c02381cdbf2663df629860e1ad6e1ccce8d44))
+
 ## [0.5.0](https://github.com/ylazakovich/skills/compare/skills-v0.4.0...skills-v0.5.0) (2026-07-21)
 
 
