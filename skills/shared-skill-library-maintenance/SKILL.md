@@ -50,6 +50,15 @@ See [`references/adapter-boundary-checklist.md`](references/adapter-boundary-che
 - Use release semantics that surface user-visible path changes; for pre-1.0 libraries, a feature/minor release can carry a breaking layout migration when that is the documented policy.
 - Keep README concise: purpose → canonical structure → setup per agent → safe sync → contribution/security. Put detailed rationale in guides.
 
+## Library Health And Selection
+
+A capture-and-promote loop grows a library; keeping it useful over time needs a selection signal and a recurring consolidation pass, not just more entries.
+
+- Use a lightweight usage signal as a maintenance input: whether a skill was triggered and whether the task it supported succeeded. Collect this in the consuming runtime, never in the shared repository.
+- Classify each skill periodically: frequently useful → keep; never triggered or low value → prune candidate; overlapping or narrow → merge into a broader umbrella skill. Prune on low value plus duplication, not on raw frequency alone, and require review before removal so a rarely used but critical skill is not lost.
+- Run a scheduled library-health pass (for example weekly or per sprint) together with `repository-quality-gates`: dedupe, merge micro-skills, retire stale entries, and re-verify frontmatter, links, and referenced files.
+- Keep signal collection and scheduling in each runtime's own configuration. Only the decision procedure and cadence are portable; telemetry wiring, cron or scheduler definitions, and concrete paths must stay out of the shared repository.
+
 ## Pitfalls
 
 - Mechanically moving every legacy tool directory into `adapters/`.
@@ -61,6 +70,7 @@ See [`references/adapter-boundary-checklist.md`](references/adapter-boundary-che
 - Updating tests to validate a legacy installer that should have been removed.
 - Deleting personas or adapters without removing mandatory role, model, tool, and fallback-directory references from canonical skills.
 - Calling a workflow portable while it requires one harness's delegation primitive or has no bounded fallback when delegation is unavailable.
+- Committing usage telemetry, scheduler definitions, or runtime-specific paths into the shared repository instead of keeping them in the consuming runtime.
 
 ## Verification
 
@@ -71,3 +81,4 @@ See [`references/adapter-boundary-checklist.md`](references/adapter-boundary-che
 - Portable workflows select roles by capability, use only active-backend tools, and remain executable through a bounded fallback when delegation is absent.
 - Public/privacy scans find no machine paths, credentials, private modules, package namespaces, fixed stack ownership paths, domain-document assumptions, or client context.
 - Validator, unit tests, docs build, shell checks, secret scans, and current-head review pass.
+- Library-health guidance keeps usage-signal collection and scheduling in the consuming runtime; the shared repository contains only the portable selection procedure and cadence.
