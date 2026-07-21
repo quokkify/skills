@@ -548,7 +548,7 @@
 <li>Merge the release pull request after its checks pass.</li>
 <li>Release Please creates the component-scoped <code>skills-vX.Y.Z</code> Git tag and GitHub release.</li>
 </ol>
-<p>The repository starts from a <code>0.0.0</code> release baseline at the commit recorded as <code>bootstrap-sha</code> in <code>release-please-config.json</code>. Earlier repository history is intentionally excluded from the first generated changelog. The <code>simple</code> release type is used because this repository has no package manifest; <code>package-name</code> and <code>include-component-in-tag</code> still provide component-scoped tags.</p>
+<p>The manifest starts from a <code>0.0.0</code> baseline, while <code>initial-version</code> explicitly makes the first public release <code>0.1.0</code>. The commit recorded as <code>bootstrap-sha</code> excludes earlier repository history from the first generated changelog. The <code>simple</code> release type is used because this repository has no package manifest; <code>package-name</code> and <code>include-component-in-tag</code> still provide component-scoped tags.</p>
 <p>Release impact follows Conventional Commits:</p>
 <ul>
 <li><code>fix(scope): ...</code> and <code>perf(scope): ...</code> produce a patch release;</li>
