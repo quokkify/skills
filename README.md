@@ -114,8 +114,9 @@ The `orchestrator-workflow` skill detects the active environment automatically a
 
 `./scripts/sync-shared-skills.sh`
 - updates a clean `main` checkout from `origin/main` using fetch plus fast-forward only
-- validates the fetched tree with the currently trusted validator and its CI gate before moving `main`
-- runs the CI validation gate after the update and refuses ahead or diverged histories
+- validates the fetched tree with a preserved copy of the currently trusted validator before and after moving `main`
+- disables Git hooks for the fast-forward and never executes scripts from the fetched tree
+- refuses ahead or diverged histories
 - prints the new-session step for Hermes; it does not restart an agent or reinstall copied Claude/Codex files
 
 ## Local Validation
@@ -142,7 +143,9 @@ For a checkout used directly through Hermes `skills.external_dirs`, run:
 ./scripts/sync-shared-skills.sh
 ```
 
-The command is fail-closed: it requires a clean `main`, fetches only `origin/main`, rejects non-fast-forward histories, validates the fetched snapshot with both the trusted current validator and the candidate CI gate before moving the branch, and validates again after the update. It never publishes local skills, changes Hermes configuration, or restarts a running agent.
+The command is fail-closed: it requires a clean `main`, fetches only `origin/main`, rejects non-fast-forward histories, and validates the fetched snapshot with a preserved copy of the trusted current validator before and after moving the branch. It disables Git hooks for the exact fast-forward and does not execute scripts from the fetched tree. It never publishes local skills, changes Hermes configuration, or restarts a running agent.
+
+Treat `origin/main` as a trusted, protected source. Repository CI remains responsible for tests, documentation builds, and full-history secret scanning before changes reach that branch; the sync helper deliberately avoids running newly fetched code on the host.
 
 After a successful update, start a new Hermes session so the external skill directory is discovered again. Claude/Codex files installed by copying are not refreshed by this command; use their normal installation flow when those copied adapters change.
 

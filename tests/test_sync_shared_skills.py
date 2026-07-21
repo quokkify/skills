@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -67,7 +68,9 @@ class SharedSkillSyncTests(unittest.TestCase):
         self.configure_identity(consumer)
         return temporary, remote, consumer
 
-    def publish(self, remote: Path, relative_path: str, content: str) -> str:
+    def publish(
+        self, remote: Path, relative_path: str, content: str, *, executable: bool = False
+    ) -> str:
         publisher = remote.parent / "publisher"
         if publisher.exists():
             shutil.rmtree(publisher)
@@ -76,6 +79,8 @@ class SharedSkillSyncTests(unittest.TestCase):
         target = publisher / relative_path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
+        if executable:
+            target.chmod(0o755)
         self.run_git("add", relative_path, cwd=publisher)
         self.run_git("commit", "-q", "-m", "test: publish", cwd=publisher)
         self.run_git("push", "-q", "origin", "main", cwd=publisher)
@@ -119,14 +124,29 @@ class SharedSkillSyncTests(unittest.TestCase):
             self.assertIn("Repository validation failed", result.stderr)
             self.assertEqual(self.run_git("rev-parse", "HEAD", cwd=consumer).stdout.strip(), original)
 
-    def test_rejects_fetched_tree_when_candidate_ci_fails(self) -> None:
+    def test_does_not_execute_fetched_scripts_or_post_merge_hooks(self) -> None:
         temporary, remote, consumer = self.make_fixture()
         with temporary:
-            original = self.run_git("rev-parse", "HEAD", cwd=consumer).stdout.strip()
-            self.publish(remote, "scripts/validate.sh", "#!/usr/bin/env bash\nexit 1\n")
+            script_sentinel = remote.parent / "candidate-script-ran"
+            hook_sentinel = remote.parent / "post-merge-hook-ran"
+            script_payload = (
+                "#!/usr/bin/env bash\n"
+                f"printf compromised > {shlex.quote(str(script_sentinel))}\n"
+            )
+            self.publish(remote, "scripts/validate.sh", script_payload, executable=True)
+            hook_payload = (
+                "#!/usr/bin/env bash\n"
+                f"printf compromised > {shlex.quote(str(hook_sentinel))}\n"
+            )
+            expected = self.publish(
+                remote, ".githooks/post-merge", hook_payload, executable=True
+            )
+            self.run_git("config", "core.hooksPath", ".githooks", cwd=consumer)
             result = self.run_sync(consumer)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertEqual(self.run_git("rev-parse", "HEAD", cwd=consumer).stdout.strip(), original)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(self.run_git("rev-parse", "HEAD", cwd=consumer).stdout.strip(), expected)
+            self.assertFalse(script_sentinel.exists())
+            self.assertFalse(hook_sentinel.exists())
 
     def test_rejects_ahead_or_diverged_main(self) -> None:
         temporary, remote, consumer = self.make_fixture()

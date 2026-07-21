@@ -20,7 +20,15 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   exit 1
 fi
 
-python3 scripts/validate_repo.py
+TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skills-sync.XXXXXX")"
+TRUSTED_VALIDATOR="$TEMP_ROOT/validate_repo.py"
+CANDIDATE_TREE="$TEMP_ROOT/candidate"
+cleanup() {
+  rm -rf "$TEMP_ROOT"
+}
+trap cleanup EXIT
+cp scripts/validate_repo.py "$TRUSTED_VALIDATOR"
+python3 "$TRUSTED_VALIDATOR" "$ROOT"
 
 CURRENT_OID="$(git rev-parse 'HEAD^{commit}')"
 git fetch --quiet --no-tags origin refs/heads/main:refs/remotes/origin/main
@@ -32,28 +40,19 @@ if ! git merge-base --is-ancestor "$CURRENT_OID" "$REMOTE_OID"; then
 fi
 
 if [[ "$CURRENT_OID" != "$REMOTE_OID" ]]; then
-  TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skills-sync.XXXXXX")"
-  CANDIDATE_TREE="$TEMP_ROOT/candidate"
-  cleanup() {
-    rm -rf "$TEMP_ROOT"
-  }
-  trap cleanup EXIT
-
   mkdir "$CANDIDATE_TREE"
   git archive "$REMOTE_OID" | tar -x -C "$CANDIDATE_TREE"
-  python3 "$ROOT/scripts/validate_repo.py" "$CANDIDATE_TREE"
-  (cd "$CANDIDATE_TREE" && ./scripts/validate.sh --ci)
-
-  cleanup
-  trap - EXIT
-  git merge --ff-only "$REMOTE_OID"
+  python3 "$TRUSTED_VALIDATOR" "$CANDIDATE_TREE"
+  git -c core.hooksPath=/dev/null merge --ff-only "$REMOTE_OID"
 fi
 
-if ! ./scripts/validate.sh --ci; then
-  echo "Sync reached the fetched revision, but post-update validation failed. Inspect the checkout before using it." >&2
+if ! python3 "$TRUSTED_VALIDATOR" "$ROOT"; then
+  echo "Sync reached the fetched revision, but trusted post-update validation failed. Inspect the checkout before using it." >&2
   exit 1
 fi
 
 UPDATED_OID="$(git rev-parse 'HEAD^{commit}')"
+cleanup
+trap - EXIT
 printf 'Shared skills are synchronized at %s.\n' "$UPDATED_OID"
 echo "Hermes: start a new session to load the updated external skills."
