@@ -7,9 +7,10 @@ Use one canonical repository for portable skills and runtime adapters:
 ```text
 repository-root/
 ├── skills/
-│   └── <portable-skill>/
-│       ├── SKILL.md
-│       └── references/
+│   └── <category>/
+│       └── <portable-skill>/
+│           ├── SKILL.md
+│           └── references/
 ├── adapters/
 │   ├── claude/
 │   ├── codex/

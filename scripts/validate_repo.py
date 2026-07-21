@@ -171,6 +171,10 @@ def validate_skills(root: Path, files: list[Path]) -> tuple[list[Skill], list[st
         for path in files
         if (rel := path.relative_to(root)).parts[0] == SKILLS_DIRECTORY
         and len(rel.parts) >= SKILL_PATH_DEPTH
+        and (
+            len(rel.parts) == SKILL_PATH_DEPTH
+            or rel.parts[SKILL_PATH_DEPTH - 1].casefold() in SKILL_SUPPORT_DIRECTORIES
+        )
     }
     repository_paths = {path.relative_to(root) for path in files}
     for directory in sorted(skill_directories):

@@ -6,11 +6,12 @@ Use a neutral canonical directory and keep runtime-specific files outside it:
 
 ```text
 skills/
-  <skill-name>/
-    SKILL.md
-    references/
-    templates/
-    scripts/
+  <category>/
+    <skill-name>/
+      SKILL.md
+      references/
+      templates/
+      scripts/
 adapters/
   claude/
   codex/

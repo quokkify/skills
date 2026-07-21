@@ -67,6 +67,7 @@ class RepositoryValidationTests(unittest.TestCase):
             )
             errors = validate_repository(root)
             self.assertTrue(any("skills/<category>/<skill-name>/SKILL.md" in error for error in errors), errors)
+            self.assertFalse(any("missing SKILL.md" in error for error in errors), errors)
 
     def test_invalid_category_name_is_rejected(self) -> None:
         temporary, root = self.make_repository()
