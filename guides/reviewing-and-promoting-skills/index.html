@@ -551,6 +551,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#optional-rolling-draft-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional rolling draft queue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -715,6 +726,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#optional-rolling-draft-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional rolling draft queue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -814,13 +836,16 @@
     -&gt; search existing skills
     -&gt; private candidate
     -&gt; privacy and portability audit
-    -&gt; user approval
+    -&gt; task approval or durable repository opt-in
     -&gt; branch or worktree
     -&gt; validation and secret scan
     -&gt; pull request
     -&gt; normal review and merge
 </code></pre></div>
-<p>A candidate is not a published skill. Keep it outside the shared repository until promotion is approved.</p>
+<p>A candidate is not a published skill. Keep it outside the shared repository until promotion is approved or an applicable durable draft-queue opt-in is verified.</p>
+<h2 id="optional-rolling-draft-queue">Optional rolling draft queue<a class="headerlink" href="#optional-rolling-draft-queue" title="Permanent link">&para;</a></h2>
+<p>A repository owner may pre-authorize completed, public-safe improvements to accumulate in a rolling draft pull request. Configure one <code>automation/skill-improvements/&lt;lane&gt;</code> branch per device or independently running agent and use <code>skill-promotion-queue</code> as the completion workflow.</p>
+<p>This opt-in replaces repeated publication prompts only. It does not authorize direct pushes to the default branch, force-push, automatic merge, or publication of private runtime state. The agent must still perform the privacy and portability audit, deterministic validation, and configured secret scanning. Independent review may be deferred until the owner handles the batch.</p>
 <h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
 <p>Every review ends with one of three decisions:</p>
 <ul>
@@ -841,7 +866,7 @@
 <p>See the repository <a href="https://github.com/ylazakovich/skills/blob/main/SECURITY.md">SECURITY.md</a> for the complete public-content policy.</p>
 <h2 id="tool-behavior">Tool behavior<a class="headerlink" href="#tool-behavior" title="Permanent link">&para;</a></h2>
 <h3 id="claude-code-and-codex">Claude Code and Codex<a class="headerlink" href="#claude-code-and-codex" title="Permanent link">&para;</a></h3>
-<p>Install the repository skills normally. In Claude Code, invoke the installed <code>skill-review</code> skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex <code>AGENTS.md</code> adapter adds a post-task review prompt. In both cases, promotion still requires approval before a branch or pull request is created.</p>
+<p>Install the repository skills normally. In Claude Code, invoke the installed <code>skill-review</code> skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex <code>AGENTS.md</code> adapter adds a post-task review prompt. By default, promotion requires task-specific approval before a branch or pull request is created. A durable repository-scoped opt-in may instead route eligible changes through <code>skill-promotion-queue</code>.</p>
 <h3 id="hermes">Hermes<a class="headerlink" href="#hermes" title="Permanent link">&para;</a></h3>
 <p>Hermes can discover this repository through <code>skills.external_dirs</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">skills</span><span class="p">:</span>
