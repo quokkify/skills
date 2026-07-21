@@ -797,6 +797,10 @@
 <h2 id="hermes-flow">Hermes Flow<a class="headerlink" href="#hermes-flow" title="Permanent link">&para;</a></h2>
 <p>Hermes uses the repository root as a <code>skills.external_dirs</code> entry. Each top-level skill directory then appears in the Hermes skill index and as a slash command.</p>
 <p>External directories are mutable when filesystem permissions allow writes, so shared-skill promotion still goes through a Git branch or worktree and a pull request. A same-named local Hermes skill takes precedence over the external version.</p>
+<p>Update a direct shared checkout from its clean <code>main</code> branch with:</p>
+<div class="highlight"><pre><span></span><code>./scripts/sync-shared-skills.sh
+</code></pre></div>
+<p>The helper fetches trusted <code>origin/main</code>, rejects ahead or diverged histories, and uses a preserved copy of the current validator before and after an exact fast-forward. It rechecks the branch, revision, and clean state around the update, disables Git hooks, and never executes scripts from the fetched tree. Concurrent checkout changes return an error rather than a success report. Start a new Hermes session after it succeeds so the external skill directory is discovered again.</p>
 <h2 id="skill-review-flow">Skill Review Flow<a class="headerlink" href="#skill-review-flow" title="Permanent link">&para;</a></h2>
 <p>After significant work, <code>skill-review</code> classifies the lesson, searches for an existing owner, prepares a private candidate, audits privacy and portability, and asks for approval. Approved candidates move through branch, validation, secret scan, and pull request. Routine work and temporary facts are skipped.</p>
 <h2 id="how-to-adapt-this-to-your-own-project">How To Adapt This To Your Own Project<a class="headerlink" href="#how-to-adapt-this-to-your-own-project" title="Permanent link">&para;</a></h2>

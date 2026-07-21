@@ -747,6 +747,7 @@
 <li>Start a new session; after significant work, load <code>/skill-review</code> to decide whether a reusable lesson should be proposed.</li>
 </ol>
 <p>Hermes external directories are mutable when the process has filesystem write access. Promote shared changes through a Git branch or worktree, not an in-place skill-management edit.</p>
+<p>To update this direct shared checkout later, run <code>./scripts/sync-shared-skills.sh</code> from its clean <code>main</code> branch, then start a new Hermes session so the external skill directory is discovered again.</p>
 <h2 id="if-you-use-claude-and-codex">If You Use Claude and Codex<a class="headerlink" href="#if-you-use-claude-and-codex" title="Permanent link">&para;</a></h2>
 <p>Install both skill targets at once:</p>
 <div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>&lt;your-git-url-or-owner/repo&gt;<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
