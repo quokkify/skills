@@ -12,8 +12,8 @@ This repo gives you reusable agent workflows for three tools:
 
 The short version is simple:
 
-1. Install the skills from this repo.
-2. Run one setup script.
+1. Install or connect the skills for your tool.
+2. Run the relevant setup script, or add the repository root to Hermes `skills.external_dirs`.
 3. Start working in your tool or target project.
 
 ## Choose Your Path

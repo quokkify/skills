@@ -16,6 +16,10 @@ Describe the class of future tasks that should load or apply this skill.
 
 Summarize the reusable procedure without copying raw transcripts, logs, personal context, or private project details.
 
+## Evidence summary
+
+Summarize the supporting evidence without including raw transcripts or sensitive source material.
+
 ## Proposed change
 
 List the exact sections, references, templates, or scripts to add or update.

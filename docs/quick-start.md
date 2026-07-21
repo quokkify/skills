@@ -57,7 +57,7 @@ skills:
     - /path/to/skills
 ```
 
-3. Start a new session and load `/skill-review` when a significant task produces a reusable lesson.
+3. Start a new session; after significant work, load `/skill-review` to decide whether a reusable lesson should be proposed.
 
 Hermes external directories are mutable when the process has filesystem write access. Promote shared changes through a Git branch or worktree, not an in-place skill-management edit.
 

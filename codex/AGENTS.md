@@ -22,6 +22,8 @@ This repository contains three portable skills:
 
 After significant work, use `skill-review` to decide whether a reusable procedure, correction, workaround, or missing instruction should become a skill change. Skip routine work, temporary state, and one-off facts.
 
+Before loading it, verify that `skill-review` is available through the environment's skill discovery mechanism. It is a skill name, not a shell command. If it is unavailable, tell the user how to connect or install the repository skills, or present the candidate inline without inventing a command.
+
 The review produces a private candidate first. Do not copy local agent state into the shared repository, edit public `main`, create a promotion branch, push, or open a pull request until the user approves the candidate. Approved shared changes must use the repository's branch, validation, secret-scan, and pull-request flow.
 
 ## Default Codex Tempo

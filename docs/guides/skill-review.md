@@ -45,7 +45,7 @@ Before promotion:
 2. Replace real values with fictional placeholders.
 3. Confirm that the procedure remains useful outside the task that produced it.
 4. Review the complete diff and untracked files.
-5. Run repository validation and Gitleaks.
+5. Run repository validation and a full-history Gitleaks scan.
 
 See the repository [SECURITY.md](https://github.com/ylazakovich/skills/blob/main/SECURITY.md) for the complete public-content policy.
 

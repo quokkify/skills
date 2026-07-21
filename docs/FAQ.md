@@ -6,7 +6,7 @@ title: FAQ
 
 ## Do I need Claude, Codex, and Hermes?
 
-No. You can use only one path.
+No. You can choose one path or combine supported paths. Claude and Codex can be installed together, while Hermes is configured separately.
 
 - If you use Claude Code, install the skills and run `./scripts/install-claude-config.sh`.
 - If you use Codex, install the skills and run `./scripts/install-codex-agents.sh /path/to/your/project`.
