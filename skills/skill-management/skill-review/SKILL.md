@@ -27,7 +27,7 @@ Skip the review for routine edits, obvious commands, one-off facts, temporary ta
 - Never include credentials, identities, account data, private URLs, infrastructure addresses, client context, or machine-specific paths.
 - Never treat scanner success as proof that content is safe to publish.
 - Never mutate a shared external skill directory as a shortcut. In Hermes, `external_dirs` are writable when filesystem permissions allow it; use a Git branch or worktree for shared changes instead of editing through `skill_manage`.
-- Never create a branch, push, open a pull request, or merge solely because a review was triggered. Present the candidate and obtain user approval before promotion.
+- Never create a branch, push, open a pull request, or merge solely because a review was triggered. Obtain task-specific approval before promotion unless the repository owner has already declared a durable, repository-scoped opt-in policy. A durable opt-in may authorize a draft queue, but never direct-to-main publication or automatic merge.
 
 Follow the repository's `SECURITY.md` whenever the candidate may enter a public repository.
 
@@ -97,11 +97,11 @@ Report only the information needed for a decision:
 - proposed files and validation;
 - any remaining uncertainty.
 
-Ask the user whether to promote the candidate. Do not imply that the change was published when it was only drafted.
+Ask the user whether to promote the candidate unless a durable repository-scoped opt-in already authorizes the applicable draft queue. Do not imply that the change was published when it was only drafted.
 
 ### 6. Promote through Git review
 
-After explicit approval:
+After task-specific approval, or after verifying an applicable durable opt-in:
 
 1. Update from the current shared `main`.
 2. Create an isolated branch or worktree.
@@ -112,6 +112,8 @@ After explicit approval:
 7. Commit with a Conventional Commit message.
 8. Push the branch and open a focused pull request with the security checklist completed.
 9. Leave merge to the repository's normal review policy.
+
+When the opt-in selects a rolling draft queue, load `skill-promotion-queue`, use the lane worktree, and stop after the draft PR is created or updated. The opt-in may defer independent review, but it does not waive privacy, portability, deterministic validation, or secret scanning.
 
 If validation exposes private data, remove it from the candidate and branch before pushing. If a real credential was committed, rotate it and follow `SECURITY.md`; deleting the latest file is not sufficient.
 

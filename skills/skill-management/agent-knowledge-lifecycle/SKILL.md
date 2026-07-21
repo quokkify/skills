@@ -57,7 +57,7 @@ Search the active skill catalog before proposing a target. Prefer patching a cla
 
 Prepare a private candidate before touching the canonical repository. It should name the target, summarize the reusable lesson and supporting evidence without raw transcripts, explain the proposed change, record duplicate-search findings, and include privacy, portability, and validation checks. Use `templates/skill-improvement-candidate.md` as the starting shape. Keep filled candidates outside the public repository or present them inline.
 
-A review trigger is not approval to publish. Do not create a promotion branch, push, or open a PR solely because a review found a lesson. Present the candidate and obtain explicit approval first. After approval, use an isolated branch or worktree, validate the exact diff, run a full-history secret scan, open a focused PR, address or explicitly triage reviewer findings, and leave merge to the human or repository policy.
+A review trigger is not approval to publish. Do not create a promotion branch, push, or open a PR solely because a review found a lesson. Present the candidate and obtain task-specific approval first unless the repository owner has already declared a durable, repository-scoped draft-queue opt-in. After approval or verified opt-in, use an isolated branch or worktree, validate the exact diff, run the required secret scan, open or update the authorized PR, and leave merge to the human or repository policy. Use `skill-promotion-queue` when independent review is intentionally deferred into a later batch.
 
 ### 5. Secure repository automation
 
@@ -91,7 +91,7 @@ For detailed repository layout, GitHub token enrollment, and the first secret-sc
 - Moving skills into a nested canonical directory without updating Hermes `external_dirs`, installer sources, sync-test fixtures, and real CLI discovery checks.
 - Rewriting a README for brevity by deleting useful cost-routing or ecosystem behavior instead of moving detail into guides and FAQ.
 - Committing a filled review candidate that contains task evidence, raw transcripts, or private context.
-- Creating a branch or PR as an automatic side effect of post-task review instead of waiting for promotion approval.
+- Creating a branch or PR as an automatic side effect of post-task review without task-specific approval or a durable repository-scoped draft-queue opt-in.
 - Saying only “run Gitleaks” when the gate requires an explicit full-history scan.
 - Passing JSON-looking array text to a scalar configuration command and assuming it became a real YAML list; use a plain path for one external directory or a supported typed/list edit, then verify the parsed value resolves to an existing directory.
 - Treating a successful configuration write as discovery proof; verify the canonical skill by bare name, load one linked support file, and confirm the expected source path.
@@ -112,7 +112,7 @@ For detailed repository layout, GitHub token enrollment, and the first secret-sc
 - [ ] New local skills have a deliberate promotion path with overlap review.
 - [ ] Review candidates summarize supporting evidence without raw transcripts and remain private until approved.
 - [ ] Skill availability is verified through runtime discovery, not shell-command lookup.
-- [ ] Promotion branches and PRs are created only after explicit candidate approval.
+- [ ] Promotion branches and PRs are created only after task-specific approval or a verified durable repository-scoped draft-queue opt-in.
 - [ ] Vault records the canonical repository URL, branch, and exact revision.
 - [ ] Repository token is fine-grained, minimally scoped, and stored outside repositories with restrictive permissions.
 - [ ] Secret scanning runs on PRs and default-branch pushes with pinned actions and least privilege.

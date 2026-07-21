@@ -18,14 +18,20 @@ significant task
     -> search existing skills
     -> private candidate
     -> privacy and portability audit
-    -> user approval
+    -> task approval or durable repository opt-in
     -> branch or worktree
     -> validation and secret scan
     -> pull request
     -> normal review and merge
 ```
 
-A candidate is not a published skill. Keep it outside the shared repository until promotion is approved.
+A candidate is not a published skill. Keep it outside the shared repository until promotion is approved or an applicable durable draft-queue opt-in is verified.
+
+## Optional rolling draft queue
+
+A repository owner may pre-authorize completed, public-safe improvements to accumulate in a rolling draft pull request. Configure one `automation/skill-improvements/<lane>` branch per device or independently running agent and use `skill-promotion-queue` as the completion workflow.
+
+This opt-in replaces repeated publication prompts only. It does not authorize direct pushes to the default branch, force-push, automatic merge, or publication of private runtime state. The agent must still perform the privacy and portability audit, deterministic validation, and configured secret scanning. Independent review may be deferred until the owner handles the batch.
 
 ## Decisions
 
@@ -53,7 +59,7 @@ See the repository [SECURITY.md](https://github.com/ylazakovich/skills/blob/main
 
 ### Claude Code and Codex
 
-Install the repository skills normally. In Claude Code, invoke the installed `skill-review` skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex `AGENTS.md` adapter adds a post-task review prompt. In both cases, promotion still requires approval before a branch or pull request is created.
+Install the repository skills normally. In Claude Code, invoke the installed `skill-review` skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex `AGENTS.md` adapter adds a post-task review prompt. By default, promotion requires task-specific approval before a branch or pull request is created. A durable repository-scoped opt-in may instead route eligible changes through `skill-promotion-queue`.
 
 ### Hermes
 

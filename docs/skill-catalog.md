@@ -16,6 +16,7 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 ## skill-management
 
 - [`skill-review`](../skills/skill-management/skill-review/SKILL.md) — review reusable lessons and promote approved changes safely.
+- [`skill-promotion-queue`](../skills/skill-management/skill-promotion-queue/SKILL.md) — accumulate pre-authorized, public-safe skill improvements in a per-agent rolling draft pull request.
 - [`agent-knowledge-lifecycle`](../skills/skill-management/agent-knowledge-lifecycle/SKILL.md) — share, evolve, secure, and synchronize reusable agent knowledge.
 - [`shared-skill-library-maintenance`](../skills/skill-management/shared-skill-library-maintenance/SKILL.md) — maintain one portable skill library with thin runtime adapters.
 
