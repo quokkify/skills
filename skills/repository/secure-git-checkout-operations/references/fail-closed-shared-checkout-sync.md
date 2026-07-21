@@ -57,6 +57,10 @@ if [[ "$CURRENT_OID" != "$REMOTE_OID" ]]; then
     echo 'checkout changed during candidate validation' >&2
     exit 1
   }
+  [[ "$(git rev-parse "${REMOTE_REF}^{commit}")" == "$REMOTE_OID" ]] || {
+    echo 'remote-tracking ref moved during candidate validation' >&2
+    exit 1
+  }
   git -c core.hooksPath=/dev/null merge --ff-only "$REMOTE_OID"
 fi
 
@@ -69,6 +73,10 @@ checkout_is_exact_and_clean "$REMOTE_OID" || {
   echo 'checkout changed during post-update validation' >&2
   exit 1
 }
+[[ "$(git rev-parse "${REMOTE_REF}^{commit}")" == "$REMOTE_OID" ]] || {
+  echo 'remote-tracking ref moved after post-update validation' >&2
+  exit 1
+}
 ```
 
 Production scripts should replace bare guards with clear errors and explicitly verify the repository root. Supply the approved remote URL independently of repository-controlled files; the same validated `REMOTE_NAME` is then used by the explicit fetch. The validator path and invocation are repository-specific parameters, not universal defaults.
@@ -78,6 +86,7 @@ Production scripts should replace bare guards with clear errors and explicitly v
 - **Clean tracked and untracked tree:** prevents overwriting local candidates, credentials, or unpublished edits.
 - **Attached expected branch:** detached HEAD or feature branches are not synchronization targets.
 - **Explicit remote refspec:** updates the intended remote-tracking ref and avoids a mutable `FETCH_HEAD` handoff.
+- **Pinned remote-tracking ref:** re-asserting `${REMOTE_REF}` still resolves to the validated `REMOTE_OID` before movement and after post-update validation prevents a concurrent fetch from advancing the ref past the tree that was actually validated.
 - **Ancestor check:** permits only equal or forward history; rejects local-ahead and divergence.
 - **Preserved validator:** candidate changes cannot weaken the gate used to approve themselves.
 - **`git archive`:** supplies an exact non-Git candidate tree without checkout/worktree hooks.
