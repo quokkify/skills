@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/ylazakovich/skills/compare/skills-v0.1.0...skills-v0.2.0) (2026-07-21)
+
+
+### ✨ Features
+
+* **skill-review:** add controlled promotion workflow ([#15](https://github.com/ylazakovich/skills/issues/15)) ([2e538dc](https://github.com/ylazakovich/skills/commit/2e538dcf947e3c17a0ce84b3d925378c5b15aac9))
+
+
+### 🧹 Chores
+
+* **deps:** update GitHub Actions to v7 ([#12](https://github.com/ylazakovich/skills/pull/12))
+* **deps:** update Gitleaks action to v3 ([#13](https://github.com/ylazakovich/skills/pull/13))
+
 ## 0.1.0 (2026-07-21)
 
 
