@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Docker image retention cleanup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+RandomizedDelaySec=30m
+Persistent=true
+Unit=docker-image-retention-cleanup.service
+
+[Install]
+WantedBy=timers.target

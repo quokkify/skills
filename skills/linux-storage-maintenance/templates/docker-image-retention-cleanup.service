@@ -1,0 +1,17 @@
+[Unit]
+Description=Remove Docker images continuously unused for the retention period
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/docker-image-retention-cleanup --days 7
+Nice=10
+IOSchedulingClass=idle
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/docker-image-retention-cleanup
+
+[Install]
+WantedBy=multi-user.target

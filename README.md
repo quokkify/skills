@@ -8,9 +8,10 @@ The repository keeps every portable skill in one canonical directory: [`skills/`
 
 ```text
 skills/
-├── orchestrator-workflow/   # complex implementation workflow
-├── refactor-workflow/       # controlled refactoring workflow
-└── skill-review/            # review and promotion of reusable lessons
+├── <skill-name>/SKILL.md     # one canonical entry point per skill
+├── <skill-name>/references/ # optional supporting guidance
+├── <skill-name>/scripts/    # optional reusable helpers
+└── <skill-name>/templates/  # optional supporting templates
 
 adapters/
 ├── claude/README.md         # Claude Code connection notes
@@ -75,9 +76,9 @@ A same-named skill under the local Hermes skill directory can take precedence ov
 
 ## Available Skills
 
-- [`orchestrator-workflow`](skills/orchestrator-workflow/SKILL.md) — plans and coordinates complex implementation tasks across supported agent environments.
-- [`refactor-workflow`](skills/refactor-workflow/SKILL.md) — performs refactoring with explicit discovery, implementation, and verification phases.
-- [`skill-review`](skills/skill-review/SKILL.md) — audits reusable lessons and promotes approved changes through a branch and pull request.
+The repository contains **11 portable skills** covering agent orchestration, repository safety, infrastructure operations, and game troubleshooting/reconnaissance.
+
+See the [skill catalog](docs/skill-catalog.md) for the complete linked list and concise descriptions.
 
 ## Update A Shared Checkout
 
