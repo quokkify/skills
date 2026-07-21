@@ -10,10 +10,8 @@
 
 ### 🧹 Chores
 
-* **deps:** update github-actions to v7 ([5504cdf](https://github.com/ylazakovich/skills/commit/5504cdf8d398c9416d8449e19f880581fb2ff0b2))
-* **deps:** update github-actions to v7 ([7a7e737](https://github.com/ylazakovich/skills/commit/7a7e7372bef0effce4876731abeb82bf1dca3704))
-* **deps:** update gitleaks/gitleaks-action action to v3 ([e0eb7b1](https://github.com/ylazakovich/skills/commit/e0eb7b19f02e537f6116c50b65e60098d2abf168))
-* **deps:** update gitleaks/gitleaks-action action to v3 ([e904570](https://github.com/ylazakovich/skills/commit/e904570bcf3444261c621e71e77fdd9c22fd6d54))
+* **deps:** update GitHub Actions to v7 ([#12](https://github.com/ylazakovich/skills/pull/12))
+* **deps:** update Gitleaks action to v3 ([#13](https://github.com/ylazakovich/skills/pull/13))
 
 ## 0.1.0 (2026-07-21)
 
