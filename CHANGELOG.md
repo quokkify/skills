@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0](https://github.com/ylazakovich/skills/compare/skills-v0.4.0...skills-v0.5.0) (2026-07-21)
+
+
+### ✨ Features
+
+* **skills:** add curated ECC workflows ([#28](https://github.com/ylazakovich/skills/issues/28)) ([ca33e1f](https://github.com/ylazakovich/skills/commit/ca33e1fc3eee1e3521041917f3b4141f8d8f5909))
+* **skills:** organize skills into category directories ([#27](https://github.com/ylazakovich/skills/issues/27)) ([7ab7ebc](https://github.com/ylazakovich/skills/commit/7ab7ebc6959bba31de8f458a11f4355c97135380))
+
+
+### 📚 Documentation
+
+* **shared-skill-library-maintenance:** add usage-signal selection and consolidation cadence ([#25](https://github.com/ylazakovich/skills/issues/25)) ([0478555](https://github.com/ylazakovich/skills/commit/047855582b23e3482bbb1a8bed66fca0ca1899b2))
+
+
+### 🧹 Chores
+
+* **deps:** update peaceiris/actions-gh-pages digest to 84c30a8 ([#29](https://github.com/ylazakovich/skills/issues/29)) ([bba8763](https://github.com/ylazakovich/skills/commit/bba87632c727ddab22aebbe0dd99a23cff87e9e9))
+
 ## [0.4.0](https://github.com/ylazakovich/skills/compare/skills-v0.3.0...skills-v0.4.0) (2026-07-21)
 
 
