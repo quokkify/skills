@@ -11,7 +11,7 @@ nav = [
     { "Guides" = [
         { "Quick Start" = "quick-start.md" },
         { "How to Use These Skills" = "guides/how-to-use-skills.md" },
-        { "Reviewing and Promoting Skills" = "guides/skill-review.md" },
+        { "Reviewing and Promoting Skills" = "guides/reviewing-and-promoting-skills.md" },
     ] },
     { "FAQ" = "FAQ.md" },
 ]

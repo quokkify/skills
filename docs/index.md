@@ -20,7 +20,7 @@ The short version is simple:
 
 - [Quick Start](quick-start.md) for the shortest setup steps
 - [How to Use These Skills](guides/how-to-use-skills.md) for the longer explanation
-- [Reviewing and Promoting Skills](guides/skill-review.md) for controlled post-task learning
+- [Reviewing and Promoting Skills](guides/reviewing-and-promoting-skills.md) for controlled post-task learning
 - [FAQ](FAQ.md) for common setup questions
 
 ## What Is In This Repo
