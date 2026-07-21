@@ -46,7 +46,7 @@ Resolve the orchestration backend before Phase 2:
 
 #### Claude Code
 
-Use native subagents / Task tool first.
+Use native subagents through the Agent tool first (`Task(...)` is a legacy compatibility alias).
 
 If the target repo uses ECC, prefer ECC roles such as:
 - `planner`
@@ -291,7 +291,7 @@ Execution is not Claude-only. Choose the backend that fits the environment and t
 
 #### Claude
 
-Use subagents / Task tool for independent implementation tracks. Prefer ECC development and review roles where available.
+Use subagents through the Agent tool for independent implementation tracks. Prefer ECC development and review roles where available.
 
 When Claude/ECC-style model tiers are available, use this bias:
 - Mechanical changes, rote propagation, pattern application, focused edits -> junior / haiku-class

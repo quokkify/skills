@@ -53,7 +53,7 @@ See the repository [SECURITY.md](https://github.com/ylazakovich/skills/blob/main
 
 ### Claude Code and Codex
 
-Install the repository skills normally. The Claude and Codex adapters prompt a post-task review only after significant work. The review still requires approval before a branch or pull request is created.
+Install the repository skills normally. In Claude Code, invoke the installed `skill-review` skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex `AGENTS.md` adapter adds a post-task review prompt. In both cases, promotion still requires approval before a branch or pull request is created.
 
 ### Hermes
 
