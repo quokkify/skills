@@ -68,12 +68,12 @@ If you are new to this repo:
 
 1. Read [Quick Start](../quick-start.md)
 2. Use the Claude, Codex, or Hermes path
-3. Read [Reviewing and Promoting Skills](skill-review.md) before promoting agent-generated knowledge
+3. Read [Reviewing and Promoting Skills](reviewing-and-promoting-skills.md) before promoting agent-generated knowledge
 4. Come back here only if you need the longer explanation
 
 ## Related Pages
 
 - [Home](../index.md)
 - [Quick Start](../quick-start.md)
-- [Reviewing and Promoting Skills](skill-review.md)
+- [Reviewing and Promoting Skills](reviewing-and-promoting-skills.md)
 - [FAQ](../FAQ.md)
