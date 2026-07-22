@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/ylazakovich/skills/compare/skills-v0.6.0...skills-v0.6.1) (2026-07-22)
+
+
+### 📚 Documentation
+
+* present the agent skills ecosystem ([#32](https://github.com/ylazakovich/skills/issues/32)) ([535bcc4](https://github.com/ylazakovich/skills/commit/535bcc42e5e64a9ae0b874fb18ad84a6152b0dcf))
+
 ## [0.6.0](https://github.com/ylazakovich/skills/compare/skills-v0.5.0...skills-v0.6.0) (2026-07-21)
 
 
