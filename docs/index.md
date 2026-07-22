@@ -1,32 +1,61 @@
 ---
-title: Skills Docs
+title: Agent Skills Hub
 ---
 
-# Shared Agent Skills
+<div class="hero" markdown>
 
-Portable workflows for Claude Code, Codex, and Hermes.
+# Skills that travel with your agents
 
-## One Source of Truth
+A portable operating layer for **Hermes**, **Claude Code**, **Codex**, and future providers—built from a public skills hub, a separate private configuration vault, and a safety-focused agent harness.
 
-All reusable skills live under `skills/`. Tool-specific configuration lives under `adapters/` and must not duplicate skill content.
+[Get started](quick-start.md){ .md-button .md-button--primary }
+[Explore the architecture](project-architecture.md){ .md-button }
 
-```text
-skills/      portable skills
-adapters/    Claude, Codex, and Hermes integration files
-docs/        detailed documentation
-scripts/     install, validation, and sync helpers
-tests/       regression tests
-```
+</div>
+
+![Skills ecosystem architecture](assets/skills-ecosystem.svg)
+
+<div class="architecture-grid" markdown>
+
+<div class="architecture-card" markdown>
+
+## :material-bookshelf: One Skills Hub
+
+Reusable workflows live once under `skills/`. Provider adapters stay thin, so knowledge does not drift between runtimes.
+
+[Browse 19 skills](skill-catalog.md)
+
+</div>
+
+<div class="architecture-card architecture-card--private" markdown>
+
+## :material-shield-lock: Private by Design
+
+Configuration backups, secrets, memories, and runtime state belong in a separate private vault—not in this public repository.
+
+[Understand the boundary](project-architecture.md#trust-boundaries)
+
+</div>
+
+<div class="architecture-card" markdown>
+
+## :material-robot-industrial: Safer Execution
+
+Typed tools, explicit permissions, deterministic observations, approval gates, and recovery contracts turn instructions into dependable agent behavior.
+
+[Browse the harness skill](skill-catalog.md#orchestration)
+
+</div>
+
+</div>
 
 ## Start Here
 
 1. Follow the [Quick Start](quick-start.md) for your agent.
-2. Read [How to Use These Skills](guides/how-to-use-skills.md) for discovery paths and adapter behavior.
-3. Read [Reviewing and Promoting Skills](guides/reviewing-and-promoting-skills.md) before publishing reusable lessons.
-4. See the [FAQ](FAQ.md) for common setup questions.
+2. Read [Project Architecture](project-architecture.md) to understand the three-layer model.
+3. Browse the [Skill Catalog](skill-catalog.md).
+4. Read [How to Use These Skills](guides/how-to-use-skills.md) for discovery paths and adapter behavior.
+5. Read [Reviewing and Promoting Skills](guides/reviewing-and-promoting-skills.md) before publishing reusable lessons.
 
-## Included Skills
-
-The library currently contains 11 portable skills across agent workflows, repository safety, infrastructure, and game troubleshooting/reconnaissance.
-
-Browse the complete [skill catalog](skill-catalog.md).
+!!! info "One source of truth"
+    Portable skill content lives under `skills/`. Tool-specific connection files live under `adapters/`. Private agent state stays outside the public repository.
