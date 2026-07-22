@@ -112,5 +112,5 @@ Use these entry points:
 - [Quick Start](quick-start.md) — connect Claude Code, Codex, or Hermes.
 - [Skill Catalog](skill-catalog.md) — browse the portable workflows.
 - [How to Use These Skills](guides/how-to-use-skills.md) — understand provider discovery and adapter behavior.
-- [`agent-harness-design`](../skills/orchestration/agent-harness-design/SKILL.md) — design safe tool and observation contracts.
-- [`agent-knowledge-lifecycle`](../skills/skill-management/agent-knowledge-lifecycle/SKILL.md) — maintain the public/private knowledge boundary.
+- [`agent-harness-design`](skill-catalog.md#orchestration) — design safe tool and observation contracts.
+- [`agent-knowledge-lifecycle`](skill-catalog.md#skill-management) — maintain the public/private knowledge boundary.

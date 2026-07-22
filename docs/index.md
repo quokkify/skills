@@ -43,7 +43,7 @@ Configuration backups, secrets, memories, and runtime state belong in a separate
 
 Typed tools, explicit permissions, deterministic observations, approval gates, and recovery contracts turn instructions into dependable agent behavior.
 
-[Read the harness model](../skills/orchestration/agent-harness-design/SKILL.md)
+[Browse the harness skill](skill-catalog.md#orchestration)
 
 </div>
 
