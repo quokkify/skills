@@ -1,18 +1,20 @@
 [project]
-site_name = "Shared Agent Skills"
-site_description = "Reusable workflows for Claude Code, Codex, and Hermes."
+site_name = "Agent Skills Hub"
+site_description = "Portable skills, private configuration boundaries, and safer harnesses for AI agents."
 docs_dir = "docs"
 site_dir = "public"
 repo_url = "https://github.com/ylazakovich/skills"
-repo_name = "skills"
+repo_name = "ylazakovich/skills"
 extra_css = ["stylesheets/custom.css"]
 nav = [
     { "Home" = "index.md" },
+    { "Architecture" = "project-architecture.md" },
     { "Guides" = [
         { "Quick Start" = "quick-start.md" },
         { "Skill Catalog" = "skill-catalog.md" },
         { "How to Use These Skills" = "guides/how-to-use-skills.md" },
         { "Reviewing and Promoting Skills" = "guides/reviewing-and-promoting-skills.md" },
+        { "Releases and Dependencies" = "guides/releases-and-dependencies.md" },
     ] },
     { "FAQ" = "FAQ.md" },
 ]
