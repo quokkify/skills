@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Skills ecosystem architecture</title><desc id="desc">A public skills hub and a separate private configuration vault feed a safety-focused agent harness used by Hermes, Claude Code, Codex, and other agents.</desc>
+<defs>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#1e3350" opacity=".32"/></pattern>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dy="18" stdDeviation="22" flood-color="#020617" flood-opacity=".36"/></filter>
+<marker id="cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="#38bdf8"/></marker>
+<marker id="amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="#f5b942"/></marker>
+<linearGradient id="hub" x2="1"><stop stop-color="#0f766e" stop-opacity=".22"/><stop offset="1" stop-color="#38bdf8" stop-opacity=".07"/></linearGradient>
+<linearGradient id="run" x2="1"><stop stop-color="#38bdf8" stop-opacity=".1"/><stop offset="1" stop-color="#14b8a6" stop-opacity=".2"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="#07111f"/><rect width="1600" height="900" fill="url(#grid)"/><circle cx="240" cy="120" r="250" fill="#14b8a6" opacity=".045"/><circle cx="1370" cy="760" r="300" fill="#38bdf8" opacity=".04"/>
+<g font-family="Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif">
+<text x="96" y="92" fill="#7dd3fc" font-size="15" font-weight="700" letter-spacing="3">PORTABLE AGENT OPERATING LAYER</text>
+<text x="96" y="142" fill="#f8fafc" font-size="42" font-weight="760" letter-spacing="-1.5">Skills that travel. State that recovers.</text>
+<text x="96" y="183" fill="#94a3b8" font-size="21">One public source of reusable knowledge, one private recovery boundary, one safer execution path.</text>
+<g transform="translate(990 72)">
+<rect width="130" height="46" rx="23" fill="#0f2035" stroke="#2b4968"/><circle cx="22" cy="23" r="6" fill="#14b8a6"/><text x="38" y="29" fill="#dbeafe" font-size="16" font-weight="650">Hermes</text>
+<rect x="142" width="156" height="46" rx="23" fill="#0f2035" stroke="#2b4968"/><circle cx="164" cy="23" r="6" fill="#38bdf8"/><text x="180" y="29" fill="#dbeafe" font-size="16" font-weight="650">Claude Code</text>
+<rect x="310" width="126" height="46" rx="23" fill="#0f2035" stroke="#2b4968"/><circle cx="332" cy="23" r="6" fill="#a78bfa"/><text x="348" y="29" fill="#dbeafe" font-size="16" font-weight="650">Codex</text>
+<rect x="448" width="126" height="46" rx="23" fill="#0f2035" stroke="#2b4968"/><circle cx="470" cy="23" r="6" fill="#94a3b8"/><text x="486" y="29" fill="#dbeafe" font-size="16" font-weight="650">Others</text>
+<text x="287" y="76" text-anchor="middle" fill="#64748b" font-size="13" letter-spacing="1.4">PROVIDER RUNTIMES</text></g>
+<path d="M305 330c125 0 165 60 285 60" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="7 8" marker-end="url(#cyan)" opacity=".85"/>
+<path d="M1295 330c-125 0-165 60-285 60" fill="none" stroke="#f5b942" stroke-width="3" stroke-dasharray="7 8" marker-end="url(#amber)" opacity=".85"/>
+<path d="M1275 150c-50 90-255 112-345 165" fill="none" stroke="#38bdf8" stroke-width="2" opacity=".35" marker-end="url(#cyan)"/>
+<!-- Public skills hub -->
+<g filter="url(#shadow)"><rect x="82" y="250" width="430" height="430" rx="28" fill="#0b192b" stroke="#1f766f" stroke-width="2"/><rect x="82" y="250" width="430" height="430" rx="28" fill="url(#hub)"/>
+<rect x="112" y="280" width="112" height="30" rx="15" fill="#123b3a"/><circle cx="131" cy="295" r="5" fill="#2dd4bf"/><text x="145" y="301" fill="#99f6e4" font-size="13" font-weight="760" letter-spacing="1.1">PUBLIC</text>
+<g transform="translate(112 334)"><rect width="52" height="52" rx="14" fill="#0f766e"/><path d="M14 15h24v5H14zm0 9h24v5H14zm0 9h17v5H14z" fill="#ccfbf1"/></g>
+<text x="182" y="357" fill="#f8fafc" font-size="29" font-weight="740">Skills Hub</text><text x="112" y="399" fill="#94a3b8" font-size="17">Canonical, portable knowledge</text><path d="M112 426h370" stroke="#1f3c53"/>
+<g fill="#d5e5f2" font-size="16"><circle cx="122" cy="467" r="4" fill="#2dd4bf"/><text x="140" y="473">One reviewed SKILL.md source</text><circle cx="122" cy="509" r="4" fill="#2dd4bf"/><text x="140" y="515">References, templates, helpers</text><circle cx="122" cy="551" r="4" fill="#2dd4bf"/><text x="140" y="557">Thin provider adapters</text><circle cx="122" cy="593" r="4" fill="#2dd4bf"/><text x="140" y="599">Validation, privacy, releases</text></g>
+<rect x="112" y="628" width="278" height="28" rx="8" fill="#0a2632"/><text x="126" y="647" fill="#67e8f9" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="13">skills/&lt;category&gt;/&lt;name&gt;/</text></g>
+<!-- Harness -->
+<g filter="url(#shadow)"><rect x="585" y="280" width="430" height="430" rx="28" fill="#0b192b" stroke="#38bdf8" stroke-width="2"/><rect x="585" y="280" width="430" height="430" rx="28" fill="url(#run)"/>
+<rect x="615" y="310" width="128" height="30" rx="15" fill="#12324a"/><circle cx="634" cy="325" r="5" fill="#38bdf8"/><text x="648" y="331" fill="#bae6fd" font-size="13" font-weight="760" letter-spacing="1.1">RUNTIME</text>
+<g transform="translate(615 364)"><rect width="52" height="52" rx="14" fill="#0369a1"/><path d="M17 16h18v5H17zm-5 10h28v5H12zm5 10h18v5H17z" fill="#e0f2fe"/></g>
+<text x="685" y="387" fill="#f8fafc" font-size="29" font-weight="740">Agent Harness</text><text x="615" y="429" fill="#94a3b8" font-size="17">Bounded, observable execution</text><path d="M615 456h370" stroke="#1f3c53"/>
+<g><rect x="615" y="486" width="174" height="60" rx="14" fill="#10273c" stroke="#1f4c6d"/><text x="635" y="511" fill="#7dd3fc" font-size="13" font-weight="700">ACTION</text><text x="635" y="532" fill="#e2e8f0" font-size="15">Typed tools · validation</text>
+<rect x="811" y="486" width="174" height="60" rx="14" fill="#10273c" stroke="#1f4c6d"/><text x="831" y="511" fill="#7dd3fc" font-size="13" font-weight="700">CONTROL</text><text x="831" y="532" fill="#e2e8f0" font-size="15">Permissions · approvals</text>
+<rect x="615" y="562" width="174" height="60" rx="14" fill="#10273c" stroke="#1f4c6d"/><text x="635" y="587" fill="#7dd3fc" font-size="13" font-weight="700">OBSERVE</text><text x="635" y="608" fill="#e2e8f0" font-size="15">State · durable handles</text>
+<rect x="811" y="562" width="174" height="60" rx="14" fill="#10273c" stroke="#1f4c6d"/><text x="831" y="587" fill="#7dd3fc" font-size="13" font-weight="700">RECOVER</text><text x="831" y="608" fill="#e2e8f0" font-size="15">Retry · cancel · resume</text></g>
+<rect x="615" y="649" width="370" height="34" rx="10" fill="#06263b" stroke="#0e7490"/><circle cx="636" cy="666" r="5" fill="#22d3ee"/><text x="651" y="672" fill="#cffafe" font-size="14" font-weight="650">Fail closed before side effects</text></g>
+<!-- Private vault -->
+<g filter="url(#shadow)"><rect x="1088" y="250" width="430" height="430" rx="28" fill="#171a25" stroke="#f5b942" stroke-width="2" stroke-dasharray="9 7"/><rect x="1102" y="264" width="402" height="402" rx="22" fill="none" stroke="#7c5b20" opacity=".55"/>
+<rect x="1118" y="280" width="134" height="30" rx="15" fill="#493817"/><circle cx="1137" cy="295" r="5" fill="#f5b942"/><text x="1151" y="301" fill="#fde68a" font-size="13" font-weight="760" letter-spacing="1.1">PRIVATE</text>
+<g transform="translate(1118 334)"><rect width="52" height="52" rx="14" fill="#8a5a0a"/><path d="M18 24v-5a8 8 0 0116 0v5h4v17H14V24zm5 0h6v-5a3 3 0 00-6 0z" fill="#fef3c7"/></g>
+<text x="1188" y="357" fill="#f8fafc" font-size="27" font-weight="740">Configuration Vault</text><text x="1118" y="399" fill="#b7ac92" font-size="17">Recoverable provider state</text><path d="M1118 426h370" stroke="#4c3c22"/>
+<g fill="#e7e0d2" font-size="16"><circle cx="1128" cy="467" r="4" fill="#f5b942"/><text x="1146" y="473">Hermes · Claude Code · Codex</text><circle cx="1128" cy="509" r="4" fill="#f5b942"/><text x="1146" y="515">Backup and restore tooling</text><circle cx="1128" cy="551" r="4" fill="#f5b942"/><text x="1146" y="557">Version and source manifest</text><circle cx="1128" cy="593" r="4" fill="#f5b942"/><text x="1146" y="599">Access-controlled secrets</text></g>
+<rect x="1118" y="628" width="370" height="28" rx="8" fill="#2b2418"/><text x="1132" y="647" fill="#fde68a" font-size="13" font-weight="650">Never stored in the public skills repository</text></g>
+<g transform="translate(360 770)"><text fill="#67e8f9" font-size="16" font-weight="720" letter-spacing="1.4">LEARN</text><path d="M82-6h128" stroke="#2b6c83" stroke-width="2" marker-end="url(#cyan)"/><text x="252" fill="#fde68a" font-size="16" font-weight="720" letter-spacing="1.4">PRESERVE</text><path d="M370-6h128" stroke="#6f5a2b" stroke-width="2" marker-end="url(#amber)"/><text x="540" fill="#99f6e4" font-size="16" font-weight="720" letter-spacing="1.4">EXECUTE SAFELY</text></g>
+<text x="800" y="842" text-anchor="middle" fill="#64748b" font-size="14">Portable knowledge · private recovery · explicit runtime boundaries</text>
+</g></svg>
