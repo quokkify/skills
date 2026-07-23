@@ -61,16 +61,33 @@ echo "installed harness scripts into $DEST"
 if [ -f "$DEST/config.env" ]; then
   echo "config.env already exists — left unchanged (per-machine settings preserved)"
 else
+  # Non-interactive runs must not fall back to developer-specific defaults for
+  # repository or paths: that would write an unreachable worktree and the gate
+  # would silently no-op. Only --lane may be inferred (from the hostname).
+  if [ ! -t 0 ]; then
+    missing=""
+    [ -n "$repo" ]     || missing="$missing --repo"
+    [ -n "$worktree" ] || missing="$missing --worktree"
+    [ -n "$main" ]     || missing="$missing --main"
+    if [ -n "$missing" ]; then
+      echo "install-harness: non-interactive run requires:$missing" >&2
+      exit 2
+    fi
+  fi
   [ -n "$lane" ]     || prompt lane     "Unique lowercase lane for THIS machine" "$(default_lane)"
   [ -n "$repo" ]     || prompt repo     "Repository (owner/name)" "ylazakovich/skills"
   [ -n "$main" ]     || prompt main     "Absolute path to the stable main checkout" "$HOME/IdeaProjects/skills"
   [ -n "$worktree" ] || prompt worktree "Absolute path to the lane worktree" "$HOME/IdeaProjects/skills-lanes/$lane"
+  # Emit shell-escaped assignments (config.env is sourced by bash) so values
+  # containing &, #, or \ survive intact — no sed replacement pitfalls.
   ( umask 077
-    sed -e "s#<owner/repository>#${repo}#" \
-        -e "s#<unique-lowercase-device-lane>#${lane}#" \
-        -e "s#<absolute-path-to-lane-worktree>#${worktree}#" \
-        -e "s#<absolute-path-to-stable-main-checkout>#${main}#" \
-        "$TEMPLATES/config.example.env" > "$DEST/config.env" )
+    {
+      sed '/^SKILL_HARNESS_/,$d' "$TEMPLATES/config.example.env"
+      printf 'SKILL_HARNESS_REPO=%q\n'     "$repo"
+      printf 'SKILL_HARNESS_LANE=%q\n'     "$lane"
+      printf 'SKILL_HARNESS_WORKTREE=%q\n' "$worktree"
+      printf 'SKILL_HARNESS_MAIN=%q\n'     "$main"
+    } > "$DEST/config.env" )
   echo "wrote $DEST/config.env (lane: $lane)"
 fi
 

@@ -32,6 +32,15 @@ WT="$SKILL_HARNESS_WORKTREE"
 BR="automation/skill-improvements/$SKILL_HARNESS_LANE"
 [ -e "$WT/.git" ] || exit 0
 
+# Resolve the base branch instead of hard-coding origin/main: an explicit
+# override wins, else the remote's default branch, else origin/main. Otherwise a
+# non-main default would drop the ahead count to 0 and silently skip the checks.
+BASE_REF="${SKILL_HARNESS_BASE:-}"
+if [ -z "$BASE_REF" ]; then
+  BASE_REF="$(git -C "$WT" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+  [ -z "$BASE_REF" ] && BASE_REF="origin/main"
+fi
+
 reasons=""
 add() { reasons="${reasons}\n  - $1"; }
 
@@ -39,7 +48,7 @@ if [ -n "$(git -C "$WT" status --porcelain --untracked-files=normal 2>/dev/null 
   add "the lane worktree has uncommitted changes"
 fi
 
-ahead_main="$(git -C "$WT" rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
+ahead_main="$(git -C "$WT" rev-list --count "$BASE_REF..HEAD" 2>/dev/null || echo 0)"
 if [ "${ahead_main:-0}" -gt 0 ]; then
   local_head="$(git -C "$WT" rev-parse HEAD 2>/dev/null || echo x)"
   remote_head="$(git -C "$WT" rev-parse "origin/$BR" 2>/dev/null || echo NONE)"
