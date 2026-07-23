@@ -98,6 +98,20 @@ Keep the semantic decision in the agent workflow and the mechanical publication 
 
 For another machine or runtime, start with `templates/local-agent-bootstrap.md`. Give every independently operating device a different lane.
 
+### Reference Claude Code harness
+
+`templates/completion_gate.sh` and `templates/publish.sh` are a runtime-generic reference implementation for Claude Code: a Stop-hook gate that holds completion while the lane queue is unsettled, and a thin wrapper around the bundled `scripts/publish_queue.py`. They contain no machine paths or secrets — every location is read at runtime from a machine-local `config.env`, so the same scripts install unchanged on every device.
+
+Install them on a machine with:
+
+```bash
+bash skills/skill-management/skill-promotion-queue/scripts/install-harness.sh \
+  --repo <owner/repository> --lane <unique-lowercase-device-lane> \
+  --worktree <absolute-path-to-lane-worktree> --main <absolute-path-to-stable-main-checkout>
+```
+
+The installer copies the scripts and the canonical publisher into the Claude configuration directory, seeds `config.env` from `templates/config.example.env` without overwriting an existing one, and idempotently registers the Stop hook in `settings.json`. The per-machine lane and any HTTPS credentials stay local and are never copied between machines, so synchronizing devices means reinstalling the same portable scripts, not sharing local state.
+
 ## Completion Criteria
 
 - The reusable change is committed on the correct lane branch.
