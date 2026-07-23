@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/ylazakovich/skills/compare/skills-v0.6.1...skills-v0.7.0) (2026-07-23)
+
+
+### ✨ Features
+
+* **skill-promotion-queue:** add reference Claude Code harness and installer ([#34](https://github.com/ylazakovich/skills/issues/34)) ([47eada4](https://github.com/ylazakovich/skills/commit/47eada4accaff6395f4df122262be3f762c2ccc1))
+
 ## [0.6.1](https://github.com/ylazakovich/skills/compare/skills-v0.6.0...skills-v0.6.1) (2026-07-22)
 
 
