@@ -22,6 +22,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -36,12 +37,50 @@ jobs:
           import yaml
 
           answers = yaml.safe_load(Path(".copier-answers.yml").read_text())
-          if not isinstance(answers, dict) or not answers.get("_src_path"):
-              raise SystemExit(".copier-answers.yml must contain _src_path")
-          for path in (Path("renovate.json"), Path(".github/release-please/config.json"), Path(".github/release-please/manifest.json")):
+          required_answers = ("_src_path", "_commit", "toolkit_version")
+          if not isinstance(answers, dict) or any(not answers.get(key) for key in required_answers):
+              raise SystemExit(".copier-answers.yml must contain _src_path, _commit, and toolkit_version")
+          if answers["_commit"] != answers["toolkit_version"]:
+              raise SystemExit("Copier _commit must match toolkit_version")
+          renovate_path = Path(".github/renovate.json")
+          if answers.get("renovate") and not renovate_path.is_file():
+              raise SystemExit("renovate=true requires .github/renovate.json")
+          for path in (renovate_path, Path(".github/release-please/config.json"), Path(".github/release-please/manifest.json")):
               if path.exists():
                   json.loads(path.read_text())
           for path in Path(".github/workflows").glob("*.yml"):
-              yaml.safe_load(path.read_text())
+              text = path.read_text()
+              yaml.safe_load(text)
+              for line in text.splitlines():
+                  marker = "uses: quokkify/project-toolkit/"
+                  if marker in line:
+                      reference = line.split("@", 1)[1].split()[0]
+                      comment = line.partition("#")[2].strip()
+                      pinned_release = len(reference) == 40 and all(char in "0123456789abcdef" for char in reference) and comment == answers["toolkit_version"]
+                      if reference != answers["toolkit_version"] and not pinned_release:
+                          raise SystemExit(f"{path} uses toolkit {reference}, expected {answers['toolkit_version']}")
           PY
-          git diff --check
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSLo "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo actionlint_checksums.txt "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"
+          grep -F " actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" actionlint_checksums.txt | sha256sum -c -
+          tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" actionlint
+          mkdir -p "$RUNNER_TEMP/bin"
+          install -m 0755 actionlint "$RUNNER_TEMP/bin/actionlint"
+      - name: Lint workflows
+        run: |
+          "$RUNNER_TEMP/bin/actionlint" .github/workflows/*.yml
+      - name: Check committed diff whitespace
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ || "$BASE_SHA" =~ ^0+$ ]]; then
+            git diff-tree --check --root "$HEAD_SHA"
+          else
+            git diff --check "$BASE_SHA..$HEAD_SHA"
+          fi

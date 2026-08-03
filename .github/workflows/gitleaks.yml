@@ -26,6 +26,22 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Materialize trusted Gitleaks policy
+        env:
+          TRUSTED_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ ! "$TRUSTED_REF" =~ ^[0-9a-f]{40}$ || "$TRUSTED_REF" =~ ^0+$ ]]; then
+            TRUSTED_REF="$GITHUB_SHA"
+          fi
+          git fetch --no-tags --depth=1 origin "$TRUSTED_REF"
+          printf '[extend]\nuseDefault = true\n' > "$RUNNER_TEMP/gitleaks.toml"
+          : > "$RUNNER_TEMP/gitleaksignore"
+          if git cat-file -e "$TRUSTED_REF:.gitleaks.toml" 2>/dev/null; then
+            git show "$TRUSTED_REF:.gitleaks.toml" > "$RUNNER_TEMP/gitleaks.toml"
+          fi
+          if git cat-file -e "$TRUSTED_REF:.gitleaksignore" 2>/dev/null; then
+            git show "$TRUSTED_REF:.gitleaksignore" > "$RUNNER_TEMP/gitleaksignore"
+          fi
       - name: Install checksum-verified Gitleaks
         env:
           GITLEAKS_VERSION: 8.30.1
@@ -41,5 +57,5 @@ jobs:
           install -m 0755 gitleaks "$RUNNER_TEMP/bin/gitleaks"
       - name: Scan repository
         run: |
-          "$RUNNER_TEMP/bin/gitleaks" git --redact --no-banner .
-          "$RUNNER_TEMP/bin/gitleaks" dir --redact --no-banner .
+          "$RUNNER_TEMP/bin/gitleaks" git --redact --no-banner --config "$RUNNER_TEMP/gitleaks.toml" --gitleaks-ignore-path "$RUNNER_TEMP/gitleaksignore" .
+          "$RUNNER_TEMP/bin/gitleaks" dir --redact --no-banner --config "$RUNNER_TEMP/gitleaks.toml" --gitleaks-ignore-path "$RUNNER_TEMP/gitleaksignore" .
