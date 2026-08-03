@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/quokkify/skills/compare/v0.7.2...v0.7.3) (2026-08-03)
+
+
+### Bug Fixes
+
+* **ci:** align Copier template baseline ([#42](https://github.com/quokkify/skills/issues/42)) ([2b7f5df](https://github.com/quokkify/skills/commit/2b7f5df0746997548b333b7dd8fc6d9b141f71b9))
+
 ## [0.7.2](https://github.com/quokkify/skills/compare/v0.7.1...v0.7.2) (2026-08-03)
 
 
