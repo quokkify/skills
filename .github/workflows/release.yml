@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   release:
-    uses: quokkify/project-toolkit/.github/workflows/release-please.yml@aa57fc8eb4a5ce7a583efa35eed64d4f1042e23d # v2.8.1
+    uses: quokkify/project-toolkit/.github/workflows/release-please.yml@403467a8e9e5518dfa641c538c857af789a7a84e # v2.8.2
     with:
       mode: manifest
       config-file: .github/release-please/config.json
