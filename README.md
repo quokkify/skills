@@ -67,14 +67,14 @@ tests/                       # dependency-free regression tests
 Clone the repository:
 
 ```bash
-git clone https://github.com/ylazakovich/skills.git
+git clone https://github.com/quokkify/skills.git
 cd skills
 ```
 
 ### Claude Code
 
 ```bash
-npx skills add ylazakovich/skills --skill '*' -g -a claude-code -y
+npx skills add quokkify/skills --skill '*' -g -a claude-code -y
 ```
 
 Claude Code needs no copied global adapter. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.
@@ -82,7 +82,7 @@ Claude Code needs no copied global adapter. Agent personas, output styles, statu
 ### Codex
 
 ```bash
-npx skills add ylazakovich/skills --skill '*' -g -a codex -y
+npx skills add quokkify/skills --skill '*' -g -a codex -y
 ```
 
 Optionally copy the shared project instructions into a target repository:
@@ -114,7 +114,7 @@ The repository currently contains **19 portable skills** spanning:
 - infrastructure operations;
 - game troubleshooting and source reconnaissance.
 
-Browse the complete [Skill Catalog](docs/skill-catalog.md) or open the [documentation site](https://ylazakovich.github.io/skills/).
+Browse the complete [Skill Catalog](docs/skill-catalog.md) or open the [documentation site](https://quokkify.github.io/skills/).
 
 ## Update a Shared Checkout
 
@@ -143,6 +143,16 @@ Run the complete local gate, including full-history Gitleaks scanning:
 ```
 
 Gitleaks `8.30.1` or newer must be available on `PATH` or through `GITLEAKS_BIN` for `--full`.
+
+## Update Project Scaffolding
+
+The repository records its `quokkify/project-toolkit` template source and answers in [`.copier-answers.yml`](.copier-answers.yml). From a clean checkout, review and apply template updates with:
+
+```bash
+copier update --trust
+```
+
+Repository-specific validation remains in `scripts/validate.sh`; the generated update contract and reusable CI workflow keep shared project plumbing versioned without replacing that custom gate.
 
 Optional repository-local Git hooks:
 

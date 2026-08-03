@@ -1,0 +1,12 @@
+_commit: v2.7.2
+_src_path: gh:quokkify/project-toolkit
+components: []
+docker: false
+project_name: Shared Agent Skills
+release_please: false
+renovate: true
+renovate_config_repository: quokkify/renovate-presets
+renovate_presets:
+- default
+- github-actions
+toolkit_version: v2.7.2

@@ -1,0 +1,4 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>quokkify/renovate-presets//presets/base", "github>quokkify/renovate-presets//presets/github-actions/default"]
+}

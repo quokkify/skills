@@ -53,7 +53,7 @@ Before promotion:
 4. Review the complete diff and untracked files.
 5. Run `./scripts/validate.sh --full`; it performs repository validation, builds the documentation, and scans the full Git history with Gitleaks.
 
-See the repository [SECURITY.md](https://github.com/ylazakovich/skills/blob/main/SECURITY.md) for the complete public-content policy.
+See the repository [SECURITY.md](https://github.com/quokkify/skills/blob/main/SECURITY.md) for the complete public-content policy.
 
 ## Tool behavior
 
