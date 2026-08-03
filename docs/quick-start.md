@@ -7,7 +7,7 @@ title: Quick Start
 Clone the repository and run commands from its root:
 
 ```bash
-git clone https://github.com/ylazakovich/skills.git
+git clone https://github.com/quokkify/skills.git
 cd skills
 ```
 
@@ -16,7 +16,7 @@ cd skills
 Install the portable skills:
 
 ```bash
-npx skills add ylazakovich/skills --skill '*' -g -a claude-code -y
+npx skills add quokkify/skills --skill '*' -g -a claude-code -y
 ```
 
 No global Claude configuration is copied. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.
@@ -26,7 +26,7 @@ No global Claude configuration is copied. Agent personas, output styles, status 
 Install the portable skills:
 
 ```bash
-npx skills add ylazakovich/skills --skill '*' -g -a codex -y
+npx skills add quokkify/skills --skill '*' -g -a codex -y
 ```
 
 Optionally copy `adapters/codex/AGENTS.md` into a target project:
@@ -52,7 +52,7 @@ Start a new Hermes session after changing the discovery path. Keep shared edits 
 ## Claude Code and Codex Together
 
 ```bash
-npx skills add ylazakovich/skills --skill '*' -g -a claude-code -a codex -y
+npx skills add quokkify/skills --skill '*' -g -a claude-code -a codex -y
 ./scripts/install-codex-agents.sh /path/to/your/project
 ```
 

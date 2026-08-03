@@ -75,7 +75,7 @@ else
     fi
   fi
   [ -n "$lane" ]     || prompt lane     "Unique lowercase lane for THIS machine" "$(default_lane)"
-  [ -n "$repo" ]     || prompt repo     "Repository (owner/name)" "ylazakovich/skills"
+  [ -n "$repo" ]     || prompt repo     "Repository (owner/name)" "quokkify/skills"
   [ -n "$main" ]     || prompt main     "Absolute path to the stable main checkout" "$HOME/IdeaProjects/skills"
   [ -n "$worktree" ] || prompt worktree "Absolute path to the lane worktree" "$HOME/IdeaProjects/skills-lanes/$lane"
   # Emit shell-escaped assignments (config.env is sourced by bash) so values

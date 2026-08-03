@@ -3,7 +3,7 @@
 Claude Code does not need a copied repository adapter. Install the canonical skills directly:
 
 ```bash
-npx skills add ylazakovich/skills -a claude-code
+npx skills add quokkify/skills -a claude-code
 ```
 
 The skills CLI connects them to Claude Code's supported personal skill directory. For project-only use, Claude Code also discovers skills under `.claude/skills/`.
