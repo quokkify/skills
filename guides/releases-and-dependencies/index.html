@@ -765,15 +765,15 @@
 <li>Merge the pull request into <code>main</code>. The squash commit title must remain conventional.</li>
 <li>Release Please updates or opens a release pull request containing the next version and <code>CHANGELOG.md</code> entries.</li>
 <li>Merge the release pull request after its checks pass.</li>
-<li>Release Please creates the component-scoped <code>skills-vX.Y.Z</code> Git tag and GitHub release.</li>
+<li>Release Please creates the organization-standard <code>vX.Y.Z</code> Git tag and GitHub release.</li>
 </ol>
-<p>The manifest starts from a <code>0.0.0</code> baseline, while <code>initial-version</code> explicitly makes the first public release <code>0.1.0</code>. The commit recorded as <code>bootstrap-sha</code> excludes earlier repository history from the first generated changelog. The <code>simple</code> release type is used because this repository has no package manifest; <code>package-name</code> and <code>include-component-in-tag</code> still provide component-scoped tags.</p>
+<p>The manifest records the latest released version. The <code>bootstrap-sha</code> marks the <code>0.7.1</code> release commit as the migration boundary from historical <code>skills-vX.Y.Z</code> tags to the organization-standard <code>vX.Y.Z</code> format, without retagging past releases. The <code>simple</code> release type is used because this repository has no package manifest.</p>
 <p>Release impact follows Conventional Commits:</p>
 <ul>
 <li><code>fix(scope): ...</code> and <code>perf(scope): ...</code> produce a patch release;</li>
 <li><code>feat(scope): ...</code> produces a minor release;</li>
 <li>a breaking change marked with <code>!</code> produces a major release;</li>
-<li><code>docs</code>, <code>test</code>, <code>ci</code>, <code>build</code>, <code>refactor</code>, and <code>chore</code> changes do not normally trigger a release by themselves, but can appear in the next generated changelog.</li>
+<li><code>docs</code>, <code>ci</code>, <code>build</code>, <code>refactor</code>, <code>test</code>, and <code>chore</code> do not create a release by themselves.</li>
 </ul>
 <p>The <code>PR Title</code> workflow enforces the title format before merge. When squash merging, verify the final commit title in GitHub because Release Please reads merged commit history rather than the pull request body.</p>
 <h2 id="renovate-flow">Renovate flow<a class="headerlink" href="#renovate-flow" title="Permanent link">&para;</a></h2>
@@ -787,9 +787,9 @@
 <p>It executes <code>renovate-config-validator --strict renovate.json</code>. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.</p>
 <h2 id="configuration-files">Configuration files<a class="headerlink" href="#configuration-files" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>release-please-config.json</code> — release type, baseline, and changelog sections;</li>
-<li><code>.release-please-manifest.json</code> — last released version tracked by Release Please;</li>
-<li><code>.github/workflows/release-please.yml</code> — release PR and GitHub release automation;</li>
+<li><code>.github/release-please/config.json</code> — release type, migration boundary, and tag convention;</li>
+<li><code>.github/release-please/manifest.json</code> — last released version tracked by Release Please;</li>
+<li><code>.github/workflows/release.yml</code> — project-owned caller for the pinned reusable release workflow;</li>
 <li><code>.github/workflows/pr-title.yml</code> — Conventional Commit title validation;</li>
 <li><code>renovate.json</code> — Copier-managed shared Renovate preset selection;</li>
 <li><code>.github/workflows/renovate-config.yml</code> — strict Renovate configuration validation.</li>
