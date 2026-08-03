@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/quokkify/skills/compare/skills-v0.7.0...skills-v0.7.1) (2026-08-03)
+
+
+### ⚙️ CI
+
+* adopt project-toolkit and Copier updates ([#36](https://github.com/quokkify/skills/issues/36)) ([b94231f](https://github.com/quokkify/skills/commit/b94231f4cc843315b3410b168593d83de7f2e642))
+
 ## [0.7.0](https://github.com/ylazakovich/skills/compare/skills-v0.6.1...skills-v0.7.0) (2026-07-23)
 
 
