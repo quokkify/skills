@@ -28,15 +28,15 @@ The `PR Title` workflow enforces the title format before merge. When squash merg
 
 ## Renovate flow
 
-`.github/renovate.json` uses semantic `chore(deps)` commits, enables only the `github-actions` manager, and extends the shared public GitHub Actions preset. Renovate keeps immutable action SHAs current while preserving readable version comments.
+Root-level `renovate.json` is generated from the Copier answers and extends the shared public base and GitHub Actions presets. Renovate keeps immutable action SHAs current while preserving readable version comments.
 
 The `Renovate Config` workflow runs:
 
-- when `.github/renovate.json` or its validation workflow changes;
+- when `renovate.json` or its validation workflow changes;
 - weekly, to detect incompatibility with newer Renovate versions;
 - manually through `workflow_dispatch`.
 
-It executes `renovate-config-validator --strict .github/renovate.json`. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.
+It executes `renovate-config-validator --strict renovate.json`. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.
 
 ## Configuration files
 
@@ -44,5 +44,5 @@ It executes `renovate-config-validator --strict .github/renovate.json`. Renovate
 - `.release-please-manifest.json` — last released version tracked by Release Please;
 - `.github/workflows/release-please.yml` — release PR and GitHub release automation;
 - `.github/workflows/pr-title.yml` — Conventional Commit title validation;
-- `.github/renovate.json` — semantic commit settings, enabled managers, grouping, and shared preset;
+- `renovate.json` — Copier-managed shared Renovate preset selection;
 - `.github/workflows/renovate-config.yml` — strict Renovate configuration validation.
