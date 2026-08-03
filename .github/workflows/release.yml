@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    uses: quokkify/project-toolkit/.github/workflows/release-please.yml@a8217fa983347a3dd10133ec51117f873485b138 # v2.7.2
+    with:
+      mode: manifest
+      config-file: .github/release-please/config.json
+      manifest-file: .github/release-please/manifest.json
