@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "0d975dc74fbb44c39a5a087d21abab9226919cc2",
+  "release-type": "simple",
+  "include-component-in-tag": false,
+  "changelog-path": "CHANGELOG.md",
+  "packages": {
+    ".": {
+      "package-name": "skills",
+      "initial-version": "0.1.0"
+    }
+  }
+}
