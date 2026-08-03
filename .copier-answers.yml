@@ -1,5 +1,5 @@
 _commit: v2.8.1
-_src_path: gh:quokkify/project-toolkit
+_src_path: https://github.com/quokkify/project-toolkit.git
 components: []
 docker: false
 project_name: Shared Agent Skills
