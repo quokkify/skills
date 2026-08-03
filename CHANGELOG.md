@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/quokkify/skills/compare/v0.7.1...v0.7.2) (2026-08-03)
+
+
+### Bug Fixes
+
+* use Renovate-compatible Copier source URL ([#40](https://github.com/quokkify/skills/issues/40)) ([1ecd833](https://github.com/quokkify/skills/commit/1ecd833ba15a0009a63083175f64f77e8c0f8822))
+
 ## [0.7.1](https://github.com/quokkify/skills/compare/skills-v0.7.0...skills-v0.7.1) (2026-08-03)
 
 
