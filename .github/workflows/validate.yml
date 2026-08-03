@@ -53,7 +53,7 @@ jobs:
               yaml.safe_load(text)
               for line in text.splitlines():
                   marker = "uses: quokkify/project-toolkit/"
-                  if marker in line:
+                  if line.lstrip().startswith(marker):
                       reference = line.split("@", 1)[1].split()[0]
                       comment = line.partition("#")[2].strip()
                       pinned_release = len(reference) == 40 and all(char in "0123456789abcdef" for char in reference) and comment == answers["toolkit_version"]
