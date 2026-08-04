@@ -19,6 +19,8 @@ Run a review when at least one condition is true:
 
 Skip the review for routine edits, obvious commands, one-off facts, temporary task state, generated logs, or results that will become stale quickly.
 
+A candidate may also arrive already staged, from tooling rather than from a live conversation — the `skill-promotion-queue` harness stages one when an installed skill has diverged from its hub revision, and again when a never-triggered skill accumulates enough evidence to be questioned. Review those exactly like a hand-written candidate: a staged file is not a decision, and its pre-filled sections are a starting point to verify, not findings to accept. Machine-staged candidates carry the diff that triggered them, so classify each hunk before proposing anything — a genuine improvement worth promoting, a machine-local or task-specific edit that must never reach the hub, or drift to revert.
+
 ## Non-negotiable boundaries
 
 - Never publish directly to `main`.

@@ -36,6 +36,8 @@ FORBIDDEN_PARTS = {
 }
 COMMAND_TIMEOUT_SECONDS = 300.0
 VALIDATION_TIMEOUT_SECONDS = 900.0
+# GitHub CLI subcommands that take the repository positionally and reject --repo.
+GH_POSITIONAL_REPOSITORY_COMMANDS = {("repo", "view")}
 
 
 class QueueError(RuntimeError):
@@ -304,8 +306,21 @@ def validate_exact_head(root: Path, expected_head: str) -> None:
 
 
 def gh(root: Path, repository: str, *arguments: str) -> str:
-    """Run GitHub CLI for the explicitly requested repository."""
-    return run(["gh", *arguments, "--repo", repository], cwd=root).stdout.strip()
+    """Run GitHub CLI for the explicitly requested repository.
+
+    Repository placement is per subcommand, not uniform. `pr` and `api` take --repo, but
+    `repo view` has no --repo flag at all and takes the repository positionally; sending
+    --repo there fails with "unknown flag: --repo" and blocks every publication.
+
+    A positional value is safe: validate_repository() runs before any gh call and
+    enforces the owner/name form with an alphanumeric first character, so the value can
+    never be parsed as a flag.
+    """
+    if tuple(arguments[:2]) in GH_POSITIONAL_REPOSITORY_COMMANDS:
+        command = ["gh", *arguments[:2], repository, *arguments[2:]]
+    else:
+        command = ["gh", *arguments, "--repo", repository]
+    return run(command, cwd=root).stdout.strip()
 
 
 def push_arguments(branch: str, *, temporary_askpass: bool) -> list[str]:
