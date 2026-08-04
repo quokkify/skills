@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/quokkify/skills/compare/v0.7.3...v0.8.0) (2026-08-04)
+
+
+### Features
+
+* **skill-promotion-queue:** ship upgrade, prune, and cycle harness scripts ([#44](https://github.com/quokkify/skills/issues/44)) ([048c89a](https://github.com/quokkify/skills/commit/048c89a152bb2e83e31acf53ea9ab670ec7e901f))
+
 ## [0.7.3](https://github.com/quokkify/skills/compare/v0.7.2...v0.7.3) (2026-08-03)
 
 
