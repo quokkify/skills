@@ -27,7 +27,10 @@ class ReleaseConfigurationTests(unittest.TestCase):
         )
         self.assertNotIn("changelog-sections", config)
         self.assertEqual(config["packages"]["."]["package-name"], "skills")
-        self.assertEqual(manifest, {".": "0.7.1"})
+        # Assert the manifest shape, not a frozen version: release-please rewrites this
+        # value on every release, so a hard-coded number breaks the suite each time.
+        self.assertEqual(list(manifest), ["."])
+        self.assertRegex(manifest["."], r"^\d+\.\d+\.\d+$")
 
     def test_release_workflow_uses_pinned_project_toolkit(self) -> None:
         workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
