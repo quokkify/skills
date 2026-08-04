@@ -59,6 +59,21 @@ A capture-and-promote loop grows a library; keeping it useful over time needs a 
 - Run a scheduled library-health pass (for example weekly or per sprint) together with `repository-quality-gates`: dedupe, merge micro-skills, retire stale entries, and re-verify frontmatter, links, and referenced files.
 - Keep signal collection and scheduling in each runtime's own configuration. Only the decision procedure and cadence are portable; telemetry wiring, cron or scheduler definitions, and concrete paths must stay out of the shared repository.
 
+### Signal shape and automated intake
+
+Give the local collector a machine-readable output beside its human report, so the maintenance pass reads a contract instead of re-deriving state or scraping markdown. One row per installed skill is enough: name, usage count, checksum of the installed skill file, resolved upstream path, upstream checksum, and a state of `in-sync`, `stale`, or `local-only`.
+
+That signal turns two of the classifications above into scripted intake, which the `skill-promotion-queue` harness implements as `skill_upgrade.sh` (stale → upgrade candidate) and `skill_prune.sh` (never triggered → prune verdict with evidence). Both only stage proposals; every removal or promotion still needs explicit approval.
+
+Two guards matter more than the heuristics, because an absent signal is not evidence of disuse:
+
+- Compare against the signal's own history, not just the current date. A usage log that has only existed for two weeks cannot support a "unused for 30+ days" claim about anything.
+- Compare against how long the skill has actually been installed. A skill synced yesterday has had no chance to be triggered.
+
+When either guard fails, the correct verdict is "keep, insufficient evidence" — not "prune". Report duplication with the evidence that produced it (which skill it overlaps and by how much) so a reviewer can disagree with the measurement rather than only with the conclusion.
+
+Compare checksums against the upstream revision you actually intend to match. Comparing against a local checkout that has drifted behind its remote reports "in sync" when it means "matches my stale copy"; state the checkout's position in the report so the number is interpretable.
+
 ## Pitfalls
 
 - Mechanically moving every legacy tool directory into `adapters/`.

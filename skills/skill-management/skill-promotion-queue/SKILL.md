@@ -100,7 +100,15 @@ For another machine or runtime, start with `templates/local-agent-bootstrap.md`.
 
 ### Reference Claude Code harness
 
-`templates/completion_gate.sh` and `templates/publish.sh` are a runtime-generic reference implementation for Claude Code: a Stop-hook gate that holds completion while the lane queue is unsettled, and a thin wrapper around the bundled `scripts/publish_queue.py`. They contain no machine paths or secrets — every location is read at runtime from a machine-local `config.env`, so the same scripts install unchanged on every device.
+`templates/` holds a runtime-generic reference implementation for Claude Code. Every script reads its locations at runtime from a machine-local `config.env` and contains no machine paths or secrets, so the same files install unchanged on every device.
+
+| Script | Hook | Role |
+|---|---|---|
+| `completion_gate.sh` | Stop | Holds completion while the lane queue is unsettled. Also carries non-blocking advisories. |
+| `publish.sh` | — | Thin wrapper around `scripts/publish_queue.py`. `--target primary\|secondary`. |
+| `skill_upgrade.sh` | — | Stages an upgrade candidate per skill whose installed `SKILL.md` diverged from the hub. |
+| `skill_prune.sh` | — | Verdict report for never-triggered skills. Deletes nothing on its own. |
+| `skill_cycle.sh` | SessionStart (async) | Chains the three above on a cadence. Silent, always exits 0. |
 
 Install them on a machine with:
 
@@ -110,7 +118,22 @@ bash skills/skill-management/skill-promotion-queue/scripts/install-harness.sh \
   --worktree <absolute-path-to-lane-worktree> --main <absolute-path-to-stable-main-checkout>
 ```
 
-The installer copies the scripts and the canonical publisher into the Claude configuration directory, seeds `config.env` from `templates/config.example.env` without overwriting an existing one, and idempotently registers the Stop hook in `settings.json`. The per-machine lane and any HTTPS credentials stay local and are never copied between machines, so synchronizing devices means reinstalling the same portable scripts, not sharing local state.
+The installer copies the scripts and the canonical publisher into the Claude configuration directory, seeds `config.env` from `templates/config.example.env` without overwriting an existing one, and idempotently registers both hooks in `settings.json`. The per-machine lane and any HTTPS credentials stay local and are never copied between machines, so synchronizing devices means reinstalling the same portable scripts, not sharing local state.
+
+`SKILL_HARNESS_REPO` must equal the worktree's `origin` URL exactly. The publisher compares them as strings and fails closed on any difference — GitHub's legacy redirect for a transferred or renamed repository does not satisfy the check, so a repository move requires updating both the remote and `config.env` together.
+
+### Automated intake
+
+`skill_upgrade.sh` and `skill_prune.sh` are an automated feed into the same review pipeline the `skill-review` skill drives by hand. They only ever *stage* proposals in the private candidate directory; the semantic decision and the approval stay with the agent and the owner.
+
+Both read a machine-local health signal (`state.tsv`: one row per installed skill with its usage count, checksums, hub path, and `in-sync` / `stale` / `local-only` state). That collection layer belongs to the `shared-skill-library-maintenance` skill and is deliberately not shipped here — without it both scripts no-op with an explanatory message instead of failing.
+
+Two write paths exist, and each requires an explicit flag, never a cadence run:
+
+- `skill_upgrade.sh --adopt <skill>` copies the installed `SKILL.md` over its hub copy inside the lane worktree and commits it.
+- `skill_prune.sh --apply` removes `prune`-verdict skills from the hub copy inside the lane worktree and commits the removal.
+
+Neither pushes. Both refuse a dirty lane, a lane on the wrong branch, and any path outside the lane worktree. `skill_prune.sh` additionally enforces a hard-coded keep list that `--apply` re-checks, so a core skill cannot be removed even if a verdict is wrong.
 
 ## Completion Criteria
 

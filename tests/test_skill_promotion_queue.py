@@ -123,6 +123,32 @@ class SkillPromotionQueueTests(unittest.TestCase):
             with self.assertRaisesRegex(publish_queue.QueueError, "invalid default branch"):
                 publish_queue.resolve_default_branch(REPOSITORY_ROOT, "example/skills")
 
+    # regression: gh() previously appended --repo to every subcommand, but `gh repo view`
+    # has no --repo flag and takes the repository positionally, so every publication died
+    # with "unknown flag: --repo". Patching gh() itself cannot catch that, so assert the
+    # argv this builds for both placement shapes.
+    def test_gh_places_repository_per_subcommand(self) -> None:
+        empty = subprocess.CompletedProcess(["gh"], 0, "", "")
+
+        with patch.object(publish_queue, "run", return_value=empty) as mocked_run:
+            publish_queue.gh(
+                REPOSITORY_ROOT, "example/skills", "repo", "view", "--json", "defaultBranchRef"
+            )
+        argv = mocked_run.call_args.args[0]
+        self.assertEqual(
+            argv,
+            ["gh", "repo", "view", "example/skills", "--json", "defaultBranchRef"],
+        )
+        self.assertNotIn("--repo", argv)
+
+        with patch.object(publish_queue, "run", return_value=empty) as mocked_run:
+            publish_queue.gh(REPOSITORY_ROOT, "example/skills", "pr", "list", "--state", "open")
+        argv = mocked_run.call_args.args[0]
+        self.assertEqual(
+            argv,
+            ["gh", "pr", "list", "--state", "open", "--repo", "example/skills"],
+        )
+
     def test_push_preserves_normal_helper_without_temporary_askpass(self) -> None:
         normal = publish_queue.push_arguments("automation/skill-improvements/lane", temporary_askpass=False)
         askpass = publish_queue.push_arguments("automation/skill-improvements/lane", temporary_askpass=True)
