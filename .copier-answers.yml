@@ -8,6 +8,6 @@ release_please: true
 renovate: true
 renovate_config_repository: quokkify/renovate-presets
 renovate_presets:
-- default
-- github-actions
-toolkit_version: v2.8.2
+  - default
+  - github-actions
+toolkit_version: v2.10.1
