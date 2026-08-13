@@ -4,16 +4,19 @@ title: How to Use These Skills
 
 # How to Use These Skills
 
-This repository has two intentionally separate layers:
+This repository has three intentionally separate layers:
 
 1. `skills/` — portable workflow knowledge and the only source of truth.
-2. `adapters/` — optional integration files for a specific agent.
+2. `adapters/` — optional integration files and genericized global templates for a specific agent runtime, plus the runtime-neutral base under `adapters/shared/`.
+3. A **private overlay**, kept in a separate repository, holding your real personal, employer, and machine-specific configuration.
+
+Layers 1 and 2 are public because they contain no one's actual configuration. Layer 3 is never published here.
 
 ## Claude Code
 
 Install the portable skills with the skills CLI. Claude Code supports personal skills under `~/.claude/skills` and project skills under `.claude/skills`.
 
-No global Claude configuration is copied from this repository. Sub-agent personas, output styles, status lines, and project-specific commands are not portable skills and remain user- or project-owned.
+Global configuration is separate and optional. The templates under `adapters/shared/` and `adapters/claude/` are genericized: a runtime-neutral instruction base, lifecycle hook scripts, settings and hook wiring, subagent definitions, and an injectable `CLAUDE.md` block. They contain no employer identifiers, credentials, machine paths, or pinned personal model versions. Copy them manually for now; a one-command installer that merges your private overlay over the templates arrives in a follow-up change, and any such installer must back up rather than overwrite existing files.
 
 ## Codex
 
@@ -53,7 +56,7 @@ The portable orchestration skills prefer instructions from the target project be
 
 The execution shape intentionally differs by agent:
 
-- Claude Code may use user- or project-owned routing when available; this repository publishes no global personas or model-routing adapter.
+- Claude Code prefers user- or project-owned routing when available. The published `adapters/` templates offer a genericized starting point that selects roles by capability; they do not pin model versions or encode one user's routing policy, and a private overlay or project file always wins.
 - Codex defaults to a compact `plan -> executor -> validation` flow and adds research or review roles only for distinct risks.
 
 The workflow remains shared; only delegation mechanics and tool-specific configuration belong in an adapter or target project.
@@ -66,10 +69,11 @@ Keep stack- and domain-specific instructions in the target project, for example:
 - `CLAUDE.md` for Claude Code
 - `.agents/skills/<name>/SKILL.md` or `.claude/skills/<name>/SKILL.md` for truly project-local skills
 
-Do not copy shared skills into multiple tracked directories in this repository.
+Do not copy shared skills into multiple tracked directories in this repository, and do not duplicate a skill body into an adapter.
 
 ## Related Pages
 
 - [Quick Start](../quick-start.md)
+- [ADR-0001: Publish generic global agent adapters](../adr/0001-publish-generic-global-agent-adapters.md)
 - [Reviewing and Promoting Skills](reviewing-and-promoting-skills.md)
 - [FAQ](../FAQ.md)

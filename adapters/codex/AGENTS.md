@@ -9,17 +9,61 @@ This repository contains portable skills under `skills/<category>/<name>/SKILL.m
 3. Prefer project-local guidance in the target repo such as `AGENTS.md` and `.agents/` over bundled generic roles.
 4. Use the skill instructions as the workflow source of truth.
 5. Use the bundled references in each skill directory instead of assuming Claude-specific files exist.
-6. When sub-agents are unavailable natively, emulate them explicitly by splitting work into these roles:
-   - research
-   - implementation
-   - validation
-   - test engineering
+6. Delegate to **native Codex subagents** (see below) rather than emulating roles inside a single thread.
+
+## Native subagents
+
+Codex CLI has first-class subagents. Multi-agent support is stable and enabled by default, so there is no feature flag to turn on and nothing to emulate.
+
+Tools available to the orchestrator:
+
+- `spawn_agent` — start a subagent with a role and a task.
+- `send_input` — feed additional context to a running subagent.
+- `wait_agent` — block on a subagent and collect its result.
+- `resume_agent` — continue a subagent with its context intact.
+- `close_agent` — tear a subagent down when its slice is finished.
+
+In the TUI, `/agent` inspects and drives the same machinery.
+
+Roles are declared in `config.toml` under the `[agents]` **table**, one subtable per role. There is no `[[agents]]` array-of-tables:
+
+```toml
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 6
+
+[agents.reviewer]
+description = "Reviewer focused on correctness, security, and missing tests."
+config_file = "agents/reviewer.toml"
+```
+
+Each `config_file` is a standalone TOML agent definition, resolved relative to the declaring `config.toml` — for a global install that means `$CODEX_HOME/agents/*.toml`. Every definition MUST set `name`, `description`, and `developer_instructions`; `name` is the source of truth, not the filename. Definitions may also layer in `model`, `model_reasoning_effort`, `sandbox_mode`, `[mcp_servers.*]`, and `[[skills.config]]`.
+
+Built-in roles are `default`, `worker`, and `explorer`. Declaring an agent named `explorer` intentionally overrides the built-in one.
+
+Consequence for orchestration: parallelism is real, so ownership discipline matters more than role invention. Assign explicit implementation slices to subagents instead of collapsing routine execution into the main thread, and cap concurrency at what `max_concurrent_threads_per_session` allows.
+
+## Native hooks
+
+Codex hooks are native and do not need to be re-expressed as instructions. Eleven events fire: `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `PreToolUse`, `PermissionRequest`, `PostToolUse`, `PreCompact`, `PostCompact`, `SubagentStart`, `SubagentStop`, `Stop`.
+
+Key properties:
+
+- Configure them in `$CODEX_HOME/hooks.json`, as `[[hooks.<Event>]]` blocks in `config.toml`, or in `<repo>/.codex/hooks.json` for a trusted project. **All layers are additive**, so declaring the same handler twice runs it twice.
+- The stdin contract is the same JSON object Claude Code passes: `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `model`, plus `turn_id`, `permission_mode`, `tool_name`, `tool_use_id`, `tool_input`, and `tool_response` where applicable. Portable hook scripts work on both runtimes.
+- Only handlers with `type = "command"` execute. `prompt` and `agent` handler types parse but are silently skipped — never rely on them.
+- To block a tool call, return `permissionDecision: "deny"` with a non-empty `permissionDecisionReason`; `updatedInput` requires `permissionDecision: "allow"`. The universal escape hatch is exit code 2 with the reason on stderr.
+- `Stop` and `SubagentStop` returning `decision: "block"` plus a `reason` creates a continuation prompt — this is how a completion gate forces more work.
+- Non-managed command hooks are hash-trusted: approve them once via the in-TUI `/hooks` command. There is no `codex hooks` CLI subcommand.
+- Kill switch: `[features] hooks = false`.
+
+So when a rule is mechanically checkable — protected paths, formatting, completion gates, session context — implement it as a hook, not as prose an agent may skip.
 
 ## Post-task skill review
 
 After significant work, use `skill-review` to decide whether a reusable procedure, correction, workaround, or missing instruction should become a skill change. Skip routine work, temporary state, and one-off facts.
 
-Before loading it, verify that `skill-review` is available through the environment's skill discovery mechanism. It is a skill name, not a shell command. If it is unavailable, tell the user how to connect or install the repository skills, or present the candidate inline without inventing a command.
+Before loading it, verify that `skill-review` is available through the environment's skill discovery mechanism. It is a skill name, not a shell command. In Codex it resolves through `.agents/skills` (current directory up to the repo root), `$HOME/.agents/skills`, `/etc/codex/skills`, or `$CODEX_HOME/skills`, and is invoked as `$skill-review`; `/skills` lists what actually resolved. If it is unavailable, tell the user how to connect or install the repository skills, or present the candidate inline without inventing a command.
 
 The review produces a private candidate first. Do not copy local agent state into the shared repository, edit public `main`, create a promotion branch, push, or open a pull request until the user approves the candidate. Approved shared changes must use the repository's branch, validation, secret-scan, and pull-request flow.
 
@@ -44,7 +88,7 @@ Treat Codex as cost-sensitive by default:
 4. Parallelize only when ownership is clearly disjoint and the time savings justify the extra context cost.
 5. Keep handoff packets compact so each agent loads only the minimum useful context.
 
-If the environment does not expose explicit low-cost model tiers, control cost through fewer delegations and shorter context windows.
+Native subagents make parallelism cheap to *start*, not cheap to *run* — each thread loads its own context. Control cost with `agents.default_subagent_model` and `agents.default_subagent_reasoning_effort` for the global floor, per-agent `model_reasoning_effort` for the exceptions, and fewer delegations with shorter handoffs everywhere else.
 
 ## Role mapping
 
@@ -65,18 +109,17 @@ If the environment does not expose explicit low-cost model tiers, control cost t
 - `validation-generalist`: standard correctness checks.
 - `test-engineer`: regression-focused coverage updates.
 
-### Built-in Codex roles in ECC-style repos
+### Roles shipped with this adapter
 - `explorer`: read-only codebase evidence and regression tracing.
 - `docs_researcher`: primary-doc and API verification.
 - `reviewer`: correctness, regression, security, and missing tests review.
 
-These roles do not replace executor ownership. If native writer roles are missing, the orchestrator should still assign explicit implementation slices instead of collapsing routine execution into the main thread by default.
-These roles also do not provide the same fine-grained cost ladder as Claude/ECC role families. When the backend supports model choice, prefer the cheapest capable executor. When it does not, compensate by reducing unnecessary delegation and keeping handoffs compact.
+These three are the concrete `[agents.<name>]` declarations in this adapter's `config.template.toml`, backed by `agents/explorer.toml`, `agents/docs-researcher.toml`, and `agents/reviewer.toml`. They are read-only by design, so they never replace executor ownership: routine implementation still needs an explicit write-capable slice.
 
 ## Operating rules
 - Make architectural decisions at orchestrator level.
-- Run independent research or implementation tracks in parallel when the environment supports it.
-- If parallel sub-agents are unavailable, still keep the phases explicit: assessment -> research -> planning -> execution -> validation.
+- Run independent research or implementation tracks in parallel using `spawn_agent`, then collect with `wait_agent`.
+- Keep the phases explicit even inside a single thread: assessment -> research -> planning -> execution -> validation.
 - In full-stack repos, split backend and frontend work by ownership boundary before deciding whether the tracks can run in parallel.
 - In domain-heavy repos, run a separate domain-rules review whenever business rules, statuses, calculations, or critical flows change.
 - Prefer concise decision-focused reporting over long code walkthroughs.
@@ -86,11 +129,12 @@ These roles also do not provide the same fine-grained cost ladder as Claude/ECC 
 - Before each delegated implementation step, prepare a compact handoff packet with goal, facts, constraints, files, and expected output.
 - Share results between agents through orchestrator-synthesized handoff packets, not by assuming peer-to-peer shared state.
 - If the next implementation step is already clear, do not extend research just to satisfy process ceremony.
-- Use the cheapest capable executor or reviewer whenever the environment exposes model tiers.
+- Use the cheapest capable executor or reviewer the configured model tiers allow.
 - Default execution shape should be `orchestrator plan -> one executor -> validation`, not `many agents by default`.
 - Add a second executor only for truly disjoint files or layers.
 - Add a research agent only for missing facts, not for routine repo reading.
 - Add a review agent only after implementation, unless the task is security- or architecture-sensitive from the start.
+- Keep authoring and review in separate passes; never self-approve in the same active context.
 
 ## Codex Budget Modes
 
@@ -117,6 +161,8 @@ Do not enter this mode unless the task risk justifies the cost.
 ## Recommended project usage
 
 Copy or symlink this file into a target repo as `AGENTS.md` when you want Codex to apply the same sub-agent orchestration style inside that project.
+
+Note the shadowing trap: an `AGENTS.override.md` in the same directory **replaces** `AGENTS.md` rather than appending to it. Keep exactly one instruction file per directory level.
 
 For a target repository, prefer its own local role docs, paths, stack constraints, verification commands, and documented domain source of truth.
 

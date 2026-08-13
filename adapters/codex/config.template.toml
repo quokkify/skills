@@ -1,0 +1,196 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# ---------------------------------------------------------------------------
+# Codex CLI configuration TEMPLATE
+# ---------------------------------------------------------------------------
+#
+# This file is a PUBLISHABLE template, not a working personal config. Copy it
+# to `$CODEX_HOME/config.toml` (defaults to `~/.codex/config.toml`) and then
+# layer machine-local values on top.
+#
+# WHAT MUST NEVER BE COMMITTED HERE
+#   * `[projects."..."]` trust lists — they leak the directory layout and the
+#     names of private/employer repositories from a specific machine.
+#   * MCP servers that carry credentials, tokens, internal hostnames, or
+#     absolute paths into a local checkout (issue trackers, test-management
+#     systems, internal gateways, in-house tooling).
+#   * `notify` commands, `[desktop]`, `[tui]` UI state, `[marketplaces]`,
+#     `[notice]`, and `[shell_environment_policy]` binary SHA pins — all of
+#     these are machine-local runtime state written by the client itself.
+#   Keep every one of those in a PRIVATE overlay repository (or leave them
+#   only in the live `$CODEX_HOME/config.toml`) and merge them at install time.
+#
+# SECURITY ANTI-PATTERN — never template this, and delete it if you find it:
+#   [projects."/"]
+#   trust_level = "trusted"
+#   That trusts the entire filesystem root, so every directory Codex is ever
+#   pointed at becomes a trusted project and project-scoped `.codex/config.toml`
+#   plus `.codex/hooks.json` files execute without review. Grant trust
+#   per-repository instead.
+#
+# MACHINE-MANAGED BLOCKS
+#   A real `config.toml` may contain a region delimited by:
+#       # BEGIN OMC MANAGED MCP REGISTRY
+#       ...
+#       # END OMC MANAGED MCP REGISTRY
+#   Everything between those markers is rewritten by oh-my-claudecode. Any
+#   installer that edits `config.toml` MUST preserve that block verbatim (or
+#   re-render it through the tool that owns it) instead of overwriting the file.
+#
+# CONFIG LAYER PRECEDENCE (highest first)
+#   1. CLI `-c key=value` overrides
+#   2. `<repo>/.codex/config.toml`            (trusted projects only)
+#   3. `$CODEX_HOME/<name>.config.toml`       (profile, via `codex --profile <name>`)
+#   4. `$CODEX_HOME/config.toml`              (this file)
+#   5. `/etc/codex/config.toml`               (system)
+#   6. built-in defaults
+#
+# `[profiles.<name>]` tables are LEGACY and can no longer be written. Create
+# `$CODEX_HOME/strict.config.toml` and run `codex --profile strict` instead.
+# See README.md in this directory for the migration.
+#
+# Removed keys — do not reintroduce: `disable_response_storage`,
+# `experimental_instructions_file`.
+# ---------------------------------------------------------------------------
+
+# --- Runtime defaults ------------------------------------------------------
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "live"
+
+# Pin a model only if you actually want to override the client default.
+# Model ids rot quickly; prefer leaving both keys commented out.
+# model = "<model-id>"
+model_reasoning_effort = "medium"
+
+# Instructions come from AGENTS.md. Two traps:
+#   * `AGENTS.override.md` REPLACES the same-directory `AGENTS.md` — it does
+#     not append. Ship exactly one file at the `$CODEX_HOME` level.
+#   * `model_instructions_file` replaces Codex's BUILT-IN instructions, not
+#     AGENTS.md. Leave it unset.
+# project_doc_max_bytes = 32768
+# project_doc_fallback_filenames = ["CLAUDE.md"]
+# project_root_markers = [".git"]
+
+# --- Features --------------------------------------------------------------
+
+[features]
+# Hooks are native. Kill switch: set this to false.
+hooks = true
+# `multi_agent` is stable and ON BY DEFAULT (`codex features list`), so it is
+# deliberately NOT set here — an explicit line would only add drift.
+
+# --- Hooks -----------------------------------------------------------------
+
+# Hooks are intentionally NOT declared in this file. They live in
+# `$CODEX_HOME/hooks.json` (see hooks.json in this directory).
+#
+# Why one location and not both: every hook layer is ADDITIVE — config.toml
+# `[[hooks.<Event>]]` blocks, `$CODEX_HOME/hooks.json`, and a trusted
+# `<repo>/.codex/hooks.json` all run. Declaring the same handler in two
+# layers runs it twice. The JSON file also validates with ordinary JSON
+# tooling and diffs cleanly, so it is the single source of truth here.
+#
+# For reference, the equivalent TOML shape would be:
+#   [[hooks.PreToolUse]]
+#   matcher = "^Bash$"
+#   [[hooks.PreToolUse.hooks]]
+#   type = "command"
+#   command = 'sh "$CODEX_HOME/hooks/guard-bash.sh"'
+#   timeout = 15
+
+# --- Subagents -------------------------------------------------------------
+
+# `[agents]` is a TABLE. There is no `[[agents]]` array-of-tables.
+# Tools: spawn_agent, send_input, resume_agent, wait_agent, close_agent.
+# TUI: `/agent`.
+[agents]
+enabled = true
+# `max_threads` is a legacy alias for this key — use the new name.
+max_concurrent_threads_per_session = 6
+max_depth = 1
+# Set these to steer every subagent at once instead of pinning a model in each
+# agent definition file.
+# default_subagent_model = "<model-id>"
+default_subagent_reasoning_effort = "medium"
+
+# Each declaration points at a standalone agent TOML file. `config_file` is
+# resolved relative to the config.toml that declares it, so these expect the
+# agent files to be installed at `$CODEX_HOME/agents/`.
+#
+# Built-in roles are `default`, `worker`, and `explorer`. Declaring an agent
+# named `explorer` intentionally OVERRIDES the built-in one.
+
+[agents.explorer]
+description = "Read-only codebase explorer that gathers evidence before changes are proposed."
+config_file = "agents/explorer.toml"
+nickname_candidates = ["scout", "tracer"]
+
+[agents.reviewer]
+description = "Reviewer focused on correctness, security, regressions, and missing tests."
+config_file = "agents/reviewer.toml"
+nickname_candidates = ["critic", "owner"]
+
+[agents.docs_researcher]
+description = "Documentation specialist that verifies APIs, framework behavior, and release notes."
+config_file = "agents/docs-researcher.toml"
+nickname_candidates = ["librarian", "reader"]
+
+# --- Skills ----------------------------------------------------------------
+
+# Discovery order for `$skill-name` invocation (`/skills` lists what resolved):
+#   `$CWD/.agents/skills` and every parent up to the repo root
+#   `$REPO_ROOT/.agents/skills`
+#   `$HOME/.agents/skills`
+#   `/etc/codex/skills`
+#   `$CODEX_HOME/skills`
+[skills]
+include_instructions = true
+
+[skills.bundled]
+enabled = true
+
+# Add the shared skill library by path. Repeat the block per extra root.
+[[skills.config]]
+path = "~/.agents/skills"
+enabled = true
+
+# --- MCP servers -----------------------------------------------------------
+
+# STDIO transport: `command` / `args` / `env` / `cwd`.
+# Streamable HTTP transport: `url` / `auth` / `bearer_token_env_var` /
+# `http_headers`. Plain SSE is NOT supported.
+# Common extras: `startup_timeout_sec` (10), `tool_timeout_sec` (60),
+# `enabled`, `required`, `enabled_tools`, `disabled_tools`,
+# `default_tools_approval_mode` (auto | prompt | writes | approve), and
+# per-tool `[mcp_servers.<name>.tools.<tool>] approval_mode`.
+#
+# Only public, credential-free packages belong in a template. Anything that
+# needs a token, an internal URL, or a local checkout goes in the private
+# overlay.
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+startup_timeout_sec = 15
+
+[mcp_servers.sequential-thinking]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+# Example of the HTTP shape with a token read from the environment. The env
+# var name is a placeholder — the value itself is never written to config.
+# [mcp_servers.example-http]
+# url = "https://mcp.example.invalid/mcp"
+# bearer_token_env_var = "EXAMPLE_MCP_TOKEN_NOT_A_REAL_SECRET"
+# tool_timeout_sec = 120
+# default_tools_approval_mode = "prompt"
+#
+# [mcp_servers.example-http.tools.delete_everything]
+# approval_mode = "approve"
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+enabled = false

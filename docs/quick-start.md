@@ -19,7 +19,9 @@ Install the portable skills:
 npx skills add quokkify/skills --skill '*' -g -a claude-code -y
 ```
 
-No global Claude configuration is copied. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.
+That command installs skills only. Global configuration is a separate, optional layer: this repository publishes **genericized templates** under `adapters/shared/` and `adapters/claude/`—a runtime-neutral instruction base, lifecycle hook scripts, and per-runtime wiring—and never anyone's real configuration. Copy them by hand for now; a one-command installer that merges a private overlay over the templates arrives in a follow-up change.
+
+Your own employer conventions, project trust lists, credentialed MCP servers, private skills, and machine paths stay in your private overlay, outside this repository. See [ADR-0001](adr/0001-publish-generic-global-agent-adapters.md).
 
 ## Codex
 

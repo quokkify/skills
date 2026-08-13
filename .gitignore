@@ -22,6 +22,12 @@ settings.local.json
 .claude/settings.local.json
 .claude/projects/
 .hermes/
+.omc/
+.opencode/
+.mcp.json
+/AGENTS.md
+/opencode.json
+/claude-config/
 
 # Personal context must stay outside this public repository
 /MEMORY.md

@@ -1,0 +1,28 @@
+{
+  "model": "opus",
+  "effortLevel": "medium",
+  "theme": "dark-ansi",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/sessionstart-repo-context.sh\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/pretooluse-bash-guard.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
