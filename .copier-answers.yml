@@ -1,4 +1,4 @@
-_commit: v2.10.1
+_commit: v2.12.1
 _src_path: https://github.com/quokkify/project-toolkit.git
 allure_report: false
 components: []
@@ -8,6 +8,6 @@ release_please: true
 renovate: true
 renovate_config_repository: quokkify/renovate-presets
 renovate_presets:
-  - default
-  - github-actions
-toolkit_version: v2.10.1
+- default
+- github-actions
+toolkit_version: v2.12.1
