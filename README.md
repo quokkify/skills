@@ -2,6 +2,8 @@
 
 **A portable operating layer for AI agents: shared skills, recoverable configuration, and safer execution harnesses.**
 
+Generated with `quokkify/project-toolkit` at `v2.10.1`. Run `copier update` to apply future template changes; Renovate updates workflow version references independently.
+
 ![Skills ecosystem: public hub, private configuration vault, and agent harness](docs/assets/skills-ecosystem.svg)
 
 The project is built around one idea: an agent should be able to **learn once, move between providers, recover its setup, and execute through explicit safety boundaries**.
