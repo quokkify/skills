@@ -1,7 +1,7 @@
 <!-- SKILLS-HUB:START -->
 <!--
-Managed block. The forthcoming installer injects everything between the SKILLS-HUB markers
-into ~/.claude/CLAUDE.md and rewrites it in place on every run. Hand edits inside these
+Managed block. `scripts/bootstrap.sh` injects everything between the SKILLS-HUB markers
+into the configured Claude `CLAUDE.md` and updates it idempotently. Hand edits inside these
 markers are lost. Put machine-local or personal rules OUTSIDE this block, or in a private
 overlay file imported from outside it.
 

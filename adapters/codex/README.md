@@ -17,19 +17,12 @@ Verified against Codex CLI **0.146.0**. Everything here is a template: no machin
 
 `$CODEX_HOME` defaults to `~/.codex`.
 
-There is no installer for these files yet. `scripts/install-codex-agents.sh` currently copies only `AGENTS.md` into a target directory; a `scripts/bootstrap.sh` that lays down the config, hooks, and agent definitions is planned for a follow-up change. Until then, copy the files by hand.
+Use `./scripts/bootstrap.sh --provider codex` to install these files with backups, additive JSON/TOML merges, rollback on failure, and a symlinked global `AGENTS.md`. Add `--overlay DIR` for a private layer or `--dry-run` to inspect operations without changing the system. The separate `scripts/install-codex-agents.sh` helper still copies project-level `AGENTS.md` files.
 
 ## Manual install
 
 ```sh
-CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
-mkdir -p "$CODEX_HOME/agents" "$CODEX_HOME/hooks"
-
-# Base config — merge by hand if you already have one (see the warning below).
-cp adapters/codex/config.template.toml "$CODEX_HOME/config.toml"
-
-cp adapters/codex/hooks.json "$CODEX_HOME/hooks.json"
-cp adapters/codex/agents/*.toml "$CODEX_HOME/agents/"
+./scripts/bootstrap.sh --provider codex
 ```
 
 Then, in the Codex TUI, run `/hooks` and approve the hook entries (see *Hook trust* below).

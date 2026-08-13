@@ -13,25 +13,25 @@ cd skills
 
 ## Claude Code
 
-Install the portable skills:
+Install the portable skills and Claude adapter:
 
 ```bash
-npx skills add quokkify/skills --skill '*' -g -a claude-code -y
+./scripts/bootstrap.sh --provider claude --install-skills
 ```
 
-That command installs skills only. Global configuration is a separate, optional layer: this repository publishes **genericized templates** under `adapters/shared/` and `adapters/claude/`—a runtime-neutral instruction base, lifecycle hook scripts, and per-runtime wiring—and never anyone's real configuration. Copy them by hand for now; a one-command installer that merges a private overlay over the templates arrives in a follow-up change.
+The installer merges genericized templates into the selected runtime home, backs up changed files with a timestamp, and preserves foreign managed blocks. Add `--overlay /path/to/private-overlay` to layer private files after the public base. The overlay is read in place and is never copied into the checkout.
 
 Your own employer conventions, project trust lists, credentialed MCP servers, private skills, and machine paths stay in your private overlay, outside this repository. See [ADR-0001](adr/0001-publish-generic-global-agent-adapters.md).
 
 ## Codex
 
-Install the portable skills:
+Install the portable skills and Codex adapter:
 
 ```bash
-npx skills add quokkify/skills --skill '*' -g -a codex -y
+./scripts/bootstrap.sh --provider codex --install-skills
 ```
 
-Optionally copy `adapters/codex/AGENTS.md` into a target project:
+The global Codex instruction file is a symlink to the checkout's shared base. After installation, open the Codex TUI and run `/hooks` to approve command hooks. For project-specific instructions, copy `adapters/codex/AGENTS.md` into a target project:
 
 ```bash
 ./scripts/install-codex-agents.sh /path/to/your/project
@@ -54,9 +54,10 @@ Start a new Hermes session after changing the discovery path. Keep shared edits 
 ## Claude Code and Codex Together
 
 ```bash
-npx skills add quokkify/skills --skill '*' -g -a claude-code -a codex -y
-./scripts/install-codex-agents.sh /path/to/your/project
+./scripts/bootstrap.sh --install-skills
 ```
+
+The default provider is `all`. Use `--dry-run` to inspect the complete operation list safely.
 
 ## Update the Shared Checkout
 
