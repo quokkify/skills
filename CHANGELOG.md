@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/quokkify/skills/compare/v0.8.0...v0.8.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* **template:** resolve Copier v2.10.1 conflicts ([#48](https://github.com/quokkify/skills/issues/48)) ([31a0ecd](https://github.com/quokkify/skills/commit/31a0ecd5ce96d9c28c6865570f36f0ab5b302198))
+
 ## [0.8.0](https://github.com/quokkify/skills/compare/v0.7.3...v0.8.0) (2026-08-04)
 
 
