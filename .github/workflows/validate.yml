@@ -52,6 +52,18 @@ jobs:
           )
           if answers.get("allure_report") and any(not path.is_file() for path in allure_paths):
               raise SystemExit("allure_report=true requires its generated workflow, config, and bounded extractor")
+          components = answers.get("components")
+          if answers.get("allure_report") and not components:
+              source_path = Path(str(answers.get("allure_external_workflow_path", "")))
+              if not source_path.is_file():
+                  raise SystemExit("external Allure reporting requires its configured source workflow")
+              minimum = answers.get("allure_external_artifact_min_count")
+              maximum = answers.get("allure_external_artifact_max_count")
+              if not isinstance(minimum, int) or not isinstance(maximum, int) or not 1 <= minimum <= maximum <= 50:
+                  raise SystemExit("external Allure artifact counts must satisfy 1 <= minimum <= maximum <= 50")
+          categories_file = answers.get("allure_categories_file")
+          if categories_file and not Path(str(categories_file)).is_file():
+              raise SystemExit("configured Allure categories file does not exist")
           if answers.get("allure_publish_pages") and not answers.get("allure_report"):
               raise SystemExit("allure_publish_pages=true requires allure_report=true")
           for path in (renovate_path, Path(".github/release-please/config.json"), Path(".github/release-please/manifest.json")):
