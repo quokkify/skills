@@ -76,10 +76,9 @@ Out of scope for this repository, permanently:
 
 ## Installer status
 
-A bootstrap script (`scripts/bootstrap.sh`) that installs the base, injects the block, and seeds
-the settings template is **forthcoming** and lands in a later change. Until it exists, treat the
-files here as reviewed source material and apply them by hand; nothing in this directory installs
-itself.
+A bootstrap script (`scripts/bootstrap.sh`) installs the base, shared hooks, settings merge, and
+the managed block. Run `./scripts/bootstrap.sh --provider claude`; add `--overlay DIR` to layer a
+private overlay after the public base and `--dry-run` to inspect operations without changes.
 
 ## Installing the skills
 
@@ -87,7 +86,7 @@ Skill installation is independent of the configuration layers above and already 
 identifier for Claude Code in the `npx skills` CLI is `claude-code`:
 
 ```bash
-npx skills add quokkify/skills --skill '*' -g -a claude-code -y
+./scripts/bootstrap.sh --provider claude --install-skills
 ```
 
 The CLI writes the skills into Claude Code's supported personal skill directory. For project-only

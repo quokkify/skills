@@ -41,11 +41,28 @@ Yes, if the process has filesystem write access. External directories are discov
 
 A same-named local Hermes skill can take precedence over the shared version.
 
-## What do the adapter installers do?
+## What does bootstrap do?
 
-`./scripts/install-codex-agents.sh /path/to/project` copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`. It does not change the canonical files under `skills/`.
+`./scripts/bootstrap.sh` installs the shared and selected provider adapter files into `$HOME/.claude` and/or `$HOME/.codex` (or environment overrides). It uses staged writes, timestamped backups, managed-block merges, and rollback on failure. `--dry-run` performs no filesystem, symlink, or Git configuration changes.
 
-The global adapter templates under `adapters/shared/`, `adapters/claude/`, and `adapters/codex/` have no installer yet; copy them manually until the merging installer ships in a follow-up change. Whatever installs them must back up existing files, never silently overwrite a user's configuration, and preserve managed blocks written by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`.
+`./scripts/install-codex-agents.sh /path/to/project` remains the separate project-level helper; it copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`.
+
+The installer backs up changed files, refuses a foreign global `core.hooksPath`, and preserves managed blocks written by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`.
+
+## What is the overlay structure?
+
+Use provider-relative paths matching the public adapter tree:
+
+```text
+overlay/
+├── shared/AGENTS.base.md
+├── shared/hooks/...
+├── claude/settings.template.json
+├── claude/CLAUDE.block.md
+└── codex/config.template.toml, hooks.json, agents/...
+```
+
+Only files that exist in the overlay replace their public counterparts before merging. The overlay itself is never copied into this checkout.
 
 ## Does this repository publish global configuration?
 
