@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[ -n "$GIT_ROOT" ] || exit 0
+
+case "${SKILLS_HUB_DISABLE_HOOKS:-0}:${SKILLS_HUB_DISABLE_GIT_HOOKS:-0}" in
+  1:*|*:1) exit 0 ;;
+esac
+case ",${SKILLS_HUB_SKIP_HOOKS:-},${SKILLS_HUB_SKIP_GIT_HOOKS:-}," in
+  *,pre-push,*|*,git-pre-push,*) exit 0 ;;
+esac
+GIT_DISABLE_FILE="$(git -C "$GIT_ROOT" rev-parse --git-path skills-hooks-disable 2>/dev/null || true)"
+if [ -f "$GIT_ROOT/.skills-hooks-disable" ] || { [ -n "$GIT_DISABLE_FILE" ] && [ -f "$GIT_DISABLE_FILE" ]; }; then
+  exit 0
+fi
+
+REMOTE_TIPS=()
+REMOTE_QUERY_OK=0
+if [ -n "${2:-}" ] && REMOTE_REFS="$(git -C "$GIT_ROOT" ls-remote --refs "$2" 2>/dev/null)"; then
+  REMOTE_QUERY_OK=1
+  while read -r remote_tip remote_ref; do
+    [ -n "${remote_tip:-}" ] || continue
+    if git -C "$GIT_ROOT" cat-file -e "$remote_tip^{commit}" 2>/dev/null; then
+      REMOTE_TIPS+=("$remote_tip")
+    fi
+  done <<< "$REMOTE_REFS"
+fi
+
+while read -r local_ref local_oid remote_ref remote_oid; do
+  [ -n "${local_oid:-}" ] || continue
+  case "$local_oid" in
+    0000000000000000000000000000000000000000) continue ;;
+  esac
+  case "${remote_oid:-}" in
+    0000000000000000000000000000000000000000)
+      [ "$REMOTE_QUERY_OK" -eq 1 ] || continue
+      REVISION_ARGS=("$local_oid")
+      if [ "${#REMOTE_TIPS[@]}" -gt 0 ]; then
+        REVISION_ARGS+=(--not "${REMOTE_TIPS[@]}")
+      fi
+      NEW_COMMITS="$(git -C "$GIT_ROOT" rev-list "${REVISION_ARGS[@]}")"
+      while IFS= read -r commit_oid; do
+        [ -n "$commit_oid" ] || continue
+        git -C "$GIT_ROOT" diff-tree --check --no-commit-id --root -r -m --diff-filter=ACMR "$commit_oid" --
+      done <<< "$NEW_COMMITS"
+      ;;
+    *)
+      git -C "$GIT_ROOT" diff --check --diff-filter=ACMR "$remote_oid" "$local_oid" --
+      ;;
+  esac
+done
+
+CHECK_PATH="$(git -C "$GIT_ROOT" config --path --get skills-hub.check.pre-push 2>/dev/null || true)"
+[ -z "$CHECK_PATH" ] && exit 0
+case "$CHECK_PATH" in
+  /*) ;;
+  *) CHECK_PATH="$GIT_ROOT/$CHECK_PATH" ;;
+esac
+[ -x "$CHECK_PATH" ] || exit 0
+cd "$GIT_ROOT"
+"$CHECK_PATH"

@@ -23,6 +23,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/completion-gate.sh\""
+          }
+        ]
+      }
     ]
   }
 }

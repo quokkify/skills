@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[ -n "$GIT_ROOT" ] || exit 0
+
+case "${SKILLS_HUB_DISABLE_HOOKS:-0}:${SKILLS_HUB_DISABLE_GIT_HOOKS:-0}" in
+  1:*|*:1) exit 0 ;;
+esac
+case ",${SKILLS_HUB_SKIP_HOOKS:-},${SKILLS_HUB_SKIP_GIT_HOOKS:-}," in
+  *,pre-commit,*|*,git-pre-commit,*) exit 0 ;;
+esac
+GIT_DISABLE_FILE="$(git -C "$GIT_ROOT" rev-parse --git-path skills-hooks-disable 2>/dev/null || true)"
+if [ -f "$GIT_ROOT/.skills-hooks-disable" ] || { [ -n "$GIT_DISABLE_FILE" ] && [ -f "$GIT_DISABLE_FILE" ]; }; then
+  exit 0
+fi
+
+git -C "$GIT_ROOT" diff --cached --check --diff-filter=ACMR --
+
+CHECK_PATH="$(git -C "$GIT_ROOT" config --path --get skills-hub.check.pre-commit 2>/dev/null || true)"
+[ -z "$CHECK_PATH" ] && exit 0
+case "$CHECK_PATH" in
+  /*) ;;
+  *) CHECK_PATH="$GIT_ROOT/$CHECK_PATH" ;;
+esac
+[ -x "$CHECK_PATH" ] || exit 0
+cd "$GIT_ROOT"
+"$CHECK_PATH"

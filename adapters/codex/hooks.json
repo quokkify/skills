@@ -26,5 +26,18 @@
         }
       ]
     }
+  ],
+  "Stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"$CODEX_HOME/hooks/completion-gate.sh\"",
+          "timeout": 20,
+          "statusMessage": "Checking completion"
+        }
+      ]
+    }
   ]
 }

@@ -231,7 +231,9 @@ hook_disabled() {
   esac
 
   if [ -n "$root" ]; then
-    if [ -f "$root/.skills-hooks-disable" ] || [ -f "$root/.git/skills-hooks-disable" ]; then
+    local git_disable_file
+    git_disable_file="$(git -C "$root" rev-parse --git-path skills-hooks-disable 2>/dev/null || true)"
+    if [ -f "$root/.skills-hooks-disable" ] || { [ -n "$git_disable_file" ] && [ -f "$git_disable_file" ]; }; then
       return 0
     fi
   fi
