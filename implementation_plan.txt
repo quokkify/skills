@@ -1,0 +1,97 @@
+Implementation Plan for Fixing Review Comments in PR #52
+
+The following changes are required to address the review comments from CodeRabbit. Each file can be modified independently, allowing for parallel execution.
+
+**Group 1: adapters/codex/hooks.json**
+- Update all three hook commands to use a fallback for CODEX_HOME:
+  - Change `bash \"$CODEX_HOME/hooks/sessionstart-repo-context.sh\"` to `bash \"${CODEX_HOME:-$HOME/.codex}/hooks/sessionstart-repo-context.sh\"`
+  - Change `bash \"$CODEX_HOME/hooks/pretooluse-bash-guard.sh\"` to `bash \"${CODEX_HOME:-$HOME/.codex}/hooks/pretooluse-bash-guard.sh\"`
+  - Change `bash \"$CODEX_HOME/hooks/completion-gate.sh\"` to `bash \"${CODEX_HOME:-$HOME/.codex}/hooks/completion-gate.sh\"`
+
+**Group 2: adapters/codex/README.md**
+- In the "Manual install" section:
+  - Add commands to copy shared hook scripts before installing hooks.json:
+    ```
+    # Copy shared hook scripts
+    cp adapters/shared/hooks/sessionstart-repo-context.sh "$CODEX_HOME/hooks/"
+    cp adapters/shared/hooks/pretooluse-bash-guard.sh "$CODEX_HOME/hooks/"
+    cp adapters/shared/hooks/completion-gate.sh "$CODEX_HOME/hooks/"
+    cp adapters/shared/hooks/hook-lib.sh "$CODEX_HOME/hooks/"
+    ```
+  - Update the config.template.toml copy command to abort if the target file already exists:
+    ```bash
+    if [ ! -f "$CODEX_HOME/config.toml" ]; then
+      cp adapters/codex/config.template.toml "$CODEX_HOME/config.toml"
+    else
+      echo "Error: $CODEX_HOME/config.toml already exists. Please merge manually."
+      exit 1
+    fi
+    ```
+- Ensure the documented hook entries in hooks.json list only the three currently shipped scripts (already satisfied by current content).
+
+**Group 3: adapters/README.md**
+- Update the adapter inventory bullets:
+  - Change:
+    - `claude/` — Claude Code connection notes and per-runtime templates (settings, hook wiring, subagent definitions, an injectable `CLAUDE.md` block)
+    - `codex/AGENTS.md` — optional project instructions for Codex
+  - To:
+    - `claude/` — Claude Code connection notes, `CLAUDE.block.md`, and `settings.template.json`
+    - `codex/` — `README.md`, `AGENTS.md`, `config.template.toml`, `hooks.json`, and `agents/` subagent definitions
+
+**Group 4: adapters/shared/git-hooks/pre-push**
+- In the block handling `0000000000000000000000000000000000000000)`, replace:
+  ```
+  [ "$REMOTE_QUERY_OK" -eq 1 ] || continue
+  ```
+  with:
+  ```
+  if [ "$REMOTE_QUERY_OK" -ne 1 ]; then
+    printf '%s\\n' "Cannot validate a new pushed ref because remote references are unavailable." >&2
+    exit 1
+  fi
+  ```
+
+**Group 5: adapters/shared/hooks/pretooluse-bash-guard.sh**
+- Update the forced-push guard (around lines 61-65) to handle implicit refspec pushes:
+  - Replace the current forced-push condition block with:
+    ```bash
+    if matches "${GIT_SUBCOMMAND_PREFIX}push([[:space:]]|\$)" && matches "$FORCE_FLAG" && ! matches '--force-with-lease'; then
+      # Check if there is an explicit refspec in the command
+      if [[ "$COMMAND" =~ ${GIT_SUBCOMMAND_PREFIX}push[[:space:]]+[^[:space:]]+[[:space:]]+([^[:space:]]+) ]]; then
+        # Explicit refspec provided, use existing check
+        if matches "$PROTECTED_BRANCH" || matches '(^|[[:space:]])(--all|--mirror)([[:space:]]|$)'; then
+          hook_deny "Refused: forced push targeting a protected branch (main/master/develop/trunk/production/release) or every ref at once. Push to a feature branch, or use --force-with-lease on a branch you own."
+        fi
+      else
+        # No explicit refspec, so we are pushing the current branch
+        CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+        if [ -n "$CURRENT_BRANCH" ] && [[ "$CURRENT_BRANCH" =~ $PROTECTED_BRANCH ]]; then
+          hook_deny "Refused: forced push targeting a protected branch ($CURRENT_BRANCH). Push to a feature branch, or use --force-with-lease on a branch you own."
+        fi
+      fi
+    fi
+    ```
+- Update the shell-pipeline pattern (around lines 85-87) to detect absolute shell interpreter paths:
+  - Change:
+    ```
+    if matches_nocase '(curl|wget)[^|;&]*\\|[[:space:]]*(sudo[[:space:]]+)?(ba|z|da|k)?sh([[:space:]]|$)'; then
+    ```
+  - To:
+    ```
+    if matches_nocase '(curl|wget)[^|;&]*\\|[[:space:]]*(sudo[[:space:]]+)?(?:(?:/usr/bin/env)[[:space:]]+)?(?:/[[:alnum:]_.-]+/)?(ba|z|da|k)?sh([[:space:]]|$)'; then
+    ```
+
+**Group 6: docs/guides/how-to-use-skills.md**
+- Update the "Codex" section (after the paragraph about the install-codex-agents.sh helper) to include actionable manual installation instructions:
+  - Add details on copying all necessary files (README.md, config.template.toml, hooks.json, hook scripts, agent definitions) to their respective locations under $CODEX_HOME.
+  - Include notes about merging config.template.toml (do not overwrite existing config), hook trust via `/hooks` command, and runtime events not covered by the current hook set.
+  - Mention that hook scripts in `adapters/shared/hooks/` must be copied to `$CODEX_HOME/hooks/` for the hooks in hooks.json to function.
+
+**Group 7: docs/quick-start.md**
+- Update the Codex section (lines 22-24) to state that a full manual installation of the Codex adapter is unavailable until the follow-up installer (`scripts/bootstrap.sh`) exists, and for now only `AGENTS.md` is copied by the helper.
+  - Replace the lines after "Optionally copy `adapters/codex/AGENTS.md` into a target project:" with:
+    ```
+    A full manual installation of the Codex adapter is unavailable until the follow-up installer (`scripts/bootstrap.sh`) exists. For now, only `AGENTS.md` is copied by the helper.
+    ```
+
+All changes are independent and can be applied in parallel. After applying the changes, run the project verification steps (validator and tests) to ensure correctness.

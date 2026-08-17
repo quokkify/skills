@@ -25,7 +25,17 @@ There is no installer for these files yet. `scripts/install-codex-agents.sh` cur
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 mkdir -p "$CODEX_HOME/agents" "$CODEX_HOME/hooks"
 
-# Base config — merge by hand if you already have one (see the warning below).
+# Copy shared hook scripts (required for hooks.json to function)
+cp adapters/shared/hooks/sessionstart-repo-context.sh "$CODEX_HOME/hooks/"
+cp adapters/shared/hooks/pretooluse-bash-guard.sh "$CODEX_HOME/hooks/"
+cp adapters/shared/hooks/completion-gate.sh "$CODEX_HOME/hooks/"
+cp adapters/shared/hooks/hook-lib.sh "$CODEX_HOME/hooks/"
+
+# Base config — abort if destination already exists (merge manually instead)
+if [ -f "$CODEX_HOME/config.toml" ]; then
+  echo "Error: $CODEX_HOME/config.toml already exists. Merge manually." >&2
+  exit 1
+fi
 cp adapters/codex/config.template.toml "$CODEX_HOME/config.toml"
 
 cp adapters/codex/hooks.json "$CODEX_HOME/hooks.json"
@@ -66,15 +76,9 @@ The stdin contract is a single JSON object with `session_id`, `transcript_path`,
 The `command` entries in `hooks.json` reference portable scripts under `$CODEX_HOME/hooks/`:
 
 ```text
-$CODEX_HOME/hooks/session-start-context.sh
-$CODEX_HOME/hooks/prompt-context.sh
-$CODEX_HOME/hooks/guard-shell-command.sh
-$CODEX_HOME/hooks/guard-protected-paths.sh
-$CODEX_HOME/hooks/format-changed-files.sh
-$CODEX_HOME/hooks/preserve-working-notes.sh
-$CODEX_HOME/hooks/subagent-result-check.sh
+$CODEX_HOME/hooks/sessionstart-repo-context.sh
+$CODEX_HOME/hooks/pretooluse-bash-guard.sh
 $CODEX_HOME/hooks/completion-gate.sh
-$CODEX_HOME/hooks/session-end-summary.sh
 ```
 
 The shared, runtime-agnostic implementations live under `adapters/shared/hooks/` in this repository; the future installer copies them into `$CODEX_HOME/hooks/`. Remove or rename the corresponding entries in `hooks.json` for any script you do not install — a missing script makes the hook fail on every matching event.

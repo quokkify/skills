@@ -49,22 +49,17 @@ A genericized template of `~/.claude/settings.json`. It is valid JSON, so it car
 the fields are documented here instead.
 
 - `model`, `effortLevel`, `theme` — starting defaults; adjust freely.
-- `statusLine` — the command shape is preserved, but the referenced script is a placeholder.
-  Scriptable status lines are a Claude Code-only feature.
-- `hooks` — seven events wired (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
-  `PostToolUseFailure`, `SubagentStop`, `Stop`). Each entry invokes one dispatcher at
-  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/dispatch.sh` with the event name as its argument.
-  The `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` indirection is intentional and portable across
+- `hooks` — three events wired (`SessionStart`, `PreToolUse`, `Stop`). Each entry invokes
+  a hook script directly under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/`. The
+  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` indirection is intentional and portable across
   machines — keep it. Hook payloads arrive as JSON on stdin, the same contract Codex CLI uses, so
   the scripts themselves are portable even though this registration format is not. The shared hook
   scripts are published under `adapters/shared/hooks/` in this repository and are expected to
   install into `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/`.
-- `extraKnownMarketplaces` — the shape is shown with an obviously fake example source. Real
-  marketplace entries are user-owned; plugins and marketplaces are Claude Code-only.
 
-Deliberately absent: `env.PATH` (it was machine-specific), any `permissions` block (its allow-list
-grammar is Claude-only and real entries contain machine paths), and anything naming a specific
-machine or account.
+Deliberately absent: `statusLine` (Claude Code-only feature), `extraKnownMarketplaces` (Claude Code-only),
+`env.PATH` (machine-specific), any `permissions` block (Claude-only, real entries contain machine paths),
+and anything naming a specific machine or account.
 
 ## What stays user-owned
 
