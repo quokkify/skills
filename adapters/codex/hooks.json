@@ -6,7 +6,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash \"$CODEX_HOME/hooks/sessionstart-repo-context.sh\"",
+          "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/sessionstart-repo-context.sh\"",
           "timeout": 20,
           "statusMessage": "Loading repository context",
           "additionalContextLimit": 4000
@@ -20,7 +20,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash \"$CODEX_HOME/hooks/pretooluse-bash-guard.sh\"",
+          "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/pretooluse-bash-guard.sh\"",
           "timeout": 10,
           "statusMessage": "Screening shell command"
         }
@@ -33,7 +33,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash \"$CODEX_HOME/hooks/completion-gate.sh\"",
+          "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/completion-gate.sh\"",
           "timeout": 20,
           "statusMessage": "Checking completion"
         }

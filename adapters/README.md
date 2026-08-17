@@ -3,8 +3,8 @@
 The reusable skills live once in [`../skills`](../skills). This directory contains tool-specific instructions and configuration that cannot be expressed as a portable skill, plus **genericized global templates** that a runtime loads before any skill runs.
 
 - `shared/` — runtime-neutral global instruction base, cross-runtime lifecycle hook scripts, and git hooks
-- `claude/` — Claude Code connection notes and per-runtime templates (settings, hook wiring, subagent definitions, an injectable `CLAUDE.md` block)
-- `codex/AGENTS.md` — optional project instructions for Codex
+- `claude/` — Claude Code connection notes, `CLAUDE.block.md`, and `settings.template.json
+- `codex/` — `README.md`, `AGENTS.md`, `config.template.toml`, `hooks.json`, and `agents/` subagent definitions
 - `hermes/config.example.yaml` — example external skill directory configuration
 
 ## What may be published here

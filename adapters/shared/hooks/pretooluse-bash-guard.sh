@@ -82,7 +82,7 @@ fi
 
 # 5. Piping a downloaded script straight into a shell — unreviewable remote
 #    code execution. Two-step it: download, read, then run.
-if matches_nocase '(curl|wget)[^|;&]*\|[[:space:]]*(sudo[[:space:]]+)?(ba|z|da|k)?sh([[:space:]]|$)'; then
+if matches_nocase '(curl|wget)[^|;&]*\|[[:space:]]*(sudo[[:space:]]+)?(?:(?:/usr/bin/env)[[:space:]]+)?(?:/[[:alnum:]_.-]+/)?(ba|z|da|k)?sh([[:space:]]|$)'; then
   hook_deny "Refused: piping a downloaded script directly into a shell executes unreviewed remote code. Download it to a file, read it, then run it explicitly."
 fi
 

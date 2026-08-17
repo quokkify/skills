@@ -24,6 +24,38 @@ Install the same portable skills for Codex. Codex discovers repository skills by
 
 The optional `./scripts/install-codex-agents.sh /path/to/project` helper copies `adapters/codex/AGENTS.md` into a target project. The repository deliberately does not maintain a duplicate `.codex/skills` tree.
 
+For a manual installation of the full Codex adapter (including hooks, configuration, and agent definitions):
+
+1. Set \$CODEX_HOME (defaults to `$HOME/.codex`):
+   ```sh
+   CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+   ```
+2. Create necessary directories:
+   ```sh
+   mkdir -p "$CODEX_HOME/agents" "$CODEX_HOME/hooks"
+   ```
+3. Copy shared hook scripts (required for hooks in hooks.json to function):
+   ```sh
+   cp adapters/shared/hooks/sessionstart-repo-context.sh "$CODEX_HOME/hooks/"
+   cp adapters/shared/hooks/pretooluse-bash-guard.sh "$CODEX_HOME/hooks/"
+   cp adapters/shared/hooks/completion-gate.sh "$CODEX_HOME/hooks/"
+   cp adapters/shared/hooks/hook-lib.sh "$CODEX_HOME/hooks/"
+   ```
+4. Copy Codex-specific configuration and agent definitions:
+   ```sh
+   # Base config — do not overwrite an existing config.toml
+   if [ ! -f "$CODEX_HOME/config.toml" ]; then
+     cp adapters/codex/config.template.toml "$CODEX_HOME/config.toml"
+   else
+     echo "Warning: $CODEX_HOME/config.toml exists, skipping copy. Merge manually if needed."
+   fi
+   cp adapters/codex/hooks.json "$CODEX_HOME/hooks.json"
+   cp adapters/codex/agents/*.toml "$CODEX_HOME/agents/"
+   ```
+5. In the Codex TUI, run `/hooks` and approve the hook entries.
+
+Note: The current hook set includes SessionStart, PreToolUse (bash-guard), and Stop. Other runtime events are not covered by the shipped hook scripts; you may add additional hooks as needed.
+
 ## Hermes
 
 Hermes reads the canonical directory directly:
