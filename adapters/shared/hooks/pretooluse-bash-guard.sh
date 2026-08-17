@@ -59,8 +59,18 @@ GIT_SUBCOMMAND_PREFIX='(^|[;&|]|[[:space:]])git([[:space:]]+-[^[:space:]]+)*[[:s
 PROTECTED_BRANCH='(^|[[:space:]:+/])(main|master|develop|trunk|production|release)([[:space:]]|$)'
 FORCE_FLAG='(^|[[:space:]])(--force|-[[:alnum:]]*f[[:alnum:]]*)([[:space:]]|$)'
 if matches "${GIT_SUBCOMMAND_PREFIX}push([[:space:]]|\$)" && matches "$FORCE_FLAG" && ! matches '--force-with-lease'; then
-  if matches "$PROTECTED_BRANCH" || matches '(^|[[:space:]])(--all|--mirror)([[:space:]]|$)'; then
-    hook_deny "Refused: forced push targeting a protected branch (main/master/develop/trunk/production/release) or every ref at once. Push to a feature branch, or use --force-with-lease on a branch you own."
+  # Check if there is an explicit refspec in the command
+  if [[ "$COMMAND" =~ ${GIT_SUBCOMMAND_PREFIX}push[[:space:]]+[^[:space:]]+[[:space:]]+([^[:space:]]+) ]]; then
+    # Explicit refspec provided, use existing check
+    if matches "$PROTECTED_BRANCH" || matches '(^|[[:space:]])(--all|--mirror)([[:space:]]|$)'; then
+      hook_deny "Refused: forced push targeting a protected branch (main/master/develop/trunk/production/release) or every ref at once. Push to a feature branch, or use --force-with-lease on a branch you own."
+    fi
+  else
+    # No explicit refspec, so we are pushing the current branch
+    CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    if [ -n "$CURRENT_BRANCH" ] && [[ "$CURRENT_BRANCH" =~ $PROTECTED_BRANCH ]]; then
+      hook_deny "Refused: forced push targeting a protected branch ($CURRENT_BRANCH). Push to a feature branch, or use --force-with-lease on a branch you own."
+    fi
   fi
 fi
 
