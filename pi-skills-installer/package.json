@@ -1,0 +1,24 @@
+{
+  "name": "pi-skills-installer",
+  "version": "1.0.0",
+  "description": "CLI command for installing skills into pi coding agent from git, npm, or local paths",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "keywords": ["pi-package", "pi-extension", "skills"],
+  "pi": {
+    "extensions": ["dist/index.js"]
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
