@@ -296,6 +296,120 @@ max_depth = 1
         self.assertEqual(6, parsed["agents"]["max_concurrent_threads_per_session"])
         self.assertEqual("medium", parsed["agents"]["default_subagent_reasoning_effort"])
 
+    def test_codex_toml_rejects_unknown_keys_in_features_section(self):
+        """Test that unknown keys in [features] section are also caught."""
+        import tomllib
+        path = pathlib.Path(self.env["CODEX_HOME"])
+        path.mkdir()
+        target = path / "config.toml"
+        legacy = """[features]
+custom_legacy_feature = true
+hooks = true
+"""
+        target.write_text(legacy)
+        result = self.run_bootstrap("--provider", "codex", expect=1)
+        self.assertIn("unrecognized keys", result.stderr)
+        self.assertIn("custom_legacy_feature", result.stderr)
+        self.assertEqual(legacy, target.read_text())
+
+    def test_codex_toml_multiple_unknown_keys_reported(self):
+        """Test that all unknown keys are reported in error message."""
+        import tomllib
+        path = pathlib.Path(self.env["CODEX_HOME"])
+        path.mkdir()
+        target = path / "config.toml"
+        legacy = """[agents]
+legacy_key1 = "value1"
+legacy_key2 = 42
+enabled = false
+"""
+        target.write_text(legacy)
+        result = self.run_bootstrap("--provider", "codex", expect=1)
+        self.assertIn("unrecognized keys", result.stderr)
+        self.assertIn("legacy_key1", result.stderr)
+        self.assertIn("legacy_key2", result.stderr)
+        self.assertEqual(legacy, target.read_text())
+
+    def test_codex_toml_unknown_keys_in_multiple_sections(self):
+        """Test that unknown keys in multiple sections are all caught (first one reported)."""
+        import tomllib
+        path = pathlib.Path(self.env["CODEX_HOME"])
+        path.mkdir()
+        target = path / "config.toml"
+        legacy = """[agents]
+legacy_agent_key = 1
+[features]
+legacy_feature_key = true
+"""
+        target.write_text(legacy)
+        result = self.run_bootstrap("--provider", "codex", expect=1)
+        self.assertIn("unrecognized keys", result.stderr)
+        # The implementation reports the first section with unknown keys it encounters
+        # (order depends on template iteration, which is deterministic)
+        self.assertIn("legacy_feature_key", result.stderr)
+        self.assertEqual(legacy, target.read_text())
+
+    def test_codex_toml_subtable_keys_not_confused(self):
+        """Test that keys in subtables like [agents.explorer] are not treated as unknown in parent."""
+        import tomllib
+        path = pathlib.Path(self.env["CODEX_HOME"])
+        path.mkdir()
+        target = path / "config.toml"
+        # This mimics a config with subtable keys - these should be fine
+        legacy = """[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+
+[agents.explorer]
+description = "custom explorer"
+config_file = "agents/explorer.toml"
+"""
+        target.write_text(legacy)
+        result = self.run_bootstrap("--provider", "codex")
+        self.assertEqual(0, result.returncode)
+        merged = target.read_text()
+        parsed = tomllib.loads(merged)
+        self.assertIn("agents", parsed)
+        self.assertTrue(parsed["agents"]["enabled"])
+        self.assertEqual(4, parsed["agents"]["max_concurrent_threads_per_session"])
+        self.assertIn("explorer", parsed["agents"])
+        self.assertEqual("custom explorer", parsed["agents"]["explorer"]["description"])
+
+    def test_codex_toml_migration_workflow(self):
+        """Test the recommended migration workflow: copy legacy value, remove legacy key, re-run."""
+        import tomllib
+        path = pathlib.Path(self.env["CODEX_HOME"])
+        path.mkdir()
+        target = path / "config.toml"
+        
+        # Step 1: User has legacy config
+        legacy = """[agents]
+max_threads = 8
+max_depth = 2
+"""
+        target.write_text(legacy)
+        result = self.run_bootstrap("--provider", "codex", expect=1)
+        self.assertIn("unrecognized keys", result.stderr)
+        
+        # Step 2: User migrates - copies value to new key, removes legacy key
+        migrated = """[agents]
+max_concurrent_threads_per_session = 8
+max_depth = 2
+"""
+        target.write_text(migrated)
+        
+        # Step 3: Bootstrap should now succeed
+        result = self.run_bootstrap("--provider", "codex")
+        self.assertEqual(0, result.returncode)
+        
+        merged = target.read_text()
+        parsed = tomllib.loads(merged)
+        self.assertEqual(8, parsed["agents"]["max_concurrent_threads_per_session"])
+        self.assertEqual(2, parsed["agents"]["max_depth"])
+        self.assertTrue(parsed["agents"]["enabled"])
+        # Legacy key should not be present
+        self.assertNotIn("max_threads", parsed["agents"])
+
 
 if __name__ == "__main__":
     unittest.main()

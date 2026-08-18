@@ -95,5 +95,10 @@ bootstrap: section [agents] contains unrecognized keys: max_threads. Use --merge
 **Why?** Codex's `[agents]` table uses `serde(flatten)` for subtables like `[agents.explorer]`. When a flattened struct's table also contains keys outside its known field set, serde misreports a valid single-occurrence field as a "duplicate field" error instead of "unknown field". The TOML text is valid, but Codex fails to start.
 
 **Fix options:**
-1. **Manual (recommended):** Remove the legacy keys from your config before running bootstrap. Their values are already carried by the new template keys (e.g., `max_threads` → `max_concurrent_threads_per_session`).
-2. **Force merge:** Run `./scripts/bootstrap.sh --provider codex --merge-unknown-keys` to allow the merge despite unknown keys. The legacy keys will be preserved alongside the new ones.
+
+1. **Manual (recommended):** For each legacy key, copy its value to the corresponding new template key **before** removing the legacy key, then run bootstrap. For example:
+   - `max_threads` → copy value to `max_concurrent_threads_per_session`
+   - Then remove the `max_threads` line
+   - Run bootstrap again
+
+2. **Force merge:** Run `./scripts/bootstrap.sh --provider codex --merge-unknown-keys` to allow the merge despite unknown keys. The legacy keys will be preserved alongside the new ones (but may cause the false "duplicate field" error in Codex).

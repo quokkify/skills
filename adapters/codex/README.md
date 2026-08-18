@@ -35,6 +35,11 @@ This prevents the silent merge that can trigger a false "duplicate field" error 
 
 The original config is left unchanged when the merge is refused.
 
+**Migration guide:** If you see this error, the recommended approach is to copy each legacy key's value to its new template equivalent **before** removing the legacy key, then re-run bootstrap. For example:
+
+- `max_threads = 6` → add `max_concurrent_threads_per_session = 6`, then remove `max_threads`
+- Re-run bootstrap
+
 ## Manual install
 
 ```sh
