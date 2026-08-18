@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0](https://github.com/quokkify/skills/compare/v0.8.1...v0.9.0) (2026-08-18)
+
+
+### Features
+
+* **adapters:** publish genericized global Claude and Codex adapters ([#52](https://github.com/quokkify/skills/issues/52)) ([5dddbbe](https://github.com/quokkify/skills/commit/5dddbbe9191ae1dfc7c441b09a072fa69eca8763))
+* add safe global adapter bootstrap installer ([#53](https://github.com/quokkify/skills/issues/53)) ([741c930](https://github.com/quokkify/skills/commit/741c930a7379498fea47a040035497e832666063))
+
+
+### Bug Fixes
+
+* **template:** reconcile Copier v2.12.1 update ([#50](https://github.com/quokkify/skills/issues/50)) ([7298ccb](https://github.com/quokkify/skills/commit/7298ccb1cea3cc16004b56ee992b3a1b6caa9d3f))
+
 ## [0.8.1](https://github.com/quokkify/skills/compare/v0.8.0...v0.8.1) (2026-08-13)
 
 
