@@ -317,7 +317,7 @@ class SharedAdapterHookTests(unittest.TestCase):
             repository = Path(temporary) / "repository"
             repository.mkdir()
             self.initialize_repository(repository)
-            subprocess.run(["git", "checkout", "-qb", branch], cwd=repository, check=True)
+            subprocess.run(["git", "checkout", "-qB", branch], cwd=repository, check=True)
             payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": command}}
             return subprocess.run(
                 ["/bin/bash", str(BASH_GUARD)],
