@@ -1,14 +1,12 @@
 _commit: v2.12.1
 _src_path: https://github.com/quokkify/project-toolkit.git
 allure_categories_file: ''
-allure_external_artifact_max_count: 50
-allure_external_artifact_min_count: 1
-allure_external_artifact_prefix: allure-results-
-allure_external_workflow_name: Validate
-allure_external_workflow_path: .github/workflows/validate.yml
 allure_publish_pages: false
 allure_report: true
-components: []
+components:
+-   allure_results_path: allure-results
+    path: .
+    type: python
 docker: false
 project_name: Shared Agent Skills
 release_please: true

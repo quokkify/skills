@@ -105,3 +105,13 @@ jobs:
           else
             git diff --check "$BASE_SHA..$HEAD_SHA"
           fi
+
+  python-1:
+    name: python (.)
+    uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@v2.12.1
+    with:
+      working-directory: "."
+      test-command: "python -m pytest --alluredir=allure-results tests/"
+      upload-test-artifacts: true
+      test-artifact-path: "allure-results"
+      test-artifact-name: allure-results-python-1

@@ -2,7 +2,7 @@ name: Allure report
 
 on:
   workflow_run:
-    workflows: ["Validate"]
+    workflows: [Validate]
     types: [completed]
 
 permissions: {}
@@ -40,9 +40,9 @@ jobs:
         with:
           script: |
             const run = context.payload.workflow_run;
-            const artifactPrefix = "allure-results-";
-            const minimumArtifacts = 1;
-            const maximumArtifacts = 50;
+            const expectedArtifacts = [
+              "allure-results-python-1",
+            ];
 
             const skip = (message) => {
               core.warning(message);
@@ -92,13 +92,13 @@ jobs:
               per_page: 100,
             });
             const allureArtifacts = artifacts.filter((artifact) =>
-              artifact.name.startsWith(artifactPrefix)
+              artifact.name.startsWith("allure-results-")
             );
             const actualNames = allureArtifacts.map((artifact) => artifact.name).sort();
 
-            if (actualNames.length < minimumArtifacts || actualNames.length > maximumArtifacts ||
-                new Set(actualNames).size !== actualNames.length) {
-              core.setFailed(`External Allure artifact contract mismatch. Expected ${minimumArtifacts}-${maximumArtifacts} unique artifacts with prefix ${artifactPrefix}; received ${actualNames.length}.`);
+            const expectedNames = [...expectedArtifacts].sort();
+            if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
+              core.setFailed(`Allure artifact contract mismatch. Expected ${expectedNames.join(", ")}; received ${actualNames.join(", ") || "none"}.`);
               return;
             }
 
@@ -116,10 +116,10 @@ jobs:
             }
             core.setOutput("artifact_manifest", JSON.stringify(
 
-              allureArtifacts.map((artifact) => ({
-                name: artifact.name,
-                id: Number(artifact.id),
-              }))
+              expectedArtifacts.map((name) => {
+                const artifact = allureArtifacts.find((candidate) => candidate.name === name);
+                return { name, id: Number(artifact.id) };
+              })
 
             ));
             const pull = matches[0];
