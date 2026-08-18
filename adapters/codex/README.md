@@ -19,6 +19,27 @@ Verified against Codex CLI **0.146.0**. Everything here is a template: no machin
 
 Use `./scripts/bootstrap.sh --provider codex` to install these files with backups, additive JSON/TOML merges, and a symlinked global `AGENTS.md`. Adapter-file and Git configuration changes roll back on failure; `--install-skills` runs `npx skills add` before that transaction starts, so its effects are not part of the rollback. Add `--overlay DIR` for a private layer or `--dry-run` to inspect operations without changing the system. The separate `scripts/install-codex-agents.sh` helper still copies project-level `AGENTS.md` files.
 
+### Legacy/unknown keys in TOML merge
+
+When merging `config.template.toml` into an existing `config.toml`, the installer compares each existing section's keys against the template's declared keys for that section. If the existing section contains keys the template does not recognize (legacy fields from older Codex versions, hand-edited configs, or previously-deprecated names), the merge **refuses by default** with a clear error naming the section and the unrecognized keys:
+
+```
+bootstrap: section [agents] contains unrecognized keys: max_threads. Use --merge-unknown-keys to proceed anyway.
+```
+
+This prevents the silent merge that can trigger a false "duplicate field" error in Codex's deserializer (which uses `serde(flatten)` for `[agents]` subtables). To allow the merge despite unknown keys, pass `--merge-unknown-keys`:
+
+```sh
+./scripts/bootstrap.sh --provider codex --merge-unknown-keys
+```
+
+The original config is left unchanged when the merge is refused.
+
+**Migration guide:** If you see this error, the recommended approach is to copy each legacy key's value to its new template equivalent **before** removing the legacy key, then re-run bootstrap. For example:
+
+- `max_threads = 6` → add `max_concurrent_threads_per_session = 6`, then remove `max_threads`
+- Re-run bootstrap
+
 ## Manual install
 
 ```sh
