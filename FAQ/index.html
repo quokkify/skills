@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../guides/releases-and-dependencies/">
+        <link rel="prev" href="../adr/0001-publish-generic-global-agent-adapters/">
       
       
       
@@ -237,6 +237,25 @@
           
   
   Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adr/" class="md-tabs__link">
+          
+  
+  Decisions
 
         </a>
       </li>
@@ -564,6 +583,121 @@
       
   
   
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decision Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-publish-generic-global-agent-adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001: Publish Generic Global Agent Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -687,6 +821,17 @@
     <span class="md-ellipsis">
       
         What do the adapter installers do?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#does-this-repository-publish-global-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Does this repository publish global configuration?
       
     </span>
   </a>
@@ -828,6 +973,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#does-this-repository-publish-global-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Does this repository publish global configuration?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-should-claude-code-sub-agents-live" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -885,7 +1041,7 @@
 <p>They have different responsibilities:</p>
 <ul>
 <li><code>skills/</code> contains portable workflow knowledge shared by every supported agent.</li>
-<li><code>adapters/</code> contains configuration specific to Claude Code, Codex, or Hermes.</li>
+<li><code>adapters/</code> contains configuration specific to Claude Code, Codex, or Hermes, plus the runtime-neutral global templates under <code>adapters/shared/</code>.</li>
 </ul>
 <p>Keeping those layers separate prevents three copies of the same skill from drifting apart.</p>
 <h2 id="should-this-repository-contain-claudeskills-and-codexskills">Should this repository contain <code>.claude/skills</code> and <code>.codex/skills</code>?<a class="headerlink" href="#should-this-repository-contain-claudeskills-and-codexskills" title="Permanent link">&para;</a></h2>
@@ -902,13 +1058,16 @@
 <p>Yes, if the process has filesystem write access. External directories are discovery sources, not read-only boundaries. Make shared changes in a separate Git branch or worktree and submit them through review.</p>
 <p>A same-named local Hermes skill can take precedence over the shared version.</p>
 <h2 id="what-do-the-adapter-installers-do">What do the adapter installers do?<a class="headerlink" href="#what-do-the-adapter-installers-do" title="Permanent link">&para;</a></h2>
-<p>Claude Code needs no repository-owned global configuration: install the canonical skills through the skills CLI.</p>
-<p><code>./scripts/install-codex-agents.sh /path/to/project</code> copies <code>adapters/codex/AGENTS.md</code> into the target project as <code>AGENTS.md</code>.</p>
-<p>The Codex script does not change the canonical files under <code>skills/</code>.</p>
+<p><code>./scripts/install-codex-agents.sh /path/to/project</code> copies <code>adapters/codex/AGENTS.md</code> into the target project as <code>AGENTS.md</code>. It does not change the canonical files under <code>skills/</code>.</p>
+<p>The global adapter templates under <code>adapters/shared/</code>, <code>adapters/claude/</code>, and <code>adapters/codex/</code> have no installer yet; copy them manually until the merging installer ships in a follow-up change. Whatever installs them must back up existing files, never silently overwrite a user's configuration, and preserve managed blocks written by other tools, such as <code>&lt;!-- OMC:START --&gt;…&lt;!-- OMC:END --&gt;</code>.</p>
+<h2 id="does-this-repository-publish-global-configuration">Does this repository publish global configuration?<a class="headerlink" href="#does-this-repository-publish-global-configuration" title="Permanent link">&para;</a></h2>
+<p>It publishes <strong>genericized templates</strong>, not anyone's configuration. A runtime-neutral instruction base and lifecycle hook scripts live in <code>adapters/shared/</code>; per-runtime settings templates, hook wiring, subagent definitions, and an injectable <code>CLAUDE.md</code> block live in <code>adapters/claude/</code> and <code>adapters/codex/</code>.</p>
+<p>Real personal content—employer conventions, project trust lists, credentialed MCP servers, private skills, machine paths, session or transcript state—remains forbidden here and belongs in a private overlay repository merged at install time. <a href="../adr/0001-publish-generic-global-agent-adapters/">ADR-0001</a> records why the earlier "no global configuration" boundary was superseded and what stays out.</p>
 <h2 id="where-should-claude-code-sub-agents-live">Where should Claude Code sub-agents live?<a class="headerlink" href="#where-should-claude-code-sub-agents-live" title="Permanent link">&para;</a></h2>
-<p>Keep global personas under your own <code>~/.claude/agents/</code> and project-specific personas with the project that owns them. This repository does not publish them because agent roles, model names, tools, and project assumptions are not portable skills.</p>
+<p>At runtime they live in your own <code>~/.claude/agents/</code>, or with the project that owns them. This repository may publish <strong>subagent definition templates</strong> under <code>adapters/claude/</code>, but only genericized ones: capability-based roles with no employer context, no private tool names, and no pinned personal model versions. A persona tied to one employer, project, or model choice stays in your private overlay.</p>
 <h2 id="how-do-i-migrate-from-the-old-root-level-layout">How do I migrate from the old root-level layout?<a class="headerlink" href="#how-do-i-migrate-from-the-old-root-level-layout" title="Permanent link">&para;</a></h2>
-<p>Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point <code>skills.external_dirs</code> at <code>&lt;checkout&gt;/skills</code> if you want discovery limited to the canonical directory. The former global Claude configuration bundle is intentionally removed; the Codex installer command stays the same. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.</p>
+<p>Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point <code>skills.external_dirs</code> at <code>&lt;checkout&gt;/skills</code> if you want discovery limited to the canonical directory. The Codex installer command stays the same. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.</p>
+<p>The old layout's global Claude configuration bundle—one user's real <code>~/.claude</code> tree—was removed and is not coming back. Its replacement is the genericized template layer under <code>adapters/</code>, which shares none of that content; see <a href="../adr/0001-publish-generic-global-agent-adapters/">ADR-0001</a>.</p>
 <h2 id="can-a-target-project-have-its-own-rules">Can a target project have its own rules?<a class="headerlink" href="#can-a-target-project-have-its-own-rules" title="Permanent link">&para;</a></h2>
 <p>Yes. Keep stack- and domain-specific rules in the target project, such as <code>AGENTS.md</code>, <code>CLAUDE.md</code>, or project-local skills. This repository should remain portable and generic.</p>
 
@@ -951,7 +1110,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../guides/releases-and-dependencies/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Releases and Dependencies">
+          <a href="../adr/0001-publish-generic-global-agent-adapters/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-0001: Publish Generic Global Agent Adapters">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -961,7 +1120,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Releases and Dependencies
+                ADR-0001: Publish Generic Global Agent Adapters
               </div>
             </div>
           </a>

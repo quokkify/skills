@@ -253,6 +253,25 @@
   
   
   
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adr/" class="md-tabs__link">
+          
+  
+  Decisions
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="../FAQ/" class="md-tabs__link">
         
@@ -676,6 +695,121 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decision Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-publish-generic-global-agent-adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001: Publish Generic Global Agent Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../FAQ/" class="md-nav__link">
         
@@ -804,17 +938,50 @@
 </code></pre></div>
 <h2 id="claude-code">Claude Code<a class="headerlink" href="#claude-code" title="Permanent link">&para;</a></h2>
 <p>Install the portable skills:</p>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-y
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">'*'</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-y
 </code></pre></div>
-<p>No global Claude configuration is copied. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.</p>
+<p>That command installs skills only. Global configuration is a separate, optional layer: this repository publishes <strong>genericized templates</strong> under <code>adapters/shared/</code> and <code>adapters/claude/</code>—a runtime-neutral instruction base, lifecycle hook scripts, and per-runtime wiring—and never anyone's real configuration. Copy them by hand for now; a one-command installer that merges a private overlay over the templates arrives in a follow-up change.</p>
+<p>Your own employer conventions, project trust lists, credentialed MCP servers, private skills, and machine paths stay in your private overlay, outside this repository. See <a href="../adr/0001-publish-generic-global-agent-adapters/">ADR-0001</a>.</p>
 <h2 id="codex">Codex<a class="headerlink" href="#codex" title="Permanent link">&para;</a></h2>
 <p>Install the portable skills:</p>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">'*'</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
 </code></pre></div>
 <p>Optionally copy <code>adapters/codex/AGENTS.md</code> into a target project:</p>
 <div class="highlight"><pre><span></span><code>./scripts/install-codex-agents.sh<span class="w"> </span>/path/to/your/project
 </code></pre></div>
 <p>Codex discovers project-local skills from <code>.agents/skills</code>, not <code>.codex/skills</code>.</p>
+<p>For a manual installation of the full Codex adapter (including hooks, configuration, and agent definitions):</p>
+<ol>
+<li>Set $CODEX_HOME (defaults to <code>$HOME/.codex</code>). Export it so it stays set across each of the following commands, even if you run them as separate shell invocations:
+   <div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">CODEX_HOME</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">CODEX_HOME</span><span class="k">:-</span><span class="nv">$HOME</span><span class="p">/.codex</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div></li>
+<li>Create necessary directories:
+   <div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/agents"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks"</span>
+</code></pre></div></li>
+<li>Copy shared hook scripts (required for hooks in hooks.json to function), backing up any file already there:
+   <div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>sessionstart-repo-context.sh<span class="w"> </span>pretooluse-bash-guard.sh<span class="w"> </span>completion-gate.sh<span class="w"> </span>hook-lib.sh<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="o">[</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/</span><span class="nv">$f</span><span class="s2">"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/</span><span class="nv">$f</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/</span><span class="nv">$f</span><span class="s2">.bak"</span>
+<span class="w">  </span>cp<span class="w"> </span><span class="s2">"adapters/shared/hooks/</span><span class="nv">$f</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/"</span>
+<span class="k">done</span>
+</code></pre></div></li>
+<li>Copy Codex-specific configuration and agent definitions, backing up any file already there:
+   <div class="highlight"><pre><span></span><code><span class="c1"># Base config — do not overwrite an existing config.toml</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-f<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/config.toml"</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span>cp<span class="w"> </span>adapters/codex/config.template.toml<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/config.toml"</span>
+<span class="k">else</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Warning: </span><span class="nv">$CODEX_HOME</span><span class="s2">/config.toml exists, skipping copy. Merge manually if needed."</span>
+<span class="k">fi</span>
+<span class="o">[</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks.json"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks.json"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks.json.bak"</span>
+cp<span class="w"> </span>adapters/codex/hooks.json<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks.json"</span>
+<span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>adapters/codex/agents/*.toml<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nv">base</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>basename<span class="w"> </span><span class="s2">"</span><span class="nv">$f</span><span class="s2">"</span><span class="k">)</span><span class="s2">"</span>
+<span class="w">  </span><span class="o">[</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/agents/</span><span class="nv">$base</span><span class="s2">"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/agents/</span><span class="nv">$base</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/agents/</span><span class="nv">$base</span><span class="s2">.bak"</span>
+<span class="w">  </span>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$f</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/agents/"</span>
+<span class="k">done</span>
+</code></pre></div></li>
+<li>In the Codex TUI, run <code>/hooks</code> and approve the hook entries.</li>
+</ol>
+<p>Note: The current hook set includes SessionStart, PreToolUse (bash-guard), and Stop. Other runtime events are not covered by the shipped hook scripts; you may add additional hooks as needed.</p>
 <h2 id="hermes">Hermes<a class="headerlink" href="#hermes" title="Permanent link">&para;</a></h2>
 <p>Add the canonical skill directory—not the repository root—to the Hermes configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">skills</span><span class="p">:</span>
@@ -823,7 +990,7 @@
 </code></pre></div>
 <p>Start a new Hermes session after changing the discovery path. Keep shared edits on an isolated Git branch or worktree; an external directory is not a write-protection boundary.</p>
 <h2 id="claude-code-and-codex-together">Claude Code and Codex Together<a class="headerlink" href="#claude-code-and-codex-together" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">'*'</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
 ./scripts/install-codex-agents.sh<span class="w"> </span>/path/to/your/project
 </code></pre></div>
 <h2 id="update-the-shared-checkout">Update the Shared Checkout<a class="headerlink" href="#update-the-shared-checkout" title="Permanent link">&para;</a></h2>
