@@ -381,7 +381,7 @@ config_file = "agents/explorer.toml"
         path = pathlib.Path(self.env["CODEX_HOME"])
         path.mkdir()
         target = path / "config.toml"
-        
+
         # Step 1: User has legacy config
         legacy = """[agents]
 max_threads = 8
@@ -390,18 +390,18 @@ max_depth = 2
         target.write_text(legacy)
         result = self.run_bootstrap("--provider", "codex", expect=1)
         self.assertIn("unrecognized keys", result.stderr)
-        
+
         # Step 2: User migrates - copies value to new key, removes legacy key
         migrated = """[agents]
 max_concurrent_threads_per_session = 8
 max_depth = 2
 """
         target.write_text(migrated)
-        
+
         # Step 3: Bootstrap should now succeed
         result = self.run_bootstrap("--provider", "codex")
         self.assertEqual(0, result.returncode)
-        
+
         merged = target.read_text()
         parsed = tomllib.loads(merged)
         self.assertEqual(8, parsed["agents"]["max_concurrent_threads_per_session"])
