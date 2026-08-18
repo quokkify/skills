@@ -59,8 +59,20 @@ GIT_SUBCOMMAND_PREFIX='(^|[;&|]|[[:space:]])git([[:space:]]+-[^[:space:]]+)*[[:s
 PROTECTED_BRANCH='(^|[[:space:]:+/])(main|master|develop|trunk|production|release)([[:space:]]|$)'
 FORCE_FLAG='(^|[[:space:]])(--force|-[[:alnum:]]*f[[:alnum:]]*)([[:space:]]|$)'
 if matches "${GIT_SUBCOMMAND_PREFIX}push([[:space:]]|\$)" && matches "$FORCE_FLAG" && ! matches '--force-with-lease'; then
-  # Check if there is an explicit refspec in the command
-  if [[ "$COMMAND" =~ ${GIT_SUBCOMMAND_PREFIX}push[[:space:]]+[^[:space:]]+[[:space:]]+([^[:space:]]+) ]]; then
+  # Determine whether an explicit remote/refspec was given by counting the
+  # positional (non-flag) arguments after "push". Flags like --force take no
+  # separate value in this denylist's scope, so skipping any "-"-prefixed
+  # token is enough to tell "git push --force origin" (no refspec, targets
+  # the current branch) apart from "git push --force origin main" (explicit).
+  PUSH_ARGS="$(printf '%s' "$COMMAND_NORM" | sed -E 's/.*push[[:space:]]+//')"
+  POSITIONAL_COUNT=0
+  for token in $PUSH_ARGS; do
+    case "$token" in
+      -*) ;;
+      *) POSITIONAL_COUNT=$((POSITIONAL_COUNT + 1)) ;;
+    esac
+  done
+  if [ "$POSITIONAL_COUNT" -ge 2 ]; then
     # Explicit refspec provided, use existing check
     if matches "$PROTECTED_BRANCH" || matches '(^|[[:space:]])(--all|--mirror)([[:space:]]|$)'; then
       hook_deny "Refused: forced push targeting a protected branch (main/master/develop/trunk/production/release) or every ref at once. Push to a feature branch, or use --force-with-lease on a branch you own."
@@ -68,7 +80,7 @@ if matches "${GIT_SUBCOMMAND_PREFIX}push([[:space:]]|\$)" && matches "$FORCE_FLA
   else
     # No explicit refspec, so we are pushing the current branch
     CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
-    if [ -n "$CURRENT_BRANCH" ] && [[ "$CURRENT_BRANCH" =~ $PROTECTED_BRANCH ]]; then
+    if [ -n "$CURRENT_BRANCH" ] && [[ "$CURRENT_BRANCH" == main || "$CURRENT_BRANCH" == master || "$CURRENT_BRANCH" == develop || "$CURRENT_BRANCH" == trunk || "$CURRENT_BRANCH" == production || "$CURRENT_BRANCH" == release ]]; then
       hook_deny "Refused: forced push targeting a protected branch ($CURRENT_BRANCH). Push to a feature branch, or use --force-with-lease on a branch you own."
     fi
   fi
@@ -92,7 +104,7 @@ fi
 
 # 5. Piping a downloaded script straight into a shell — unreviewable remote
 #    code execution. Two-step it: download, read, then run.
-if matches_nocase '(curl|wget)[^|;&]*\|[[:space:]]*(sudo[[:space:]]+)?(?:(?:/usr/bin/env)[[:space:]]+)?(?:/[[:alnum:]_.-]+/)?(ba|z|da|k)?sh([[:space:]]|$)'; then
+if matches_nocase '(curl|wget)[^|;&]*\|[[:space:]]*(sudo[[:space:]]+)?((/usr/bin/env)[[:space:]]+)?((/[[:alnum:]_.-]+)*/)?(ba|z|da|k)?sh([[:space:]]|$)'; then
   hook_deny "Refused: piping a downloaded script directly into a shell executes unreviewed remote code. Download it to a file, read it, then run it explicitly."
 fi
 

@@ -26,22 +26,22 @@ The optional `./scripts/install-codex-agents.sh /path/to/project` helper copies 
 
 For a manual installation of the full Codex adapter (including hooks, configuration, and agent definitions):
 
-1. Set \$CODEX_HOME (defaults to `$HOME/.codex`):
+1. Set \$CODEX_HOME (defaults to `$HOME/.codex`). Export it so it stays set across each of the following commands, even if you run them as separate shell invocations:
    ```sh
-   CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+   export CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
    ```
 2. Create necessary directories:
    ```sh
    mkdir -p "$CODEX_HOME/agents" "$CODEX_HOME/hooks"
    ```
-3. Copy shared hook scripts (required for hooks in hooks.json to function):
+3. Copy shared hook scripts (required for hooks in hooks.json to function), backing up any file already there:
    ```sh
-   cp adapters/shared/hooks/sessionstart-repo-context.sh "$CODEX_HOME/hooks/"
-   cp adapters/shared/hooks/pretooluse-bash-guard.sh "$CODEX_HOME/hooks/"
-   cp adapters/shared/hooks/completion-gate.sh "$CODEX_HOME/hooks/"
-   cp adapters/shared/hooks/hook-lib.sh "$CODEX_HOME/hooks/"
+   for f in sessionstart-repo-context.sh pretooluse-bash-guard.sh completion-gate.sh hook-lib.sh; do
+     [ -e "$CODEX_HOME/hooks/$f" ] && cp "$CODEX_HOME/hooks/$f" "$CODEX_HOME/hooks/$f.bak"
+     cp "adapters/shared/hooks/$f" "$CODEX_HOME/hooks/"
+   done
    ```
-4. Copy Codex-specific configuration and agent definitions:
+4. Copy Codex-specific configuration and agent definitions, backing up any file already there:
    ```sh
    # Base config — do not overwrite an existing config.toml
    if [ ! -f "$CODEX_HOME/config.toml" ]; then
@@ -49,8 +49,13 @@ For a manual installation of the full Codex adapter (including hooks, configurat
    else
      echo "Warning: $CODEX_HOME/config.toml exists, skipping copy. Merge manually if needed."
    fi
+   [ -e "$CODEX_HOME/hooks.json" ] && cp "$CODEX_HOME/hooks.json" "$CODEX_HOME/hooks.json.bak"
    cp adapters/codex/hooks.json "$CODEX_HOME/hooks.json"
-   cp adapters/codex/agents/*.toml "$CODEX_HOME/agents/"
+   for f in adapters/codex/agents/*.toml; do
+     base="$(basename "$f")"
+     [ -e "$CODEX_HOME/agents/$base" ] && cp "$CODEX_HOME/agents/$base" "$CODEX_HOME/agents/$base.bak"
+     cp "$f" "$CODEX_HOME/agents/"
+   done
    ```
 5. In the Codex TUI, run `/hooks` and approve the hook entries.
 
