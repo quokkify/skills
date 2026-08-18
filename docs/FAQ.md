@@ -43,7 +43,7 @@ A same-named local Hermes skill can take precedence over the shared version.
 
 ## What does bootstrap do?
 
-`./scripts/bootstrap.sh` installs the shared and selected provider adapter files into `$HOME/.claude` and/or `$HOME/.codex` (or environment overrides). It uses staged writes, timestamped backups, managed-block merges, and rollback on failure. `--dry-run` performs no filesystem, symlink, or Git configuration changes.
+`./scripts/bootstrap.sh` installs the shared and selected provider adapter files into `$HOME/.claude` and/or `$HOME/.codex` (or environment overrides). It uses staged writes, timestamped backups, and managed-block merges, and rolls back adapter-file and Git configuration changes on failure. `--dry-run` performs no filesystem, symlink, or Git configuration changes. `--install-skills` runs `npx skills add` before that transaction starts, so a later failure does not uninstall skills it already added.
 
 `./scripts/install-codex-agents.sh /path/to/project` remains the separate project-level helper; it copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`.
 

@@ -95,7 +95,7 @@ This installs the shared hooks, Claude settings, and managed `CLAUDE.md` block w
 ./scripts/bootstrap.sh --provider codex --install-skills
 ```
 
-The installer creates `$CODEX_HOME/AGENTS.md` as a symlink to the checkout's shared base, merges `config.toml` and `hooks.json`, installs native agent definitions and shared hooks, and configures global Git hooks. Review and approve command hooks in the Codex TUI with `/hooks`.
+The installer creates `$CODEX_HOME/AGENTS.md` as a symlink to the selected shared base — the overlay's copy if `--overlay` provides one, otherwise the public checkout's — merges `config.toml` and `hooks.json`, installs native agent definitions and shared hooks, and configures global Git hooks. Review and approve command hooks in the Codex TUI with `/hooks`.
 
 To install both runtimes (the default):
 

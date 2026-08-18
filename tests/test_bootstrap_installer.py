@@ -21,6 +21,8 @@ class BootstrapInstallerTest(unittest.TestCase):
             "CLAUDE_CONFIG_DIR": str(base / "claude"),
             "CODEX_HOME": str(base / "codex"),
             "XDG_CONFIG_HOME": str(base / "config"),
+            "GIT_CONFIG_GLOBAL": str(base / "gitconfig"),
+            "GIT_CONFIG_NOSYSTEM": "1",
         })
         pathlib.Path(self.env["HOME"]).mkdir()
         self.repo = base / "repo"
@@ -121,7 +123,7 @@ class BootstrapInstallerTest(unittest.TestCase):
         self.run_bootstrap("--provider", "codex")
         actual = json.loads(target.read_text())
         self.assertIn("Foreign", actual)
-        self.assertIn("SessionStart", actual)
+        self.assertIn("SessionStart", actual["hooks"])
 
     def test_codex_toml_preserves_omc_bytes(self):
         path = pathlib.Path(self.env["CODEX_HOME"])

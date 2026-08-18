@@ -147,12 +147,39 @@ def load_toml(text):
     return {"_validated": True}
 
 
+def section_end_lines(lines):
+    # Map each section name to the line index of the next table header (or
+    # end of file), so a missing key can be inserted back into its own
+    # table instead of always landing at the end of the file, where it
+    # would be assigned to whatever table happens to be last. The boundary
+    # backs up over any blank/comment lines immediately before that header,
+    # since those conventionally document the upcoming table (e.g. a managed
+    # block's opening marker) rather than the section being closed.
+    ends = {}
+    current_section = ""
+    for index, raw in enumerate(lines):
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            boundary = index
+            while boundary > 0:
+                previous = lines[boundary - 1].strip()
+                if previous == "" or previous.startswith("#"):
+                    boundary -= 1
+                else:
+                    break
+            ends[current_section] = boundary
+            current_section = line[1:-1].strip()
+    ends[current_section] = len(lines)
+    return ends
+
+
 def merge_toml(existing_text, template_text):
     _, existing_keys = toml_keys(existing_text)
     toml_keys(template_text)
     lines = existing_text.splitlines(keepends=True)
     if lines and not lines[-1].endswith("\n"):
         lines[-1] += "\n"
+    section_end = section_end_lines(lines)
     chunks = []
     current = []
     for raw in template_text.splitlines(keepends=True):
@@ -163,12 +190,13 @@ def merge_toml(existing_text, template_text):
         current.append(raw)
     if current:
         chunks.append(current)
-    additions = []
+    trailing_additions = []
+    insertions = {}
     for chunk in chunks:
         header = next((line.strip() for line in chunk if line.strip().startswith("[") and line.strip().endswith("]")), "")
         section = header[1:-1].strip() if header else ""
         if section not in existing_keys:
-            additions.extend(chunk)
+            trailing_additions.extend(chunk)
             continue
         missing = []
         for raw in chunk:
@@ -180,13 +208,17 @@ def merge_toml(existing_text, template_text):
                 missing.append(raw)
                 existing_keys[section].add(key)
         if missing:
-            additions.append("\n")
-            additions.extend(missing)
-    merged = "".join(lines)
-    if additions:
+            insertions.setdefault(section_end[section], []).extend(["\n", *missing])
+    merged_lines = []
+    for index, raw in enumerate(lines):
+        merged_lines.extend(insertions.pop(index, []))
+        merged_lines.append(raw)
+    merged_lines.extend(insertions.pop(len(lines), []))
+    merged = "".join(merged_lines)
+    if trailing_additions:
         if merged and not merged.endswith("\n\n"):
             merged += "\n"
-        merged += "".join(additions)
+        merged += "".join(trailing_additions)
     load_toml(merged)
     omc_before = extract_block(existing_text, OMC_START, OMC_END)
     omc_after = extract_block(merged, OMC_START, OMC_END)
@@ -303,11 +335,18 @@ def hooks_path_matches(current, expected):
     return bool(current) and (current == str(expected) or absolute(current) == expected)
 
 
+def nearest_existing_ancestor(destination):
+    candidate = destination.parent
+    while not candidate.exists() and candidate != candidate.parent:
+        candidate = candidate.parent
+    return candidate
+
+
 def apply(plans, changes, git_dir, old_hooks, args):
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
     backups = {}
     existing_dirs = set()
-    temp = pathlib.Path(tempfile.mkdtemp(prefix="skills-hub-bootstrap-"))
+    stage_dirs = []
     fail_after = int(os.environ.get("BOOTSTRAP_TEST_FAIL_AFTER", "0"))
     count = 0
     staged_paths = {}
@@ -319,14 +358,21 @@ def apply(plans, changes, git_dir, old_hooks, args):
                 if parent.exists():
                     existing_dirs.add(parent)
                 parent = parent.parent
-        for index, destination_text in enumerate(plans):
+        for destination_text in plans:
             destination = pathlib.Path(destination_text)
             item = changes[destination]
             if destination.exists() or destination.is_symlink():
                 backup = destination.with_name(destination.name + f".bak.{timestamp}")
                 backups[destination] = backup
-            staged = temp / str(index)
-            staged.parent.mkdir(parents=True, exist_ok=True)
+            # Stage each replacement on the same filesystem as its
+            # destination (rather than a shared tempfile.mkdtemp() root,
+            # which may be a different device) so the os.replace() below is
+            # always an atomic rename and never raises EXDEV.
+            stage_dir = pathlib.Path(
+                tempfile.mkdtemp(prefix="skills-hub-bootstrap-", dir=nearest_existing_ancestor(destination))
+            )
+            stage_dirs.append(stage_dir)
+            staged = stage_dir / "staged"
             if item[2] is not None:
                 staged.symlink_to(item[2])
             else:
@@ -373,7 +419,8 @@ def apply(plans, changes, git_dir, old_hooks, args):
                 candidate.rmdir()
         raise BootstrapError(f"installation rolled back: {exc}") from exc
     finally:
-        shutil.rmtree(temp, ignore_errors=True)
+        for stage_dir in stage_dirs:
+            shutil.rmtree(stage_dir, ignore_errors=True)
 
 
 def install_skills(args):

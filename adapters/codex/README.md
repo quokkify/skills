@@ -17,7 +17,7 @@ Verified against Codex CLI **0.146.0**. Everything here is a template: no machin
 
 `$CODEX_HOME` defaults to `~/.codex`.
 
-Use `./scripts/bootstrap.sh --provider codex` to install these files with backups, additive JSON/TOML merges, rollback on failure, and a symlinked global `AGENTS.md`. Add `--overlay DIR` for a private layer or `--dry-run` to inspect operations without changing the system. The separate `scripts/install-codex-agents.sh` helper still copies project-level `AGENTS.md` files.
+Use `./scripts/bootstrap.sh --provider codex` to install these files with backups, additive JSON/TOML merges, and a symlinked global `AGENTS.md`. Adapter-file and Git configuration changes roll back on failure; `--install-skills` runs `npx skills add` before that transaction starts, so its effects are not part of the rollback. Add `--overlay DIR` for a private layer or `--dry-run` to inspect operations without changing the system. The separate `scripts/install-codex-agents.sh` helper still copies project-level `AGENTS.md` files.
 
 ## Manual install
 
@@ -64,7 +64,7 @@ $CODEX_HOME/hooks/pretooluse-bash-guard.sh
 $CODEX_HOME/hooks/completion-gate.sh
 ```
 
-The shared, runtime-agnostic implementations live under `adapters/shared/hooks/` in this repository; the future installer copies them into `$CODEX_HOME/hooks/`. Remove or rename the corresponding entries in `hooks.json` for any script you do not install — a missing script makes the hook fail on every matching event.
+The shared, runtime-agnostic implementations live under `adapters/shared/hooks/` in this repository; `./scripts/bootstrap.sh --provider codex` copies them into `$CODEX_HOME/hooks/`. Remove or rename the corresponding entries in `hooks.json` for any script you do not install — a missing script makes the hook fail on every matching event.
 
 ### Blocking and control flow
 
