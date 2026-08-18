@@ -45,7 +45,7 @@ The included [`agent-harness-design`](skills/orchestration/agent-harness-design/
 | --- | --- | --- |
 | Portable skill hub | Available | [`skills/`](skills) |
 | Provider adapters | Available | [`adapters/`](adapters) |
-| Genericized global adapter templates | Available; one-command installer forthcoming | `adapters/shared/`, `adapters/claude/`, `adapters/codex/` |
+| Genericized global adapter templates | Available; installed by `scripts/bootstrap.sh` | `adapters/shared/`, `adapters/claude/`, `adapters/codex/` |
 | Harness design guidance | Available | [`agent-harness-design`](skills/orchestration/agent-harness-design/SKILL.md) |
 | Validation and safe synchronization | Available | [`scripts/`](scripts), [`tests/`](tests), CI |
 | Private overlay and configuration backup vault | Separate deployment | Deliberately outside this public repository |
@@ -84,22 +84,26 @@ cd skills
 ### Claude Code
 
 ```bash
-npx skills add quokkify/skills --skill '*' -g -a claude-code -y
+./scripts/bootstrap.sh --provider claude --install-skills
 ```
 
-The portable skills work on their own. The global adapter templates under `adapters/shared/` and `adapters/claude/` are optional and currently copied by hand; a one-command installer arrives in a follow-up change. Merge your own private overlay over them—this repository publishes no one's real settings, project trust lists, credentials, or machine paths.
+This installs the shared hooks, Claude settings, and managed `CLAUDE.md` block with timestamped backups. Add `--overlay /path/to/private-overlay` to layer private files after the public base. The overlay is read in place and is never copied into this checkout.
 
 ### Codex
 
 ```bash
-npx skills add quokkify/skills --skill '*' -g -a codex -y
+./scripts/bootstrap.sh --provider codex --install-skills
 ```
 
-Optionally copy the shared project instructions into a target repository:
+The installer creates `$CODEX_HOME/AGENTS.md` as a symlink to the selected shared base — the overlay's copy if `--overlay` provides one, otherwise the public checkout's — merges `config.toml` and `hooks.json`, installs native agent definitions and shared hooks, and configures global Git hooks. Review and approve command hooks in the Codex TUI with `/hooks`.
+
+To install both runtimes (the default):
 
 ```bash
-./scripts/install-codex-agents.sh /path/to/your/project
+./scripts/bootstrap.sh --install-skills
 ```
+
+Use `--dry-run` to print every planned operation without changing files, symlinks, or Git configuration.
 
 ### Hermes
 

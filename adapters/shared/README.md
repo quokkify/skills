@@ -14,7 +14,9 @@ The shared adapter is one JSON-on-stdin hook contract for two runtimes: Claude C
 | `git-hooks/pre-commit` | the path from `git rev-parse --git-path hooks` as `pre-commit` | the path from `git rev-parse --git-path hooks` as `pre-commit` |
 | `git-hooks/pre-push` | the path from `git rev-parse --git-path hooks` as `pre-push` | the path from `git rev-parse --git-path hooks` as `pre-push` |
 
-These are templates: review existing user-owned configuration, copy the needed files manually, and preserve executable mode. No command in this repository installs this adapter or changes live hook configuration.
+These are templates: review existing user-owned configuration, or use `scripts/bootstrap.sh`, which stages changes, preserves executable mode, creates timestamped backups, and refuses a foreign global Git `core.hooksPath`.
+
+The bootstrap installer uses `$XDG_CONFIG_HOME/git/skills-hub-hooks` (or `$HOME/.config/git/skills-hub-hooks`) for the shared `pre-commit` and `pre-push` hooks. It does not use repository-local `.githooks`.
 
 ## Event mapping
 
