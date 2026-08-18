@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/quokkify/skills/compare/v0.9.0...v0.9.1) (2026-08-18)
+
+
+### Bug Fixes
+
+* **bootstrap:** reject TOML merge when existing section has unrecognized keys ([#58](https://github.com/quokkify/skills/issues/58)) ([d73b3a7](https://github.com/quokkify/skills/commit/d73b3a77bf5be5d04f6645b5372c05a0c834e083))
+
 ## [0.9.0](https://github.com/quokkify/skills/compare/v0.8.1...v0.9.0) (2026-08-18)
 
 
