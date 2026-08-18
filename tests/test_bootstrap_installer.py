@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -36,6 +37,18 @@ class BootstrapInstallerTest(unittest.TestCase):
         result = subprocess.run([str(BOOTSTRAP), *args], env=env or self.env, text=True, capture_output=True)
         self.assertEqual(expect, result.returncode, result.stderr)
         return result
+
+    def hermetic_path_without_npx(self, extra_dir=None):
+        # Build a PATH that resolves only the interpreters bootstrap.sh
+        # itself needs (env, bash, python3, git) plus anything the caller
+        # supplies, and nothing else — so the test cannot pick up a real
+        # `npx` from the ambient system PATH.
+        bin_dir = pathlib.Path(tempfile.mkdtemp(dir=self.temp.name))
+        for name in ("env", "bash", "dirname", "python3", "git"):
+            found = shutil.which(name)
+            if found:
+                (bin_dir / name).symlink_to(found)
+        return f"{extra_dir}:{bin_dir}" if extra_dir else str(bin_dir)
 
     def snapshot(self, root):
         result = {}
@@ -104,7 +117,7 @@ class BootstrapInstallerTest(unittest.TestCase):
         self.run_bootstrap("--provider", "codex")
         target = pathlib.Path(self.env["CODEX_HOME"], "AGENTS.md")
         self.assertTrue(target.is_symlink())
-        self.assertTrue(target.resolve().is_absolute())
+        self.assertTrue(os.path.isabs(os.readlink(target)))
 
     def test_codex_foreign_agents_is_backed_up(self):
         path = pathlib.Path(self.env["CODEX_HOME"])
@@ -211,20 +224,21 @@ class BootstrapInstallerTest(unittest.TestCase):
 
     def test_missing_npx_is_nonfatal(self):
         env = self.env.copy()
-        env["PATH"] = "/usr/bin:/bin"
+        env["PATH"] = self.hermetic_path_without_npx()
         self.run_bootstrap("--provider", "claude", "--install-skills", env=env)
 
-    def test_failing_npx_leaves_no_partial_state(self):
+    def test_failing_npx_prints_warning_but_keeps_installed_files(self):
         bin_dir = pathlib.Path(self.temp.name, "bin")
         bin_dir.mkdir()
         npx = bin_dir / "npx"
         npx.write_text("#!/bin/sh\nexit 7\n")
         npx.chmod(0o755)
         env = self.env.copy()
-        env["PATH"] = str(bin_dir) + ":/usr/bin:/bin"
-        self.run_bootstrap("--provider", "claude", "--install-skills", expect=1, env=env)
-        self.assertFalse(pathlib.Path(self.env["CLAUDE_CONFIG_DIR"]).exists())
-        self.assertFalse(pathlib.Path(self.env["XDG_CONFIG_HOME"], "git").exists())
+        env["PATH"] = self.hermetic_path_without_npx(extra_dir=str(bin_dir))
+        result = self.run_bootstrap("--provider", "claude", "--install-skills", env=env)
+        self.assertIn("Warning: official skills installation failed", result.stderr)
+        self.assertTrue(pathlib.Path(self.env["CLAUDE_CONFIG_DIR"]).exists())
+        self.assertTrue(pathlib.Path(self.env["XDG_CONFIG_HOME"], "git").exists())
 
     def test_codex_prints_hooks_approval_instruction(self):
         result = self.run_bootstrap("--provider", "codex")

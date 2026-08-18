@@ -315,10 +315,15 @@ def build_plan(args):
             add(plans, changes, destination, source.read_bytes(), source.stat().st_mode & 0o777)
     git_hooks = root / "adapters/shared/git-hooks"
     git_dir = env_path("XDG_CONFIG_HOME", home / ".config") / "git/skills-hub-hooks"
-    current_hooks = subprocess.run(["git", "config", "--global", "--get", "core.hooksPath"], text=True, capture_output=True).stdout.strip()
-    if current_hooks and absolute(current_hooks) != git_dir and current_hooks != str(git_dir):
+    try:
+        current_hooks = subprocess.run(
+            ["git", "config", "--global", "--get", "core.hooksPath"], text=True, capture_output=True
+        ).stdout.strip()
+    except OSError as exc:
+        raise BootstrapError(f"cannot run git: {exc}") from exc
+    if current_hooks and not hooks_path_matches(current_hooks, git_dir):
         raise BootstrapError(f"refusing to replace foreign global core.hooksPath '{current_hooks}'")
-    for source in sorted(git_hooks.iterdir()):
+    for source in sorted(item for item in git_hooks.iterdir() if item.is_file()):
         add(plans, changes, git_dir / source.name, source.read_bytes(), source.stat().st_mode & 0o777)
     return plans, changes, git_dir, current_hooks, args, root
 
@@ -379,7 +384,6 @@ def apply(plans, changes, git_dir, old_hooks, args):
                 staged.write_bytes(item[0])
                 os.chmod(staged, item[1] or 0o600)
             staged_paths[destination] = staged
-        install_skills(args)
         for destination in plans:
             destination = pathlib.Path(destination)
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -432,7 +436,11 @@ def install_skills(args):
         return
     providers = ("claude-code", "codex") if args.provider == "all" else (("claude-code",) if args.provider == "claude" else ("codex",))
     for provider in providers:
-        subprocess.run([npx, "skills", "add", "quokkify/skills", "--skill", "*", "-g", "-a", provider, "-y"], check=True)
+        subprocess.run(
+            [npx, "skills", "add", "quokkify/skills", "--skill", "*", "-g", "-a", provider, "-y"],
+            check=True,
+            timeout=600,
+        )
 
 
 def main():
@@ -442,6 +450,10 @@ def main():
     if args.dry_run:
         return 0
     apply(plans, changes, git_dir, old_hooks, args)
+    try:
+        install_skills(args)
+    except subprocess.SubprocessError as exc:
+        print(f"Warning: official skills installation failed: {exc}", file=sys.stderr)
     if args.provider in ("codex", "all"):
         print("Codex hook handlers were installed. Open the Codex TUI and run /hooks to review and approve them.")
     print("Bootstrap installation complete.")
