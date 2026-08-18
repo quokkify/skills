@@ -21,13 +21,19 @@ This repository is the public, canonical source for reusable workflows. Every po
 - review and promotion workflows for reusable lessons;
 - validation, privacy checks, and release automation.
 
-### 2. Private Configuration Vault
+### 2. Genericized Global Adapters
 
-Agent state and provider configuration need a different trust boundary. The wider project architecture therefore keeps backups in a **separate private vault**, with restore scripts and a version/source manifest for Hermes, Claude Code, Codex, and future providers.
+Portable skills describe *how to work*; a global adapter decides *what a runtime loads before any skill runs*. This repository publishes that layer as **templates and genericized defaults only**: a runtime-neutral global instruction base plus cross-runtime lifecycle hook scripts under `adapters/shared/`, and thin per-runtime wiring under `adapters/claude/` and `adapters/codex/`.
+
+Publishable means: no real credentials, no employer identifiers, no machine paths, no pinned personal model choices, and no session or transcript state. See [ADR-0001](docs/adr/0001-publish-generic-global-agent-adapters.md) for the decision that reversed the earlier "no global configuration" boundary and for the list of content that remains forbidden.
+
+### 3. Private Configuration Vault
+
+Your real personal configuration needs a different trust boundary. Employer conventions, project trust lists, credentialed MCP servers, employer-only skills, and machine paths live in a **separate private overlay repository**, merged over the public templates at install time, alongside backups with restore scripts and a version/source manifest.
 
 The vault is intentionally **not part of this public repository**. Secrets, memories, transcripts, runtime databases, machine-specific settings, and raw agent-home snapshots must never be promoted here. See [Project Architecture](docs/project-architecture.md) for the boundary and recovery model.
 
-### 3. Agent Harness
+### 4. Agent Harness
 
 Skills describe *how to work*; a harness controls *how work is executed*. The harness layer connects agent runtimes to typed tools, validation, permissions, observations, approval gates, retries, and recovery contracts.
 
@@ -39,9 +45,10 @@ The included [`agent-harness-design`](skills/orchestration/agent-harness-design/
 | --- | --- | --- |
 | Portable skill hub | Available | [`skills/`](skills) |
 | Provider adapters | Available | [`adapters/`](adapters) |
+| Genericized global adapter templates | Available; one-command installer forthcoming | `adapters/shared/`, `adapters/claude/`, `adapters/codex/` |
 | Harness design guidance | Available | [`agent-harness-design`](skills/orchestration/agent-harness-design/SKILL.md) |
 | Validation and safe synchronization | Available | [`scripts/`](scripts), [`tests/`](tests), CI |
-| Private configuration backup vault | Separate deployment | Deliberately outside this public repository |
+| Private overlay and configuration backup vault | Separate deployment | Deliberately outside this public repository |
 
 ## Repository Layout
 
@@ -53,16 +60,17 @@ skills/
 └── <category>/<skill-name>/templates/  # reusable templates
 
 adapters/
-├── claude/README.md         # Claude Code connection notes
-├── codex/AGENTS.md          # optional Codex project instructions
+├── shared/                  # runtime-neutral global instruction base, lifecycle hooks, git hooks
+├── claude/                  # Claude Code connection notes and per-runtime templates
+├── codex/                   # Codex project instructions and per-runtime templates
 └── hermes/                  # Hermes configuration example
 
-docs/                        # architecture, catalog, and guides
+docs/                        # architecture, decision records, catalog, and guides
 scripts/                     # install, validation, and safe-sync helpers
 tests/                       # dependency-free regression tests
 ```
 
-`skills/` is the only source of truth for portable skills. Tool-specific configuration belongs in `adapters/`; private runtime state belongs in the separate vault. Claude Code discovers project skills from `.claude/skills`, while Codex uses `.agents/skills`—not `.codex/skills`.
+`skills/` is the only source of truth for portable skills; a skill body must never be duplicated into an adapter. `adapters/` holds tool-specific configuration and genericized global templates. Your real personal, employer, and machine-specific configuration belongs in the separate private overlay, which is not a directory inside this repository. Claude Code discovers project skills from `.claude/skills`, while Codex uses `.agents/skills`—not `.codex/skills`.
 
 ## Quick Start
 
@@ -79,7 +87,7 @@ cd skills
 npx skills add quokkify/skills --skill '*' -g -a claude-code -y
 ```
 
-Claude Code needs no copied global adapter. Agent personas, output styles, status lines, and project-specific commands remain user- or project-owned.
+The portable skills work on their own. The global adapter templates under `adapters/shared/` and `adapters/claude/` are optional and currently copied by hand; a one-command installer arrives in a follow-up change. Merge your own private overlay over them—this repository publishes no one's real settings, project trust lists, credentials, or machine paths.
 
 ### Codex
 
@@ -173,6 +181,7 @@ Every pull request runs repository validation and Gitleaks. Scanner success comp
 ## Documentation
 
 - [Project architecture](docs/project-architecture.md)
+- [Decision records](docs/adr/index.md)
 - [Quick start](docs/quick-start.md)
 - [Skill catalog](docs/skill-catalog.md)
 - [Using the skills](docs/guides/how-to-use-skills.md)

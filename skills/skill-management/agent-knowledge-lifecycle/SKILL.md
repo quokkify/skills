@@ -34,7 +34,7 @@ Put broadly reusable procedures, references, templates, and deterministic script
 
 ### 2. Establish one source of truth
 
-Let each agent runtime consume the canonical `skills/` tree through its supported external directory, installer, generated link, plugin, or project-instruction adapter. Verify current upstream discovery conventions instead of guessing from dot-directory names: Claude Code and Codex do not use interchangeable project paths. Tool-specific files may coexist under `adapters/<runtime>/`, but portable skill bodies must not be copied there or depend on one runtime unless clearly isolated behind an adapter.
+Let each agent runtime consume the canonical `skills/` tree through its supported external directory, installer, generated link, plugin, or project-instruction adapter. Verify current upstream discovery conventions instead of guessing from dot-directory names: Claude Code and Codex do not use interchangeable project paths. Tool-specific files may coexist under `adapters/<runtime>/`, but portable skill bodies must not be copied there or depend on one runtime unless clearly isolated behind an adapter. A generic public adapter is a reviewed template derived from a real setup, never a copied runtime setup.
 
 When moving an established library from root-level skills into `skills/`, treat it as an integration migration: update validators, installer sources, sync fixtures, documentation, and every runtime's configured discovery path. Prove nested discovery with the actual ecosystem CLI in list-only mode, not only with repository structure tests.
 
@@ -78,6 +78,7 @@ For detailed repository layout, GitHub token enrollment, and the first secret-sc
 - Saying “one repository” without distinguishing the shared knowledge product from the full private runtime backup.
 - Using a migration vault as the editable canonical skill library.
 - Automatically copying `~/.hermes` or `~/.claude` into a public repository.
+- Treating a generic public adapter as a copied `~/.hermes` or `~/.claude` setup instead of a sanitized template derived from one.
 - Assuming external skill directories capture newly agent-created skills automatically.
 - Duplicating canonical skills into snapshots instead of recording their repository revision.
 - Asking the user to paste tokens into chat or storing PATs in Git remotes.

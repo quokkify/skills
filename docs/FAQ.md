@@ -13,7 +13,7 @@ No. Install or connect only the path you use. Claude Code and Codex can share th
 They have different responsibilities:
 
 - `skills/` contains portable workflow knowledge shared by every supported agent.
-- `adapters/` contains configuration specific to Claude Code, Codex, or Hermes.
+- `adapters/` contains configuration specific to Claude Code, Codex, or Hermes, plus the runtime-neutral global templates under `adapters/shared/`.
 
 Keeping those layers separate prevents three copies of the same skill from drifting apart.
 
@@ -43,19 +43,25 @@ A same-named local Hermes skill can take precedence over the shared version.
 
 ## What do the adapter installers do?
 
-Claude Code needs no repository-owned global configuration: install the canonical skills through the skills CLI.
+`./scripts/install-codex-agents.sh /path/to/project` copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`. It does not change the canonical files under `skills/`.
 
-`./scripts/install-codex-agents.sh /path/to/project` copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`.
+The global adapter templates under `adapters/shared/`, `adapters/claude/`, and `adapters/codex/` have no installer yet; copy them manually until the merging installer ships in a follow-up change. Whatever installs them must back up existing files, never silently overwrite a user's configuration, and preserve managed blocks written by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`.
 
-The Codex script does not change the canonical files under `skills/`.
+## Does this repository publish global configuration?
+
+It publishes **genericized templates**, not anyone's configuration. A runtime-neutral instruction base and lifecycle hook scripts live in `adapters/shared/`; per-runtime settings templates, hook wiring, subagent definitions, and an injectable `CLAUDE.md` block live in `adapters/claude/` and `adapters/codex/`.
+
+Real personal content—employer conventions, project trust lists, credentialed MCP servers, private skills, machine paths, session or transcript state—remains forbidden here and belongs in a private overlay repository merged at install time. [ADR-0001](adr/0001-publish-generic-global-agent-adapters.md) records why the earlier "no global configuration" boundary was superseded and what stays out.
 
 ## Where should Claude Code sub-agents live?
 
-Keep global personas under your own `~/.claude/agents/` and project-specific personas with the project that owns them. This repository does not publish them because agent roles, model names, tools, and project assumptions are not portable skills.
+At runtime they live in your own `~/.claude/agents/`, or with the project that owns them. This repository may publish **subagent definition templates** under `adapters/claude/`, but only genericized ones: capability-based roles with no employer context, no private tool names, and no pinned personal model versions. A persona tied to one employer, project, or model choice stays in your private overlay.
 
 ## How do I migrate from the old root-level layout?
 
-Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point `skills.external_dirs` at `<checkout>/skills` if you want discovery limited to the canonical directory. The former global Claude configuration bundle is intentionally removed; the Codex installer command stays the same. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.
+Hermes recursively discovers nested skills, so an existing repository-root entry remains compatible. Point `skills.external_dirs` at `<checkout>/skills` if you want discovery limited to the canonical directory. The Codex installer command stays the same. Reinstall or update skills managed by the skills CLI so recorded source paths follow the new layout.
+
+The old layout's global Claude configuration bundle—one user's real `~/.claude` tree—was removed and is not coming back. Its replacement is the genericized template layer under `adapters/`, which shares none of that content; see [ADR-0001](adr/0001-publish-generic-global-agent-adapters.md).
 
 ## Can a target project have its own rules?
 

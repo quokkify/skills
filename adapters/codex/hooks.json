@@ -1,0 +1,45 @@
+{
+  "description": "Codex CLI hooks template. Install to $CODEX_HOME/hooks.json. Commands reference the portable scripts in adapters/shared/hooks, which an installer places in $CODEX_HOME/hooks/. Only handlers with type 'command' execute; 'prompt' and 'agent' parse but are skipped. Non-managed command hooks are hash-trusted and must be approved once via the in-TUI /hooks command. Hook layers are additive, so do not also declare these as [[hooks.*]] in config.toml. Only the events backed by a shipped script are wired here; more will be added as the shared hook set grows.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/sessionstart-repo-context.sh\"",
+            "timeout": 20,
+            "statusMessage": "Loading repository context",
+            "additionalContextLimit": 4000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/pretooluse-bash-guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "Screening shell command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/completion-gate.sh\"",
+            "timeout": 20,
+            "statusMessage": "Checking completion"
+          }
+        ]
+      }
+    ]
+  }
+}
