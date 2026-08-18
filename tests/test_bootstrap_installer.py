@@ -253,6 +253,49 @@ class BootstrapInstallerTest(unittest.TestCase):
         self.assertTrue(target.read_text().startswith("private\n"))
         self.assertEqual(1, target.read_text().count("SKILLS-HUB:START"))
 
+    def test_codex_toml_rejects_legacy_keys_in_existing_section(self):
+        """Test that merge_toml refuses to merge when existing section has unknown keys."""
+        import tomllib
+        path = pathlib.Path(self.env["CODEX_HOME"])
+        path.mkdir()
+        target = path / "config.toml"
+        # Legacy config with keys not in template (max_threads is legacy, not in template)
+        legacy = """[agents]
+max_threads = 6
+max_depth = 1
+"""
+        target.write_text(legacy)
+        # Without --force flag, should refuse
+        result = self.run_bootstrap("--provider", "codex", expect=1)
+        self.assertIn("unrecognized keys", result.stderr)
+        self.assertIn("max_threads", result.stderr)
+        # Original config should be unchanged
+        self.assertEqual(legacy, target.read_text())
+
+    def test_codex_toml_allows_legacy_keys_with_force_flag(self):
+        """Test that --merge-unknown-keys flag allows merging despite unknown keys."""
+        import tomllib
+        path = pathlib.Path(self.env["CODEX_HOME"])
+        path.mkdir()
+        target = path / "config.toml"
+        legacy = """[agents]
+max_threads = 6
+max_depth = 1
+"""
+        target.write_text(legacy)
+        # With --merge-unknown-keys flag, should succeed
+        result = self.run_bootstrap("--provider", "codex", "--merge-unknown-keys")
+        self.assertEqual(0, result.returncode)
+        # Config should now have both legacy and new keys
+        merged = target.read_text()
+        parsed = tomllib.loads(merged)
+        self.assertIn("agents", parsed)
+        self.assertEqual(6, parsed["agents"]["max_threads"])
+        self.assertEqual(1, parsed["agents"]["max_depth"])
+        self.assertTrue(parsed["agents"]["enabled"])
+        self.assertEqual(6, parsed["agents"]["max_concurrent_threads_per_session"])
+        self.assertEqual("medium", parsed["agents"]["default_subagent_reasoning_effort"])
+
 
 if __name__ == "__main__":
     unittest.main()

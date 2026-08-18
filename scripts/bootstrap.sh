@@ -35,6 +35,8 @@ def parse_args():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--overlay", type=pathlib.Path)
     parser.add_argument("--install-skills", action="store_true")
+    parser.add_argument("--merge-unknown-keys", action="store_true",
+                        help="Allow merging template keys into sections that contain unrecognized/legacy keys")
     return parser.parse_args()
 
 
@@ -173,9 +175,9 @@ def section_end_lines(lines):
     return ends
 
 
-def merge_toml(existing_text, template_text):
+def merge_toml(existing_text, template_text, allow_unknown_keys=False):
     _, existing_keys = toml_keys(existing_text)
-    toml_keys(template_text)
+    template_parsed, template_keys = toml_keys(template_text)
     lines = existing_text.splitlines(keepends=True)
     if lines and not lines[-1].endswith("\n"):
         lines[-1] += "\n"
@@ -198,6 +200,15 @@ def merge_toml(existing_text, template_text):
         if section not in existing_keys:
             trailing_additions.extend(chunk)
             continue
+        # Check for unrecognized keys in existing section
+        template_section_keys = template_keys.get(section, set())
+        existing_section_keys = existing_keys.get(section, set())
+        unknown_keys = existing_section_keys - template_section_keys
+        if unknown_keys and not allow_unknown_keys:
+            raise BootstrapError(
+                f"section [{section}] contains unrecognized keys: {', '.join(sorted(unknown_keys))}. "
+                f"Use --merge-unknown-keys to proceed anyway."
+            )
         missing = []
         for raw in chunk:
             line = raw.strip()
@@ -294,7 +305,7 @@ def build_plan(args):
         copy_tree(root, pathlib.Path("shared/hooks"), config / "hooks", overlay, plans, changes)
         config_source = overlay_file(overlay, pathlib.Path("codex/config.template.toml"), root / "adapters/codex/config.template.toml")
         config_path = config / "config.toml"
-        merged = config_source.read_text() if not config_path.exists() else merge_toml(config_path.read_text(), config_source.read_text())
+        merged = config_source.read_text() if not config_path.exists() else merge_toml(config_path.read_text(), config_source.read_text(), args.merge_unknown_keys)
         add(plans, changes, config_path, merged.encode(), 0o600)
         hooks_source = overlay_file(overlay, pathlib.Path("codex/hooks.json"), root / "adapters/codex/hooks.json")
         hooks = read_json(hooks_source)

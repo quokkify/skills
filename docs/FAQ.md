@@ -83,3 +83,17 @@ The old layout's global Claude configuration bundle—one user's real `~/.claude
 ## Can a target project have its own rules?
 
 Yes. Keep stack- and domain-specific rules in the target project, such as `AGENTS.md`, `CLAUDE.md`, or project-local skills. This repository should remain portable and generic.
+
+## bootstrap.sh refuses to merge config.toml with "unrecognized keys" error
+
+The Codex bootstrap installer (`./scripts/bootstrap.sh --provider codex`) now compares the keys in each existing section of your `config.toml` against the template's declared keys for that section. If it finds keys the template doesn't know about (legacy fields like `max_threads` from older Codex versions, hand-edited configs, or previously-deprecated names), it **refuses to merge** and shows:
+
+```
+bootstrap: section [agents] contains unrecognized keys: max_threads. Use --merge-unknown-keys to proceed anyway.
+```
+
+**Why?** Codex's `[agents]` table uses `serde(flatten)` for subtables like `[agents.explorer]`. When a flattened struct's table also contains keys outside its known field set, serde misreports a valid single-occurrence field as a "duplicate field" error instead of "unknown field". The TOML text is valid, but Codex fails to start.
+
+**Fix options:**
+1. **Manual (recommended):** Remove the legacy keys from your config before running bootstrap. Their values are already carried by the new template keys (e.g., `max_threads` → `max_concurrent_threads_per_session`).
+2. **Force merge:** Run `./scripts/bootstrap.sh --provider codex --merge-unknown-keys` to allow the merge despite unknown keys. The legacy keys will be preserved alongside the new ones.
