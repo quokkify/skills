@@ -1,11 +1,95 @@
-# Claude Code
+# Claude Code Adapter
 
-Claude Code does not need a copied repository adapter. Install the canonical skills directly:
+This directory holds the Claude Code side of the global agent configuration that this repository
+publishes. It complements — it does not replace — the portable skills in
+[`../../skills`](../../skills).
+
+## Three-layer model
+
+Global agent instructions are assembled from three layers with different owners:
+
+| Layer | Lives in | Owner | Contains |
+| --- | --- | --- | --- |
+| Shared base | [`../shared/AGENTS.base.md`](../shared/AGENTS.base.md) | this repository | runtime-neutral engineering standards: investigation discipline, no-fake-completion rules, delegation and parallelism, review separation, testing, security, commit conventions |
+| Runtime adapter | this directory (Claude Code), `../codex` (Codex CLI) | this repository | only the deltas that a single runtime needs, plus config templates |
+| Private overlay | a separate private repository, never here | the user | machine paths, employer conventions, credentials, personal context, real tool endpoints |
+
+Earlier revisions of this file stated that the repository would never publish a global
+`CLAUDE.md`. That policy has been narrowed rather than kept: the *genericized* base and adapter
+artifacts are now published here, while everything personal or employer-specific stays in the
+private overlay layer.
+
+The same shared base serves both runtimes. Claude Code pulls it in through an `@` import;
+Codex CLI reads it as `~/.codex/AGENTS.md`.
+
+## Files
+
+### `../shared/AGENTS.base.md`
+
+The runtime-neutral instruction base. It never names a specific runtime where "the agent" works,
+and it contains no machine paths. Rules that genuinely differ per runtime are deliberately absent
+and live in the adapters instead.
+
+### [`CLAUDE.block.md`](CLAUDE.block.md)
+
+The exact block intended for injection into `~/.claude/CLAUDE.md`, delimited by
+`<!-- SKILLS-HUB:START -->` and `<!-- SKILLS-HUB:END -->`.
+
+`~/.claude/CLAUDE.md` must remain a real file, never a symlink and never wholly generated: other
+tooling (for example oh-my-claudecode) maintains its own marker-delimited block in the same file
+and rewrites it on update. The distinct `SKILLS-HUB` markers keep the two blocks from colliding.
+
+The block carries an `@__SHARED_BASE__` token. An installer is expected to replace that literal
+token with an `@` import of the installed base, normally `@~/.claude/skills-hub/AGENTS.base.md`.
+Claude Code follows `@` imports up to five hops deep.
+
+### [`settings.template.json`](settings.template.json)
+
+A genericized template of `~/.claude/settings.json`. It is valid JSON, so it carries no comments;
+the fields are documented here instead.
+
+- `model`, `effortLevel`, `theme` — starting defaults; adjust freely.
+- `hooks` — three events wired (`SessionStart`, `PreToolUse`, `Stop`). Each entry invokes
+  a hook script directly under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/`. The
+  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` indirection is intentional and portable across
+  machines — keep it. Hook payloads arrive as JSON on stdin, the same contract Codex CLI uses, so
+  the scripts themselves are portable even though this registration format is not. The shared hook
+  scripts are published under `adapters/shared/hooks/` in this repository and are expected to
+  install into `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/`.
+
+Deliberately absent: `statusLine` (Claude Code-only feature), `extraKnownMarketplaces` (Claude Code-only),
+`env.PATH` (machine-specific), any `permissions` block (Claude-only, real entries contain machine paths),
+and anything naming a specific machine or account.
+
+## What stays user-owned
+
+Out of scope for this repository, permanently:
+
+- `settings.local.json` — git-ignored, machine-local, and never templated here.
+- A `permissions` allow-list with real paths and commands.
+- Plugin and marketplace installs, and any hooks those plugins manage. Plugin-managed hook entries
+  in a real `settings.json` belong to the plugin, not to this template.
+- MCP server definitions that carry credentials, private hostnames, or tokens.
+- Employer- or client-specific conventions: internal repository names, issue-tracker keys, private
+  registry paths, internal CI conventions.
+- Personal subagent personas and output styles.
+
+## Installer status
+
+A bootstrap script (`scripts/bootstrap.sh`) installs the base, shared hooks, settings merge, and
+the managed block. Run `./scripts/bootstrap.sh --provider claude`; add `--overlay DIR` to layer a
+private overlay after the public base and `--dry-run` to inspect operations without changes.
+
+## Installing the skills
+
+Skill installation is independent of the configuration layers above and already works. The adapter
+identifier for Claude Code in the `npx skills` CLI is `claude-code`:
 
 ```bash
-npx skills add ylazakovich/skills -a claude-code
+./scripts/bootstrap.sh --provider claude --install-skills
 ```
 
-The skills CLI connects them to Claude Code's supported personal skill directory. For project-only use, Claude Code also discovers skills under `.claude/skills/`.
+The CLI writes the skills into Claude Code's supported personal skill directory. For project-only
+use, Claude Code also discovers skills under `.claude/skills/`.
 
-This repository intentionally does not publish global `CLAUDE.md`, sub-agent personas, output styles, status lines, or project-specific commands. Those settings are user- or project-owned and should remain outside the portable skill library.
+Do not copy skill content into this adapter — see [`../README.md`](../README.md).
