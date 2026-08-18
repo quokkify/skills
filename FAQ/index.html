@@ -882,6 +882,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bootstrapsh-refuses-to-merge-configtoml-with-unrecognized-keys-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bootstrap.sh refuses to merge config.toml with "unrecognized keys" error
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1038,6 +1049,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bootstrapsh-refuses-to-merge-configtoml-with-unrecognized-keys-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bootstrap.sh refuses to merge config.toml with "unrecognized keys" error
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1103,6 +1125,23 @@
 <p>The old layout's global Claude configuration bundle—one user's real <code>~/.claude</code> tree—was removed and is not coming back. Its replacement is the genericized template layer under <code>adapters/</code>, which shares none of that content; see <a href="../adr/0001-publish-generic-global-agent-adapters/">ADR-0001</a>.</p>
 <h2 id="can-a-target-project-have-its-own-rules">Can a target project have its own rules?<a class="headerlink" href="#can-a-target-project-have-its-own-rules" title="Permanent link">&para;</a></h2>
 <p>Yes. Keep stack- and domain-specific rules in the target project, such as <code>AGENTS.md</code>, <code>CLAUDE.md</code>, or project-local skills. This repository should remain portable and generic.</p>
+<h2 id="bootstrapsh-refuses-to-merge-configtoml-with-unrecognized-keys-error">bootstrap.sh refuses to merge config.toml with "unrecognized keys" error<a class="headerlink" href="#bootstrapsh-refuses-to-merge-configtoml-with-unrecognized-keys-error" title="Permanent link">&para;</a></h2>
+<p>The Codex bootstrap installer (<code>./scripts/bootstrap.sh --provider codex</code>) now compares the keys in each existing section of your <code>config.toml</code> against the template's declared keys for that section. If it finds keys the template doesn't know about (legacy fields like <code>max_threads</code> from older Codex versions, hand-edited configs, or previously-deprecated names), it <strong>refuses to merge</strong> and shows:</p>
+<div class="highlight"><pre><span></span><code>bootstrap: section [agents] contains unrecognized keys: max_threads. Use --merge-unknown-keys to proceed anyway.
+</code></pre></div>
+<p><strong>Why?</strong> Codex's <code>[agents]</code> table uses <code>serde(flatten)</code> for subtables like <code>[agents.explorer]</code>. When a flattened struct's table also contains keys outside its known field set, serde misreports a valid single-occurrence field as a "duplicate field" error instead of "unknown field". The TOML text is valid, but Codex fails to start.</p>
+<p><strong>Fix options:</strong></p>
+<ol>
+<li><strong>Manual (recommended):</strong> For each legacy key, copy its value to the corresponding new template key <strong>before</strong> removing the legacy key, then run bootstrap. For example:</li>
+<li><code>max_threads</code> → copy value to <code>max_concurrent_threads_per_session</code></li>
+<li>Then remove the <code>max_threads</code> line</li>
+<li>
+<p>Run bootstrap again</p>
+</li>
+<li>
+<p><strong>Force merge:</strong> Run <code>./scripts/bootstrap.sh --provider codex --merge-unknown-keys</code> to allow the merge despite unknown keys. The legacy keys will be preserved alongside the new ones (but may cause the false "duplicate field" error in Codex).</p>
+</li>
+</ol>
 
 
 
