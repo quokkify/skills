@@ -937,16 +937,16 @@
 <span class="nb">cd</span><span class="w"> </span>skills
 </code></pre></div>
 <h2 id="claude-code">Claude Code<a class="headerlink" href="#claude-code" title="Permanent link">&para;</a></h2>
-<p>Install the portable skills:</p>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">'*'</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-y
+<p>Install the portable skills and Claude adapter:</p>
+<div class="highlight"><pre><span></span><code>./scripts/bootstrap.sh<span class="w"> </span>--provider<span class="w"> </span>claude<span class="w"> </span>--install-skills
 </code></pre></div>
-<p>That command installs skills only. Global configuration is a separate, optional layer: this repository publishes <strong>genericized templates</strong> under <code>adapters/shared/</code> and <code>adapters/claude/</code>—a runtime-neutral instruction base, lifecycle hook scripts, and per-runtime wiring—and never anyone's real configuration. Copy them by hand for now; a one-command installer that merges a private overlay over the templates arrives in a follow-up change.</p>
+<p>The installer merges genericized templates into the selected runtime home, backs up changed files with a timestamp, and preserves foreign managed blocks. Add <code>--overlay /path/to/private-overlay</code> to layer private files after the public base. The overlay is read in place and is never copied into the checkout.</p>
 <p>Your own employer conventions, project trust lists, credentialed MCP servers, private skills, and machine paths stay in your private overlay, outside this repository. See <a href="../adr/0001-publish-generic-global-agent-adapters/">ADR-0001</a>.</p>
 <h2 id="codex">Codex<a class="headerlink" href="#codex" title="Permanent link">&para;</a></h2>
-<p>Install the portable skills:</p>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">'*'</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
+<p>Install the portable skills and Codex adapter:</p>
+<div class="highlight"><pre><span></span><code>./scripts/bootstrap.sh<span class="w"> </span>--provider<span class="w"> </span>codex<span class="w"> </span>--install-skills
 </code></pre></div>
-<p>Optionally copy <code>adapters/codex/AGENTS.md</code> into a target project:</p>
+<p>The global Codex instruction file is a symlink to the checkout's shared base. After installation, open the Codex TUI and run <code>/hooks</code> to approve command hooks. For project-specific instructions, copy <code>adapters/codex/AGENTS.md</code> into a target project:</p>
 <div class="highlight"><pre><span></span><code>./scripts/install-codex-agents.sh<span class="w"> </span>/path/to/your/project
 </code></pre></div>
 <p>Codex discovers project-local skills from <code>.agents/skills</code>, not <code>.codex/skills</code>.</p>
@@ -990,9 +990,9 @@ cp<span class="w"> </span>adapters/codex/hooks.json<span class="w"> </span><span
 </code></pre></div>
 <p>Start a new Hermes session after changing the discovery path. Keep shared edits on an isolated Git branch or worktree; an external directory is not a write-protection boundary.</p>
 <h2 id="claude-code-and-codex-together">Claude Code and Codex Together<a class="headerlink" href="#claude-code-and-codex-together" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>quokkify/skills<span class="w"> </span>--skill<span class="w"> </span><span class="s1">'*'</span><span class="w"> </span>-g<span class="w"> </span>-a<span class="w"> </span>claude-code<span class="w"> </span>-a<span class="w"> </span>codex<span class="w"> </span>-y
-./scripts/install-codex-agents.sh<span class="w"> </span>/path/to/your/project
+<div class="highlight"><pre><span></span><code>./scripts/bootstrap.sh<span class="w"> </span>--install-skills
 </code></pre></div>
+<p>The default provider is <code>all</code>. Use <code>--dry-run</code> to inspect the complete operation list safely.</p>
 <h2 id="update-the-shared-checkout">Update the Shared Checkout<a class="headerlink" href="#update-the-shared-checkout" title="Permanent link">&para;</a></h2>
 <p>From its clean <code>main</code> branch:</p>
 <div class="highlight"><pre><span></span><code>./scripts/sync-shared-skills.sh

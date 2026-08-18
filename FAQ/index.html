@@ -817,10 +817,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-do-the-adapter-installers-do" class="md-nav__link">
+  <a href="#what-does-bootstrap-do" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What do the adapter installers do?
+        What does bootstrap do?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-the-overlay-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is the overlay structure?
       
     </span>
   </a>
@@ -962,10 +973,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-do-the-adapter-installers-do" class="md-nav__link">
+  <a href="#what-does-bootstrap-do" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What do the adapter installers do?
+        What does bootstrap do?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-the-overlay-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is the overlay structure?
       
     </span>
   </a>
@@ -1057,9 +1079,20 @@
 <h2 id="can-hermes-edit-an-external-skill-directory">Can Hermes edit an external skill directory?<a class="headerlink" href="#can-hermes-edit-an-external-skill-directory" title="Permanent link">&para;</a></h2>
 <p>Yes, if the process has filesystem write access. External directories are discovery sources, not read-only boundaries. Make shared changes in a separate Git branch or worktree and submit them through review.</p>
 <p>A same-named local Hermes skill can take precedence over the shared version.</p>
-<h2 id="what-do-the-adapter-installers-do">What do the adapter installers do?<a class="headerlink" href="#what-do-the-adapter-installers-do" title="Permanent link">&para;</a></h2>
-<p><code>./scripts/install-codex-agents.sh /path/to/project</code> copies <code>adapters/codex/AGENTS.md</code> into the target project as <code>AGENTS.md</code>. It does not change the canonical files under <code>skills/</code>.</p>
-<p>The global adapter templates under <code>adapters/shared/</code>, <code>adapters/claude/</code>, and <code>adapters/codex/</code> have no installer yet; copy them manually until the merging installer ships in a follow-up change. Whatever installs them must back up existing files, never silently overwrite a user's configuration, and preserve managed blocks written by other tools, such as <code>&lt;!-- OMC:START --&gt;…&lt;!-- OMC:END --&gt;</code>.</p>
+<h2 id="what-does-bootstrap-do">What does bootstrap do?<a class="headerlink" href="#what-does-bootstrap-do" title="Permanent link">&para;</a></h2>
+<p><code>./scripts/bootstrap.sh</code> installs the shared and selected provider adapter files into <code>$HOME/.claude</code> and/or <code>$HOME/.codex</code> (or environment overrides). It uses staged writes, timestamped backups, and managed-block merges, and rolls back adapter-file and Git configuration changes on failure. <code>--dry-run</code> performs no filesystem, symlink, or Git configuration changes. <code>--install-skills</code> runs <code>npx skills add</code> before that transaction starts, so a later failure does not uninstall skills it already added.</p>
+<p><code>./scripts/install-codex-agents.sh /path/to/project</code> remains the separate project-level helper; it copies <code>adapters/codex/AGENTS.md</code> into the target project as <code>AGENTS.md</code>.</p>
+<p>The installer backs up changed files, refuses a foreign global <code>core.hooksPath</code>, and preserves managed blocks written by other tools, such as <code>&lt;!-- OMC:START --&gt;…&lt;!-- OMC:END --&gt;</code>.</p>
+<h2 id="what-is-the-overlay-structure">What is the overlay structure?<a class="headerlink" href="#what-is-the-overlay-structure" title="Permanent link">&para;</a></h2>
+<p>Use provider-relative paths matching the public adapter tree:</p>
+<div class="highlight"><pre><span></span><code>overlay/
+├── shared/AGENTS.base.md
+├── shared/hooks/...
+├── claude/settings.template.json
+├── claude/CLAUDE.block.md
+└── codex/config.template.toml, hooks.json, agents/...
+</code></pre></div>
+<p>Only files that exist in the overlay replace their public counterparts before merging. The overlay itself is never copied into this checkout.</p>
 <h2 id="does-this-repository-publish-global-configuration">Does this repository publish global configuration?<a class="headerlink" href="#does-this-repository-publish-global-configuration" title="Permanent link">&para;</a></h2>
 <p>It publishes <strong>genericized templates</strong>, not anyone's configuration. A runtime-neutral instruction base and lifecycle hook scripts live in <code>adapters/shared/</code>; per-runtime settings templates, hook wiring, subagent definitions, and an injectable <code>CLAUDE.md</code> block live in <code>adapters/claude/</code> and <code>adapters/codex/</code>.</p>
 <p>Real personal content—employer conventions, project trust lists, credentialed MCP servers, private skills, machine paths, session or transcript state—remains forbidden here and belongs in a private overlay repository merged at install time. <a href="../adr/0001-publish-generic-global-agent-adapters/">ADR-0001</a> records why the earlier "no global configuration" boundary was superseded and what stays out.</p>
