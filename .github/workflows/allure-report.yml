@@ -54,7 +54,7 @@ jobs:
             }
             const headRepository = run.head_repository?.full_name;
             if (!headRepository || !run.head_sha) {
-              skip("Source run has no live head repository or SHA.");
+              skip("Source run has no live repository or SHA.");
               return;
             }
             const pulls = await github.paginate(github.rest.pulls.list, {
@@ -239,4 +239,3 @@ jobs:
                 body,
               });
             }
-
