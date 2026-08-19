@@ -1,7 +1,12 @@
 _commit: v2.12.1
 _src_path: https://github.com/quokkify/project-toolkit.git
-allure_report: false
-components: []
+allure_categories_file: ''
+allure_publish_pages: false
+allure_report: true
+components:
+-   allure_results_path: allure-results
+    path: .
+    type: python
 docker: false
 project_name: Shared Agent Skills
 release_please: true

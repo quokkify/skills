@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["actions"]
+        language: ["actions", "python"]
     permissions:
       actions: read
       contents: read
