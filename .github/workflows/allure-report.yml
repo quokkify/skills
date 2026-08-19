@@ -215,6 +215,11 @@ jobs:
             const reportRun = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const sourceRun = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}`;
             let body = `${marker}\n## Allure test report\n\nThe report was generated in a read-only job from validated artifacts for \`${run.head_sha.slice(0, 12)}\`.\n\n- [Download the Allure HTML artifact](${reportRun})\n- [Open the source validation run](${sourceRun})`;
+            const pagesBaseUrl = "https://quokkify.github.io/skills";
+            if (pull.head.repo.full_name === pull.base.repo.full_name &&
+                pull.user?.login !== "dependabot[bot]") {
+              body += `\n- [Open the published report](${pagesBaseUrl}/allure/pr-${prNumber}/)`;
+            }
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -239,3 +244,96 @@ jobs:
                 body,
               });
             }
+
+  pages:
+    name: Publish trusted Pages report
+    needs: [resolve, generate]
+    if: >-
+      ${{
+        needs.resolve.outputs.ready == 'true' &&
+        needs.resolve.outputs.fork-pr == 'false'
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Revalidate source freshness
+        id: freshness
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.resolve.outputs.pr-number }}
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const prNumber = Number(process.env.PR_NUMBER);
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const sameHead = pull.state === "open" && pull.head?.sha === run.head_sha &&
+              pull.head?.repo?.full_name === run.head_repository?.full_name;
+            const sourceRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: run.workflow_id,
+              event: "pull_request",
+              head_sha: run.head_sha,
+              per_page: 100,
+            });
+            const latest = Number(run.id) === Math.max(
+              ...sourceRuns.map((candidate) => Number(candidate.id))
+            );
+            if (!sameHead || !latest) {
+              core.warning("PR head or source run is stale; Pages publication suppressed.");
+              core.setOutput("fresh", "false");
+              return;
+            }
+            const expectedName = `allure-report-${context.runId}`;
+            const reportArtifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId,
+                per_page: 100,
+              }
+            );
+            const matches = reportArtifacts.filter((artifact) => artifact.name === expectedName);
+            if (matches.length !== 1 || matches[0].expired ||
+                Number(matches[0].size_in_bytes || 0) > 262144000) {
+              core.setFailed("Generated report artifact failed identity, expiry, or compressed-size checks.");
+              return;
+            }
+            core.setOutput("artifact_manifest", JSON.stringify([
+              { name: expectedName, id: Number(matches[0].id) },
+            ]))
+            core.setOutput("fresh", "true");
+      - name: Check out trusted extractor
+        if: ${{ steps.freshness.outputs.fresh == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Safely download generated report
+        if: ${{ steps.freshness.outputs.fresh == 'true' }}
+        shell: bash
+        env:
+          ARTIFACT_MANIFEST: ${{ steps.freshness.outputs.artifact_manifest }}
+          API_URL: ${{ github.api_url }}
+          REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCHIVE_ROOT: ${{ runner.temp }}/allure-pages-archives
+          OUTPUT_ROOT: ${{ runner.temp }}/allure-pages-expanded
+          MATERIALIZE_ROOT: ${{ github.workspace }}/allure-report
+        run: python .github/allure/safe_extract.py
+      - name: Publish Allure HTML to GitHub Pages
+        if: ${{ steps.freshness.outputs.fresh == 'true' }}
+        uses: quokkify/project-toolkit/actions/deploy-gh-pages-subdir@v2.12.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          publish-dir: allure-report
+          destination-dir: allure/pr-${{ needs.resolve.outputs.pr-number }}
