@@ -111,7 +111,7 @@ jobs:
     uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@v2.12.1
     with:
       working-directory: "."
-      install-command: "python -m pip install -e .[test]"
+      install-command: "python -m pip install pytest pytest-allure"
       test-command: "python -m pytest --alluredir=allure-results tests/"
       upload-test-artifacts: true
       test-artifact-path: "allure-results"
