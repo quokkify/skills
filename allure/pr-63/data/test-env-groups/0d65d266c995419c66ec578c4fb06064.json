@@ -1,0 +1,1 @@
+{"id":"0d65d266c995419c66ec578c4fb06064","fullName":"tests.test_sidecar_nftables_recipe.SidecarNftablesRecipeTests#test_backup_recipe_is_private_and_does_not_require_docker_group","name":"test_backup_recipe_is_private_and_does_not_require_docker_group","status":"passed","testResultsByEnv":{"default":"f20645f8a091b388e48a798add9d8d7a"}}
