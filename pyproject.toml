@@ -8,7 +8,7 @@ dependencies = []
 [project.optional-dependencies]
 test = [
     "pytest>=8.0.0",
-    "pytest-allure>=2.16.0",
+    "allure-pytest>=2.16.0",
 ]
 
 [tool.pytest.ini_options]
