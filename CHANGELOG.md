@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/quokkify/skills/compare/v0.9.1...v0.9.2) (2026-08-19)
+
+
+### Bug Fixes
+
+* replace pytest-allure with allure-pytest (correct PyPI package name) ([#66](https://github.com/quokkify/skills/issues/66)) ([b3b710f](https://github.com/quokkify/skills/commit/b3b710fcc444737388bcd9fda78cc8792ae0dedd))
+
 ## [0.9.1](https://github.com/quokkify/skills/compare/v0.9.0...v0.9.1) (2026-08-18)
 
 
