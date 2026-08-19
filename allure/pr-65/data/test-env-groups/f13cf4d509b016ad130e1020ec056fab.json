@@ -1,0 +1,1 @@
+{"id":"f13cf4d509b016ad130e1020ec056fab","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_bash_guard_blocks_piped_shell_regardless_of_interpreter_path","name":"test_bash_guard_blocks_piped_shell_regardless_of_interpreter_path","status":"passed","testResultsByEnv":{"default":"d9efdddb6aac1451b1a37a2f7d290995"}}
