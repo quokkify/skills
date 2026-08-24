@@ -55,6 +55,8 @@ for raw_path in untracked.split(b"\0"):
     if not raw_path:
         continue
     relative = os.fsdecode(raw_path)
+    if any(part in {"node_modules", ".venv", "__pycache__"} for part in relative.split(os.sep)):
+        continue
     full_path = os.path.join(root, relative)
     try:
         content = open(full_path, "rb").read()
