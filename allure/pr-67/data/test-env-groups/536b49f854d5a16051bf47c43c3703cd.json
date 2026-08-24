@@ -1,0 +1,1 @@
+{"id":"536b49f854d5a16051bf47c43c3703cd","fullName":"tests.test_sidecar_nftables_recipe.SidecarNftablesRecipeTests#test_recipe_atomically_recreates_existing_dedicated_table","name":"test_recipe_atomically_recreates_existing_dedicated_table","status":"passed","testResultsByEnv":{"default":"f8307573d3ffea5b344a00288d3f5316"}}
