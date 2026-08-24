@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/quokkify/skills/compare/v0.9.2...v0.9.3) (2026-08-24)
+
+
+### Bug Fixes
+
+* ignore dependency directories in completion gate ([#67](https://github.com/quokkify/skills/issues/67)) ([6714a27](https://github.com/quokkify/skills/commit/6714a275b529633584b707cb32a81d5c647683c5))
+
 ## [0.9.2](https://github.com/quokkify/skills/compare/v0.9.1...v0.9.2) (2026-08-19)
 
 
