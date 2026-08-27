@@ -1,0 +1,1 @@
+{"id":"108a624e079d928d370af268f1663de4","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_pre_push_uses_advertised_remote_refs_instead_of_stale_tracking_refs","name":"test_pre_push_uses_advertised_remote_refs_instead_of_stale_tracking_refs","status":"passed","testResultsByEnv":{"default":"7391ab69795a007eec1f4c942ba5daba"}}
