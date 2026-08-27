@@ -108,7 +108,7 @@ jobs:
 
   python-1:
     name: python (.)
-    uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@v2.12.4
+    uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@204b0f332c03d8ea8ceed920e3dc7487a13bb224 # v2.12.4
     with:
       working-directory: "."
       install-command: "python -m pip install pytest allure-pytest"
