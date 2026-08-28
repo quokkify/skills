@@ -112,6 +112,7 @@ jobs:
     with:
       working-directory: "."
       install-command: "python -m pip install pytest allure-pytest"
+      test-command: "python -m pytest --alluredir=allure-results tests/"
       upload-test-artifacts: true
       test-artifact-path: "allure-results"
       test-artifact-name: allure-results-python-1
