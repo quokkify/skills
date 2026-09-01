@@ -12,6 +12,56 @@ MANIFEST_PATH = REPOSITORY_ROOT / ".github" / "release-please" / "manifest.json"
 WORKFLOW_PATH = REPOSITORY_ROOT / ".github" / "workflows" / "release.yml"
 ANSWERS_PATH = REPOSITORY_ROOT / ".copier-answers.yml"
 
+TOOLKIT_RELEASE_WORKFLOW = "quokkify/project-toolkit/.github/workflows/release-please.yml"
+TOOLKIT_USES_MARKER = f"uses: {TOOLKIT_RELEASE_WORKFLOW}@"
+
+
+def toolkit_references(workflow: str) -> list[tuple[str, str]]:
+    """Return every toolkit release-workflow reference with its trailing comment."""
+    references = []
+    for line in workflow.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith(TOOLKIT_USES_MARKER):
+            reference = stripped[len(TOOLKIT_USES_MARKER) :].split()[0]
+            references.append((reference, line.partition("#")[2].strip()))
+    return references
+
+
+def pins_toolkit_version(reference: str, comment: str, version: str) -> bool:
+    """Apply the toolkit's pin contract to one reference.
+
+    The reference names ``version`` when it is either that exact tag, or a full
+    40-character digest whose trailing comment names that tag.
+    """
+    if reference == version:
+        return True
+    return re.fullmatch(r"[0-9a-f]{40}", reference) is not None and comment == version
+
+
+def references_toolkit_version(workflow: str, version: str) -> bool:
+    """Check every toolkit release-workflow reference in ``workflow`` against the contract.
+
+    ``.github/workflows/validate.yml`` applies the same rule to every toolkit
+    reference in every workflow and fails on any violation, so a second reference
+    on a weaker pin has to fail here too rather than hide behind the first.
+    """
+    references = toolkit_references(workflow)
+    if not references:
+        return False
+    return all(pins_toolkit_version(reference, comment, version) for reference, comment in references)
+
+
+def with_toolkit_reference(workflow: str, replacement: str) -> str:
+    """Rewrite the toolkit reference in place, keeping the rest of the artifact intact."""
+    lines = []
+    for line in workflow.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith(TOOLKIT_USES_MARKER):
+            indent = line[: len(line) - len(stripped)]
+            line = f"{indent}{TOOLKIT_USES_MARKER}{replacement}"
+        lines.append(line)
+    return "\n".join(lines) + "\n"
+
 
 class ReleaseConfigurationTests(unittest.TestCase):
     def test_manifest_configuration_uses_standard_tag_format(self) -> None:
@@ -32,22 +82,79 @@ class ReleaseConfigurationTests(unittest.TestCase):
         self.assertEqual(list(manifest), ["."])
         self.assertRegex(manifest["."], r"^\d+\.\d+\.\d+$")
 
-    def test_release_workflow_uses_pinned_project_toolkit(self) -> None:
-        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+    def toolkit_version(self) -> str:
         answers = ANSWERS_PATH.read_text(encoding="utf-8")
         version_match = re.search(r"^toolkit_version: (v\d+\.\d+\.\d+)$", answers, re.MULTILINE)
-
         self.assertIn("release_please: true", answers)
         self.assertIsNotNone(version_match)
         assert version_match is not None
-        self.assertRegex(
-            workflow,
-            r"uses: quokkify/project-toolkit/\.github/workflows/release-please\.yml@[0-9a-f]{40}",
+        return version_match.group(1)
+
+    def test_release_workflow_calls_the_toolkit_at_the_answered_version(self) -> None:
+        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+        version = self.toolkit_version()
+
+        self.assertEqual(
+            len(toolkit_references(workflow)),
+            1,
+            "release.yml must call the toolkit release-please workflow exactly once",
         )
-        self.assertIn(f"# {version_match.group(1)}", workflow)
+        self.assertTrue(
+            references_toolkit_version(workflow, version),
+            f"release.yml must reference the toolkit at {version}, as that tag or as a "
+            "digest whose comment names it",
+        )
         self.assertIn("mode: manifest", workflow)
         self.assertIn("config-file: .github/release-please/config.json", workflow)
         self.assertIn("manifest-file: .github/release-please/manifest.json", workflow)
+
+    def test_pin_contract_accepts_both_forms_the_toolkit_emits(self) -> None:
+        # The probes are the committed artifact with only its pin rewritten, so they
+        # cannot drift from the file they mirror.
+        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+        version = self.toolkit_version()
+        digest = "0" * 40
+        other_digest = "1" * 40
+
+        accepted = {
+            "exact tag": version,
+            "digest carrying the version": f"{digest} # {version}",
+            "bumped digest carrying the version": f"{other_digest} # {version}",
+        }
+        for label, replacement in accepted.items():
+            with self.subTest(accepted=label):
+                self.assertTrue(
+                    references_toolkit_version(with_toolkit_reference(workflow, replacement), version)
+                )
+
+        rejected = {
+            "mutable branch": "main",
+            "another tag": "v0.0.1",
+            "truncated digest": f"{digest[:-1]} # {version}",
+            "digest without a version comment": digest,
+            "digest naming another version": f"{digest} # v0.0.1",
+        }
+        for label, replacement in rejected.items():
+            with self.subTest(rejected=label):
+                self.assertFalse(
+                    references_toolkit_version(with_toolkit_reference(workflow, replacement), version)
+                )
+
+    def test_pin_contract_requires_the_toolkit_release_workflow(self) -> None:
+        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+        version = self.toolkit_version()
+        unrelated = workflow.replace(TOOLKIT_RELEASE_WORKFLOW, "quokkify/other/.github/workflows/x.yml")
+
+        self.assertEqual(toolkit_references(unrelated), [])
+        self.assertFalse(references_toolkit_version(unrelated, version))
+
+    def test_pin_contract_rejects_a_second_reference_on_a_weaker_pin(self) -> None:
+        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+        version = self.toolkit_version()
+        smuggled = f"{workflow}  second:\n    {TOOLKIT_USES_MARKER}main\n"
+
+        self.assertTrue(references_toolkit_version(workflow, version))
+        self.assertFalse(references_toolkit_version(smuggled, version))
 
     def test_legacy_release_files_are_absent(self) -> None:
         legacy_paths = (

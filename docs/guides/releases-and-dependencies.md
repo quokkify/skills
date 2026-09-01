@@ -1,6 +1,6 @@
 # Releases and dependency updates
 
-This repository uses Release Please for versioning and changelog generation, and Renovate for pinned GitHub Actions updates.
+This repository uses Release Please for versioning and changelog generation, and Renovate for pinned GitHub Actions updates. The workflows rendered by the `quokkify/project-toolkit` Copier template are the exception: the toolkit owns the versions inside them and delivers them through `copier update`.
 
 ## Release flow
 
@@ -28,21 +28,32 @@ The `PR Title` workflow enforces the title format before merge. When squash merg
 
 ## Renovate flow
 
-Root-level `renovate.json` is generated from the Copier answers and extends the shared public base and GitHub Actions presets. Renovate keeps immutable action SHAs current while preserving readable version comments.
+`.github/renovate.json` was generated from the Copier answers and is owned by this repository from then on; the template does not rewrite it. It extends the shared public base and GitHub Actions presets, which is how toolkit-owned Renovate policy reaches this repository. Renovate keeps immutable action SHAs current while preserving readable version comments.
+
+Renovate is disabled for the workflow paths the template owns, including `.github/workflows/release.yml`. Without that exclusion the same pin has two owners: Renovate moves it, the next `copier update` lands on the moved pin, and the update conflicts in a file this repository never edited. Versions inside those files change only when the template is updated.
 
 The `Renovate Config` workflow runs:
 
-- when `renovate.json` or its validation workflow changes;
+- when `.github/renovate.json` or its validation workflow changes;
 - weekly, to detect incompatibility with newer Renovate versions;
 - manually through `workflow_dispatch`.
 
-It executes `renovate-config-validator --strict renovate.json`. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.
+It executes `renovate-config-validator --strict .github/renovate.json`. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.
+
+## Toolkit references
+
+Every workflow that calls `quokkify/project-toolkit` references it at the version recorded as `toolkit_version` in `.copier-answers.yml`, in one of two accepted forms:
+
+- the exact release tag, for example `@v2.19.0` — what the template renders, and what every consumer that calls the toolkit's release workflow uses;
+- a full 40-character commit digest carrying that tag as a comment, for example `@7bc13e13… # v2.19.0`.
+
+The template-owned check in `.github/workflows/validate.yml` enforces this across every workflow, and `tests/test_release_configuration.py` asserts it for the release caller. A tag is mutable and a digest is not, so the digest form remains available for a deliberate, hand-maintained pin. It is not the default here: [ADR-0002](../adr/0002-reference-project-toolkit-by-release-tag.md) records why this repository references the toolkit by tag and what that trades away.
 
 ## Configuration files
 
 - `.github/release-please/config.json` — release type, migration boundary, and tag convention;
 - `.github/release-please/manifest.json` — last released version tracked by Release Please;
-- `.github/workflows/release.yml` — project-owned caller for the pinned reusable release workflow;
+- `.github/workflows/release.yml` — template-owned caller for the toolkit's reusable release workflow;
 - `.github/workflows/pr-title.yml` — Conventional Commit title validation;
-- `renovate.json` — Copier-managed shared Renovate preset selection;
+- `.github/renovate.json` — project-owned Renovate configuration extending the shared presets;
 - `.github/workflows/renovate-config.yml` — strict Renovate configuration validation.
