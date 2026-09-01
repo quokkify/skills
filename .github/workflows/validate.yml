@@ -45,6 +45,9 @@ jobs:
           renovate_path = Path(".github/renovate.json")
           if answers.get("renovate") and not renovate_path.is_file():
               raise SystemExit("renovate=true requires .github/renovate.json")
+          codeql_path = Path(".github/workflows/codeql.yml")
+          if answers.get("codeql") and not codeql_path.is_file():
+              raise SystemExit("codeql=true requires .github/workflows/codeql.yml")
           allure_paths = (
               Path(".github/workflows/allure-report.yml"),
               Path(".github/allure/allurerc.mjs"),
@@ -108,7 +111,7 @@ jobs:
 
   python-1:
     name: python (.)
-    uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@v2.14.0
+    uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@v2.17.0
     with:
       working-directory: "."
       install-command: "python -m pip install pytest allure-pytest"
