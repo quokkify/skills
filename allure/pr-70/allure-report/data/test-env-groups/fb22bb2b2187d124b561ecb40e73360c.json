@@ -1,1 +1,0 @@
-{"id":"fb22bb2b2187d124b561ecb40e73360c","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_real_run_deletes_eligible_image_and_commits_empty_state","name":"test_real_run_deletes_eligible_image_and_commits_empty_state","status":"passed","testResultsByEnv":{"default":"8581c0b6bbfaed80b49ced2332ce61c4"}}

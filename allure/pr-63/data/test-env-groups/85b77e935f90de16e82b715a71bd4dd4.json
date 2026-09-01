@@ -1,1 +1,0 @@
-{"id":"85b77e935f90de16e82b715a71bd4dd4","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_second_run_is_byte_and_backup_set_idempotent","name":"test_second_run_is_byte_and_backup_set_idempotent","status":"passed","testResultsByEnv":{"default":"3717a70d6b6c24474ff64fbc1da04f90"}}

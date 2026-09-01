@@ -1,1 +1,0 @@
-{"id":"b86d9a913cce7c32f6944fd9ebe5de38","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_bash_guard_blocks_implicit_forced_push_on_exact_protected_branch_name","name":"test_bash_guard_blocks_implicit_forced_push_on_exact_protected_branch_name","status":"passed","testResultsByEnv":{"default":"37f086dce83a7025e371659b873aaaa2"}}

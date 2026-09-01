@@ -1,1 +1,0 @@
-{"id":"43e3e73037ff824b7d164c0bd9989c0f","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_codex_toml_rejects_legacy_keys_in_existing_section","name":"test_codex_toml_rejects_legacy_keys_in_existing_section","status":"passed","testResultsByEnv":{"default":"db94c443f65749475c9bdac233137712"}}

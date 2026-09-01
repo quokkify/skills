@@ -1,1 +1,0 @@
-{"id":"1d07bd31af15bafb8921e5a5e447d417","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_codex_second_run_does_not_rewrite_config_or_create_backup","name":"test_codex_second_run_does_not_rewrite_config_or_create_backup","status":"passed","testResultsByEnv":{"default":"e5611eea00704ab9cbe73e6472016d4b"}}

@@ -1,1 +1,0 @@
-{"id":"a31eb551088c8ad3c355e55e9f018ac4","fullName":"tests.test_sidecar_nftables_recipe.SidecarNftablesRecipeTests#test_recipe_rejects_unsafe_table_name_before_calling_nft","name":"test_recipe_rejects_unsafe_table_name_before_calling_nft","status":"passed","testResultsByEnv":{"default":"845642e41274254f613c5ded56f28a60"}}

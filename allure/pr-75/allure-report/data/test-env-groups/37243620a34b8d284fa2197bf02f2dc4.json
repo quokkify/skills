@@ -1,1 +1,0 @@
-{"id":"37243620a34b8d284fa2197bf02f2dc4","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_pre_commit_checks_staged_changes_and_honors_opt_out","name":"test_pre_commit_checks_staged_changes_and_honors_opt_out","status":"passed","testResultsByEnv":{"default":"faa1c06579557d0aff1187d86799d5cf"}}

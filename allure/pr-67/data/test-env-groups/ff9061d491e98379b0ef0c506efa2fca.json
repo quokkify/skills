@@ -1,1 +1,0 @@
-{"id":"ff9061d491e98379b0ef0c506efa2fca","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_git_hooks_are_executable_and_noop_outside_a_worktree","name":"test_git_hooks_are_executable_and_noop_outside_a_worktree","status":"passed","testResultsByEnv":{"default":"c2b997645cfe0ca02d5812fd196adede"}}

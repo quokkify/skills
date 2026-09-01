@@ -641,6 +641,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#toolkit-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toolkit references
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration-files" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -775,6 +786,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0002-reference-project-toolkit-by-release-tag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002: Reference Project-Toolkit By Release Tag
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -859,6 +898,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#toolkit-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toolkit references
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration-files" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -888,7 +938,7 @@
 
 
 <h1 id="releases-and-dependency-updates">Releases and dependency updates<a class="headerlink" href="#releases-and-dependency-updates" title="Permanent link">&para;</a></h1>
-<p>This repository uses Release Please for versioning and changelog generation, and Renovate for pinned GitHub Actions updates.</p>
+<p>This repository uses Release Please for versioning and changelog generation, and Renovate for pinned GitHub Actions updates. The workflows rendered by the <code>quokkify/project-toolkit</code> Copier template are the exception: the toolkit owns the versions inside them and delivers them through <code>copier update</code>.</p>
 <h2 id="release-flow">Release flow<a class="headerlink" href="#release-flow" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Open pull requests with a Conventional Commit title. The scope is optional:</li>
@@ -911,21 +961,29 @@
 </ul>
 <p>The <code>PR Title</code> workflow enforces the title format before merge. When squash merging, verify the final commit title in GitHub because Release Please reads merged commit history rather than the pull request body.</p>
 <h2 id="renovate-flow">Renovate flow<a class="headerlink" href="#renovate-flow" title="Permanent link">&para;</a></h2>
-<p>Root-level <code>renovate.json</code> is generated from the Copier answers and extends the shared public base and GitHub Actions presets. Renovate keeps immutable action SHAs current while preserving readable version comments.</p>
+<p><code>.github/renovate.json</code> was generated from the Copier answers and is owned by this repository from then on; the template does not rewrite it. It extends the shared public base and GitHub Actions presets, which is how toolkit-owned Renovate policy reaches this repository. Renovate keeps immutable action SHAs current while preserving readable version comments.</p>
+<p>Renovate is disabled for the workflow paths the template owns, including <code>.github/workflows/release.yml</code>. Without that exclusion the same pin has two owners: Renovate moves it, the next <code>copier update</code> lands on the moved pin, and the update conflicts in a file this repository never edited. Versions inside those files change only when the template is updated.</p>
 <p>The <code>Renovate Config</code> workflow runs:</p>
 <ul>
-<li>when <code>renovate.json</code> or its validation workflow changes;</li>
+<li>when <code>.github/renovate.json</code> or its validation workflow changes;</li>
 <li>weekly, to detect incompatibility with newer Renovate versions;</li>
 <li>manually through <code>workflow_dispatch</code>.</li>
 </ul>
-<p>It executes <code>renovate-config-validator --strict renovate.json</code>. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.</p>
+<p>It executes <code>renovate-config-validator --strict .github/renovate.json</code>. Renovate pull requests must pass the normal repository checks before merge. Major dependency updates still require explicit review; do not bypass branch protection or security review for an automated update.</p>
+<h2 id="toolkit-references">Toolkit references<a class="headerlink" href="#toolkit-references" title="Permanent link">&para;</a></h2>
+<p>Every workflow that calls <code>quokkify/project-toolkit</code> references it at the version recorded as <code>toolkit_version</code> in <code>.copier-answers.yml</code>, in one of two accepted forms:</p>
+<ul>
+<li>the exact release tag, for example <code>@v2.19.0</code> — what the template renders, and what every consumer that calls the toolkit's release workflow uses;</li>
+<li>a full 40-character commit digest carrying that tag as a comment, for example <code>@7bc13e13… # v2.19.0</code>.</li>
+</ul>
+<p>The template-owned check in <code>.github/workflows/validate.yml</code> enforces this across every workflow, and <code>tests/test_release_configuration.py</code> asserts it for the release caller. A tag is mutable and a digest is not, so the digest form remains available for a deliberate, hand-maintained pin. It is not the default here: <a href="../../adr/0002-reference-project-toolkit-by-release-tag/">ADR-0002</a> records why this repository references the toolkit by tag and what that trades away.</p>
 <h2 id="configuration-files">Configuration files<a class="headerlink" href="#configuration-files" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>.github/release-please/config.json</code> — release type, migration boundary, and tag convention;</li>
 <li><code>.github/release-please/manifest.json</code> — last released version tracked by Release Please;</li>
-<li><code>.github/workflows/release.yml</code> — project-owned caller for the pinned reusable release workflow;</li>
+<li><code>.github/workflows/release.yml</code> — template-owned caller for the toolkit's reusable release workflow;</li>
 <li><code>.github/workflows/pr-title.yml</code> — Conventional Commit title validation;</li>
-<li><code>renovate.json</code> — Copier-managed shared Renovate preset selection;</li>
+<li><code>.github/renovate.json</code> — project-owned Renovate configuration extending the shared presets;</li>
 <li><code>.github/workflows/renovate-config.yml</code> — strict Renovate configuration validation.</li>
 </ul>
 

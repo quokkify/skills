@@ -1,1 +1,0 @@
-{"id":"3b88a0328970bd35d4f031d9781cf050","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_excessive_retention_days_are_rejected_before_arithmetic","name":"test_excessive_retention_days_are_rejected_before_arithmetic","status":"passed","testResultsByEnv":{"default":"cd51c67897a1dc356e4a900eb094eb1d"}}

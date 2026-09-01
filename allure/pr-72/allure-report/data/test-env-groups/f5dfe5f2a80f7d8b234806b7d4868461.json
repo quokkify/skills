@@ -1,1 +1,0 @@
-{"id":"f5dfe5f2a80f7d8b234806b7d4868461","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_malformed_toml_refuses_before_changes","name":"test_malformed_toml_refuses_before_changes","status":"passed","testResultsByEnv":{"default":"fad28070fd11ff62022d462cc918914b"}}
