@@ -28,7 +28,7 @@ The `PR Title` workflow enforces the title format before merge. When squash merg
 
 ## Renovate flow
 
-`.github/renovate.json` is generated from the Copier answers and extends the shared public base and GitHub Actions presets. Renovate keeps immutable action SHAs current while preserving readable version comments.
+`.github/renovate.json` was generated from the Copier answers and is owned by this repository from then on; the template does not rewrite it. It extends the shared public base and GitHub Actions presets, which is how toolkit-owned Renovate policy reaches this repository. Renovate keeps immutable action SHAs current while preserving readable version comments.
 
 Renovate is disabled for the workflow paths the template owns, including `.github/workflows/release.yml`. Without that exclusion the same pin has two owners: Renovate moves it, the next `copier update` lands on the moved pin, and the update conflicts in a file this repository never edited. Versions inside those files change only when the template is updated.
 
@@ -44,7 +44,7 @@ It executes `renovate-config-validator --strict .github/renovate.json`. Renovate
 
 Every workflow that calls `quokkify/project-toolkit` references it at the version recorded as `toolkit_version` in `.copier-answers.yml`, in one of two accepted forms:
 
-- the exact release tag, for example `@v2.19.0` — what the template renders, and what every consumer of the toolkit uses;
+- the exact release tag, for example `@v2.19.0` — what the template renders, and what every consumer that calls the toolkit's release workflow uses;
 - a full 40-character commit digest carrying that tag as a comment, for example `@7bc13e13… # v2.19.0`.
 
 The template-owned check in `.github/workflows/validate.yml` enforces this across every workflow, and `tests/test_release_configuration.py` asserts it for the release caller. A tag is mutable and a digest is not, so the digest form remains available for a deliberate, hand-maintained pin. It is not the default here: [ADR-0002](../adr/0002-reference-project-toolkit-by-release-tag.md) records why this repository references the toolkit by tag and what that trades away.
@@ -55,5 +55,5 @@ The template-owned check in `.github/workflows/validate.yml` enforces this acros
 - `.github/release-please/manifest.json` — last released version tracked by Release Please;
 - `.github/workflows/release.yml` — template-owned caller for the toolkit's reusable release workflow;
 - `.github/workflows/pr-title.yml` — Conventional Commit title validation;
-- `.github/renovate.json` — Copier-managed shared Renovate preset selection;
+- `.github/renovate.json` — project-owned Renovate configuration extending the shared presets;
 - `.github/workflows/renovate-config.yml` — strict Renovate configuration validation.
