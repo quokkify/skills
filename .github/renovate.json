@@ -1,4 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>quokkify/renovate-presets//presets/base", "github>quokkify/renovate-presets//presets/github-actions/default"]
+  "extends": ["github>quokkify/renovate-presets//presets/base", "github>quokkify/renovate-presets//presets/github-actions/default"],
+  "packageRules": [
+    {
+      "description": "Disable competing updates inside template-owned workflows; project-toolkit owns those versions and delivers them through copier update.",
+      "matchFileNames": [".github/workflows/allure-report.yml", ".github/workflows/codeql.yml", ".github/workflows/copier-update.yml", ".github/workflows/gitleaks.yml", ".github/workflows/release.yml", ".github/workflows/validate.yml"],
+      "enabled": false
+    }
+  ]
 }

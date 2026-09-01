@@ -33,7 +33,9 @@ jobs:
           if [[ ! "$TRUSTED_REF" =~ ^[0-9a-f]{40}$ || "$TRUSTED_REF" =~ ^0+$ ]]; then
             TRUSTED_REF="$GITHUB_SHA"
           fi
-          git fetch --no-tags --depth=1 origin "$TRUSTED_REF"
+          if ! git cat-file -e "$TRUSTED_REF^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$TRUSTED_REF"
+          fi
           printf '[extend]\nuseDefault = true\n' > "$RUNNER_TEMP/gitleaks.toml"
           : > "$RUNNER_TEMP/gitleaksignore"
           if git cat-file -e "$TRUSTED_REF:.gitleaks.toml" 2>/dev/null; then
