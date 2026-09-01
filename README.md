@@ -2,7 +2,7 @@
 
 **A portable operating layer for AI agents: shared skills, recoverable configuration, and safer execution harnesses.**
 
-Generated with `quokkify/project-toolkit` at `v2.17.0`. Run `copier update` to apply future template changes; Renovate updates workflow version references independently.
+Generated with `quokkify/project-toolkit` at `v2.19.0`. Run `copier update` to apply future template changes; the toolkit owns the versions inside the workflows it renders, and Renovate updates the remaining action references independently.
 
 ![Skills ecosystem: public hub, private configuration vault, and agent harness](docs/assets/skills-ecosystem.svg)
 

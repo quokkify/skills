@@ -1,12 +1,13 @@
-_commit: v2.17.0
+_commit: v2.19.0
 _src_path: https://github.com/quokkify/project-toolkit.git
 allure_categories_file: ''
 allure_pages_url: https://quokkify.github.io/skills
 allure_publish_pages: true
 allure_report: true
 codeql: true
+codeql_languages: []
 components:
-  - allure_results_path: allure-results
+-   allure_results_path: allure-results
     path: .
     type: python
 docker: false
@@ -16,6 +17,6 @@ release_please: true
 renovate: true
 renovate_config_repository: quokkify/renovate-presets
 renovate_presets:
-  - default
-  - github-actions
-toolkit_version: v2.17.0
+- default
+- github-actions
+toolkit_version: v2.19.0
