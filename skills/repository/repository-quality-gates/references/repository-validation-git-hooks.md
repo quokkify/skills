@@ -32,6 +32,9 @@ Do not validate arbitrary pushed refs against unrelated working-tree files. Reje
 - Resolve local Markdown links and require every candidate target to remain within the repository root before checking existence.
 - Detect duplicate skill names and Markdown filename stems that collide with skill names when an agent resolves skills by filename.
 - Keep privacy checks targeted and disclose their limits.
+- Separate the two requirements a pinned-dependency guard actually has: identity, meaning the step is the dependency the guard is about, and immutability, meaning the reference is a full digest rather than a mutable tag. Match identity on the dependency name and let a dedicated check reject mutable and truncated references.
+- Derive a probe fixture's pin from the artifact under validation instead of restating it, so the fixture cannot drift from the file it is meant to mirror.
+- Cover a pin bump with its own probe: rewrite the reference to a different valid digest and assert every guard still holds. Confirm the probe is non-vacuous by restoring the digest-equality matcher and observing it fail.
 
 ## Reproducibility
 
@@ -48,6 +51,7 @@ Do not validate arbitrary pushed refs against unrelated working-tree files. Reje
 - malformed UTF-8 in skill and Markdown files is reported without stopping aggregation;
 - a relative link to an existing host file outside the repository fails;
 - forbidden state filenames, machine-specific paths, and symlinks fail;
+- a dependency pin bumped to a different valid digest keeps every guard satisfied;
 - pinned documentation build and both secret-scan scopes pass.
 
 Before opening the PR, run shell static analysis, workflow linting, unit tests, documentation build, `git diff --check`, and secret scanning. After fixes, re-run all gates on the new exact head and inspect every reviewer surface.
