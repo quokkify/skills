@@ -1,1 +1,1 @@
-{"id":"80732d9674ab9c4d742a8d0fbf3fa18c","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_rollback_removes_partial_state","name":"test_rollback_removes_partial_state","status":"passed","testResultsByEnv":{"default":"b46daeb035c8734ed2d8bf923b1e6f1c"}}
+{"id":"80732d9674ab9c4d742a8d0fbf3fa18c","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_rollback_removes_partial_state","name":"test_rollback_removes_partial_state","status":"passed","testResultsByEnv":{"default":"9a1177635eae156a7a5566505c582879"}}
