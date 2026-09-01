@@ -1,1 +1,1 @@
-{"id":"5365124ce09b1d305afe0531f9329987","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_ambiguous_claude_block_refuses","name":"test_ambiguous_claude_block_refuses","status":"passed","testResultsByEnv":{"default":"1f8b1f6a04ab3b16da7b7dc3a9b9175b"}}
+{"id":"5365124ce09b1d305afe0531f9329987","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_ambiguous_claude_block_refuses","name":"test_ambiguous_claude_block_refuses","status":"passed","testResultsByEnv":{"default":"617a000bb7c8d08fb4e08eb49b84a98e"}}
