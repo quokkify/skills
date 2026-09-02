@@ -4,7 +4,7 @@
 
 Generated with `quokkify/project-toolkit` at `v2.19.0`. Run `copier update` to apply future template changes; the toolkit owns the versions inside the workflows it renders, and Renovate updates the remaining action references independently.
 
-![Skills ecosystem: public hub, private configuration vault, and agent harness](docs/assets/skills-ecosystem.svg)
+![Skills ecosystem: public hub, private configuration vault, and agent harness](https://raw.githubusercontent.com/quokkify/.github/main/assets/diagrams/skills-ecosystem.svg)
 
 The project is built around one idea: an agent should be able to **learn once, move between providers, recover its setup, and execute through explicit safety boundaries**.
 
