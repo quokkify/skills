@@ -16,6 +16,16 @@ from tempfile import TemporaryDirectory
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+
+# The templates commit on their own. Git only falls back to an identity built from the
+# OS user and hostname, which a container has no reason to make valid, so a run that
+# passes on a workstation fails in CI with "Author identity unknown". Supply one.
+GIT_IDENTITY = {
+    "GIT_AUTHOR_NAME": "harness test",
+    "GIT_AUTHOR_EMAIL": "harness@example.invalid",
+    "GIT_COMMITTER_NAME": "harness test",
+    "GIT_COMMITTER_EMAIL": "harness@example.invalid",
+}
 TEMPLATES = (
     REPOSITORY_ROOT / "skills" / "skill-management" / "skill-promotion-queue" / "templates"
 )
@@ -72,6 +82,7 @@ class TemplateFixture(unittest.TestCase):
                 "HOME": str(self.root),
             }
         )
+        environment.update(GIT_IDENTITY)
         environment.update(extra_env or {})
         return subprocess.run(
             ["bash", str(script), *arguments],
@@ -140,14 +151,7 @@ class AdoptDirectoryTests(TemplateFixture):
 
     def git(self, cwd: Path, *arguments: str) -> None:
         environment = dict(os.environ)
-        environment.update(
-            {
-                "GIT_AUTHOR_NAME": "t",
-                "GIT_AUTHOR_EMAIL": "t@example.invalid",
-                "GIT_COMMITTER_NAME": "t",
-                "GIT_COMMITTER_EMAIL": "t@example.invalid",
-            }
-        )
+        environment.update(GIT_IDENTITY)
         subprocess.run(
             ["git", *arguments], cwd=cwd, env=environment, check=True, capture_output=True, text=True
         )

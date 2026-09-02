@@ -470,7 +470,7 @@ REPORT="$CANDIDATES_DIR/prune-assessment-$today.md"
   echo "  installer that put it there."
   echo "- \`keep-unobservable-usage\` — ships a runnable file (executable, \`.sh\` or \`.py\`)."
   echo "  Such a skill is invoked directly, so the Skill-tool usage signal never records it"
-  echo "  and a zero count carries no information. Waiting longer cannot change that." 
+  echo "  and a zero count carries no information. Waiting longer cannot change that."
   echo "- \`merge-into:<skill>\` — fold the useful part into the named skill, then re-assess."
   echo "- \`prune\` — near-duplicate; removable from the hub via the lane."
   echo
