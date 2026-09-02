@@ -1,0 +1,1 @@
+{"id":"27d00ec2a3d94f26b0beea406684613d","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_malformed_state_fails_closed","name":"test_malformed_state_fails_closed","status":"passed","testResultsByEnv":{"default":"dcc82a98b55957f66018931cfdb773b3"}}
