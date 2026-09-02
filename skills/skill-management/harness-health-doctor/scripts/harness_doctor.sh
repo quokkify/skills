@@ -12,10 +12,55 @@
 # is portable across machines, accounts, and operating systems.
 set -uo pipefail
 
-CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-HARNESS_DIR="$CLAUDE_DIR/skill-harness"
+# The harness is runtime-generic, but each agent runtime keeps its home in a different
+# place. Resolve by evidence rather than by assuming one runtime: the harness lives
+# wherever its config.env does. An explicit override always wins.
+#
+# A runtime is identified by which setting the path came from, never by the directory
+# name: CLAUDE_CONFIG_DIR and CODEX_HOME exist precisely so the home can sit anywhere,
+# so matching on a trailing ".claude" would misclassify every relocated install.
+runtime_candidates() {
+  printf 'claude\t%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+  printf 'codex\t%s\n'  "${CODEX_HOME:-$HOME/.codex}"
+  printf 'hermes\t%s\n' "${HERMES_HOME:-$HOME/.hermes}"
+}
+
+runtime_label() {
+  case "$1" in
+    claude) printf 'Claude Code' ;;
+    codex)  printf 'Codex' ;;
+    hermes) printf 'Hermes' ;;
+    *)      printf 'Unknown runtime' ;;
+  esac
+}
+
+# "<kind><tab><path>" per line, for the runtimes actually present on this machine.
+present_runtimes="$(
+  runtime_candidates | while IFS="$(printf '\t')" read -r kind path; do
+    [ -n "$path" ] || continue
+    [ -d "$path" ] || continue
+    printf '%s\t%s\n' "$kind" "$path"
+  done
+)"
+
+AGENT_HOME=""
+harness_homes=""
+if [ -n "${SKILL_HARNESS_HOME:-}" ]; then
+  AGENT_HOME="$SKILL_HARNESS_HOME"
+  harness_homes="$SKILL_HARNESS_HOME"
+else
+  harness_homes="$(
+    printf '%s\n' "$present_runtimes" | while IFS="$(printf '\t')" read -r kind path; do
+      [ -n "${path:-}" ] || continue
+      { [ -f "$path/skill-harness/config.env" ] || [ -d "$path/skill-harness" ]; } && printf '%s\n' "$path"
+    done
+  )"
+  AGENT_HOME="$(printf '%s\n' "$harness_homes" | awk 'NF { print; exit }')"
+  [ -n "$AGENT_HOME" ] || AGENT_HOME="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+fi
+
+HARNESS_DIR="$AGENT_HOME/skill-harness"
 CONFIG_FILE="$HARNESS_DIR/config.env"
-SETTINGS_FILES="$CLAUDE_DIR/settings.json $CLAUDE_DIR/settings.local.json"
 
 OFFLINE=0
 for argument in "$@"; do
@@ -66,6 +111,28 @@ report_fail() { printf '%s %s\n' "$FAIL" "$1"; raise 2; note_warning "$1"; }
 printf 'HARNESS HEALTH CHECK\n'
 
 # ---------------------------------------------------------------- installation
+section "Runtimes"
+
+if [ -z "$present_runtimes" ]; then
+  report_warn "No agent runtime home found under the usual locations"
+  note_step "Set SKILL_HARNESS_HOME to the agent home that owns the harness."
+else
+  printf '%s\n' "$present_runtimes" | while IFS="$(printf '\t')" read -r kind home; do
+    [ -n "${home:-}" ] || continue
+    if [ -d "$home/skill-harness" ]; then
+      printf '%s %s\n' "$OK" "$(runtime_label "$kind") at $(redact "$home") — hosts the harness"
+    else
+      printf '%s %s\n' "$INFO" "$(runtime_label "$kind") at $(redact "$home") — present, no harness"
+    fi
+  done
+fi
+
+harness_count="$(printf '%s\n' "$harness_homes" | awk 'NF' | wc -l | tr -d ' ')"
+if [ "$harness_count" -gt 1 ]; then
+  report_warn "The harness is installed under more than one runtime home; they share one lane and will fight over it"
+  note_step "Keep one harness install per machine, or give each runtime its own lane in its own config.env."
+fi
+
 section "Installation"
 
 harness_present=0
@@ -177,29 +244,39 @@ fi
 BRANCH=""
 [ -n "$LANE" ] && BRANCH="automation/skill-improvements/$LANE"
 
-# ----------------------------------------------------------------------- hooks
-section "Hooks"
+# -------------------------------------------------------- completion gate wiring
+# The harness scripts are runtime-generic; only the wiring that runs them is not.
+# `local-agent-bootstrap.md` asks each machine for "a completion gate appropriate to
+# this agent runtime", so check the mechanism each installed runtime actually has
+# rather than reporting every runtime against Claude Code's settings.json.
+section "Completion Gate"
 
 stop_hook=0
 session_hook=0
+gate_wired=0
 
-present_settings=""
-for candidate in $SETTINGS_FILES; do
-  [ -f "$candidate" ] && present_settings="$present_settings $candidate"
-done
+# Claude Code: Stop and SessionStart hooks in the merged settings files. A hook event
+# holds a list of groups, each with its own hooks list, and unrelated tools commonly
+# register under the same event, so every command in every group must be searched.
+check_claude_runtime() {
+  home="$1"
+  found=""
+  for candidate in "$home/settings.json" "$home/settings.local.json"; do
+    [ -f "$candidate" ] && found="$found $candidate"
+  done
 
-if [ -z "$present_settings" ]; then
-  report_warn "No settings.json found under $(redact "$CLAUDE_DIR")"
-  note_step "Register the harness hooks in settings.json, or accept manual publishing."
-elif ! command -v python3 >/dev/null 2>&1; then
-  report_warn "python3 not available; cannot inspect settings.json hook registration"
-  note_step "Install python3 — the harness itself requires it for publish_queue.py."
-else
-  invalid_settings=""
-  for settings_file in $present_settings; do
-    # A hook event holds a list of groups, each with its own hooks list. Search
-    # every command in every group; several unrelated tools share these events.
-    hook_scan="$(python3 - "$settings_file" <<'PY' 2>/dev/null
+  if [ -z "$found" ]; then
+    report_warn "Claude Code: no settings file under $(redact "$home"); the completion gate is not wired"
+    note_step "Register completion_gate.sh (Stop) and skill_cycle.sh (SessionStart) in $(redact "$home")/settings.json."
+    return 0
+  fi
+  if ! command -v python3 >/dev/null 2>&1; then
+    report_warn "Claude Code: python3 unavailable; cannot inspect hook registration"
+    return 0
+  fi
+
+  for settings_file in $found; do
+    scan="$(python3 - "$settings_file" <<'PY' 2>/dev/null
 import json, sys
 
 try:
@@ -221,32 +298,91 @@ print("stop" if any("completion_gate.sh" in c for c in commands("Stop")) else "-
 print("session" if any("skill_cycle.sh" in c for c in commands("SessionStart")) else "-")
 PY
 )"
-    if [ "$hook_scan" = "ERROR" ] || [ -z "$hook_scan" ]; then
-      invalid_settings="$invalid_settings $settings_file"
+    if [ "$scan" = "ERROR" ] || [ -z "$scan" ]; then
+      report_fail "Claude Code: $(redact "$settings_file") is not valid JSON"
+      note_step "Repair $(redact "$settings_file"); invalid JSON disables every hook, not only the harness ones."
       continue
     fi
-    case "$hook_scan" in *stop*) stop_hook=1 ;; esac
-    case "$hook_scan" in *session*) session_hook=1 ;; esac
-  done
-
-  for broken in $invalid_settings; do
-    report_fail "Not valid JSON: $(redact "$broken")"
-    note_step "Repair $(redact "$broken"); invalid JSON disables every hook, not only the harness ones."
+    case "$scan" in *stop*) stop_hook=1 ;; esac
+    case "$scan" in *session*) session_hook=1 ;; esac
   done
 
   if [ "$stop_hook" -eq 1 ]; then
-    report_ok "Stop hook registered (completion_gate.sh)"
+    report_ok "Claude Code: Stop hook registered (completion_gate.sh)"
+    gate_wired=1
   else
-    report_warn "Stop hook not registered; the completion gate will never hold an unsettled queue"
-    note_step "Add completion_gate.sh as a Stop hook in settings.json."
+    report_warn "Claude Code: no Stop hook for completion_gate.sh; an unsettled queue will never hold completion"
+    note_step "Add completion_gate.sh as a Stop hook in $(redact "$home")/settings.json."
   fi
 
   if [ "$session_hook" -eq 1 ]; then
-    report_ok "SessionStart hook registered (skill_cycle.sh)"
+    report_ok "Claude Code: SessionStart hook registered (skill_cycle.sh)"
   else
-    report_warn "SessionStart hook not registered; the maintenance cycle will never run"
-    note_step "Add skill_cycle.sh as an async SessionStart hook in settings.json."
+    report_warn "Claude Code: no SessionStart hook for skill_cycle.sh; the maintenance cycle will never run"
+    note_step "Add skill_cycle.sh as an async SessionStart hook in $(redact "$home")/settings.json."
   fi
+}
+
+# Codex has no blocking stop hook. Its `notify` program runs on turn-ended, and its
+# AGENTS.md carries the standing instruction. Either can carry the gate; report which,
+# and never measure Codex against a settings.json it does not have.
+check_codex_runtime() {
+  home="$1"
+  wired=0
+
+  if [ -f "$home/config.toml" ] && grep -q 'completion_gate\.sh' "$home/config.toml" 2>/dev/null; then
+    report_ok "Codex: completion_gate.sh wired through config.toml"
+    wired=1
+    gate_wired=1
+  fi
+  if [ -f "$home/AGENTS.md" ] && grep -qE 'completion_gate\.sh|skill-?harness|publish\.sh' "$home/AGENTS.md" 2>/dev/null; then
+    report_ok "Codex: AGENTS.md instructs the agent to settle the queue"
+    wired=1
+    gate_wired=1
+  fi
+
+  if [ "$wired" -eq 0 ]; then
+    report_warn "Codex: nothing wires the completion gate; a queued commit can go unnoticed on this runtime"
+    note_step "Codex: run completion_gate.sh from the notify program in $(redact "$home")/config.toml, or state the settle-the-queue rule in $(redact "$home")/AGENTS.md."
+  fi
+}
+
+# Hermes drives skills from its own configuration; the gate belongs to whatever it
+# runs at end of turn.
+check_hermes_runtime() {
+  home="$1"
+  # Capture the match: `find -exec grep -l ... +` exits with find's status, which is 0
+  # whether or not grep matched anything, and would report every Hermes install wired.
+  hermes_match="$(find "$home" -maxdepth 2 -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.toml' \) \
+    -exec grep -l 'completion_gate\.sh' {} + 2>/dev/null || true)"
+  if [ -n "$hermes_match" ]; then
+    report_ok "Hermes: completion_gate.sh referenced from its configuration"
+    gate_wired=1
+  else
+    report_warn "Hermes: nothing wires the completion gate; a queued commit can go unnoticed on this runtime"
+    note_step "Hermes: invoke completion_gate.sh at end of turn from its configuration under $(redact "$home")."
+  fi
+}
+
+# A `while read` loop would run in a subshell and lose gate_wired; feed it from a
+# here-document so the counters survive.
+while IFS="$(printf '\t')" read -r kind home; do
+  [ -n "${home:-}" ] || continue
+  case "$kind" in
+    claude) check_claude_runtime "$home" ;;
+    codex)  check_codex_runtime "$home" ;;
+    hermes) check_hermes_runtime "$home" ;;
+    *)      report_info "$(runtime_label "$kind") at $(redact "$home"): gate wiring not checked" ;;
+  esac
+done <<EOF
+$present_runtimes
+EOF
+
+if [ -z "$present_runtimes" ]; then
+  report_warn "No agent runtime home found; cannot check completion-gate wiring"
+  note_step "Set SKILL_HARNESS_HOME to the agent home that owns the harness."
+elif [ "$gate_wired" -eq 0 ]; then
+  note_step "No runtime settles the queue automatically. Run publish.sh by hand, or wire the gate into one runtime."
 fi
 
 # ------------------------------------------------------------------------- git
@@ -351,15 +487,10 @@ fi
 # The harness is GitHub-only: publish_queue.py drives `gh`, and completion_gate.sh
 # holds task completion on a GitHub draft PR. On a GitLab-primary machine those
 # hooks block work that glab-based workflows are meant to finish.
-hooks_registered=0
-if [ "$stop_hook" -eq 1 ] || [ "$session_hook" -eq 1 ]; then
-  hooks_registered=1
-fi
-
-if [ "$glab_authed" -eq 1 ] && [ "$gh_authed" -eq 0 ] && [ "$hooks_registered" -eq 1 ]; then
-  report_warn "GitLab detected but the harness hooks are configured for GitHub; they will conflict with glab workflows"
-  note_step "Disable the harness here: remove the completion_gate.sh Stop hook and the skill_cycle.sh SessionStart hook from settings.json."
-  note_step "Alternatively rename $(redact "$CONFIG_FILE") — without it both hooks become unconditional no-ops."
+if [ "$glab_authed" -eq 1 ] && [ "$gh_authed" -eq 0 ] && [ "$gate_wired" -eq 1 ]; then
+  report_warn "GitLab detected but the completion gate is wired for a GitHub-only harness; it will conflict with glab workflows"
+  note_step "Disable the harness here: unwire the completion gate from whichever runtime registers it (see the Completion Gate section above)."
+  note_step "Alternatively rename $(redact "$CONFIG_FILE") — without it the gate becomes an unconditional no-op on every runtime."
 elif [ "$glab_authed" -eq 1 ] && [ "$gh_authed" -eq 1 ]; then
   report_info "Both providers are authenticated; the harness will use GitHub for the lane queue"
 fi

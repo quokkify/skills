@@ -15,13 +15,27 @@ A publishing harness has five moving parts, and a fault in any one of them is si
 
 | Part | Location | Failure symptom |
 | --- | --- | --- |
-| Scripts | `~/.claude/skill-harness/` | `publish.sh` not found or not executable |
-| Machine config | `config.env` beside the scripts | Hooks become unconditional no-ops |
-| Hook registration | `settings.json` under the Claude config directory | The completion gate never runs |
+| Scripts | `skill-harness/` inside the agent home | `publish.sh` not found or not executable |
+| Machine config | `config.env` beside the scripts | The gate becomes an unconditional no-op |
+| Completion gate | Wired through the runtime's own mechanism | The gate never runs; queued work goes unnoticed |
 | Tracked Git hooks | `core.hooksPath` in each checkout | Unvalidated commits reach the queue |
 | Lane worktree | Path from `config.env`, branch `automation/skill-improvements/<lane>` | Publication refuses to run |
 
-`config.env` is machine-local and never committed. Every path in this skill is derived from it, so nothing here assumes a particular account, home directory, or operating system.
+`config.env` is machine-local and never committed. Every path is derived from it, so nothing here assumes a particular account, home directory, or operating system.
+
+### Do not assume one agent runtime
+
+The harness scripts are runtime-generic; only the wiring that runs them is not. Locate the harness by evidence — it lives in whichever agent home contains its `skill-harness/config.env`, whether that is `~/.claude`, `~/.codex`, `~/.hermes`, or a path given explicitly. Resolving it as "the Claude configuration directory" silently reports a healthy Codex or Hermes install as missing, and a `SKILL_HARNESS_HOME`-style override must win over any default.
+
+The completion gate is the part that genuinely differs. `local-agent-bootstrap.md` asks each machine for "a completion gate appropriate to this agent runtime", so check the mechanism each installed runtime actually has, and never measure one runtime against another's configuration file:
+
+| Runtime | Where the gate is wired | Note |
+| --- | --- | --- |
+| Claude Code | `Stop` and `SessionStart` hooks in `settings.json` / `settings.local.json` | The Stop hook can block completion. |
+| Codex | The `notify` program in `config.toml`, or the standing instruction in `AGENTS.md` | Turn-ended notification only; it cannot block. |
+| Hermes | Whatever its configuration runs at end of turn | Reference the gate script from that configuration. |
+
+Report each installed runtime separately. A machine with three runtimes and the gate wired into one is healthy, not two-thirds broken — but a runtime with no wiring genuinely can leave a queued commit unnoticed while working there, so say so per runtime rather than passing or failing the machine as a whole. If the harness appears under more than one agent home, warn: those installs share a single lane and will fight over it.
 
 ## When to run it
 
@@ -30,6 +44,7 @@ A publishing harness has five moving parts, and a fault in any one of them is si
 - The completion gate blocks repeatedly and the reason is unclear.
 - The completion gate stopped blocking and queued work is going unnoticed.
 - A machine that uses GitLab started behaving strangely at the end of tasks.
+- The harness works under one agent runtime on a machine but appears absent from another.
 - Before trusting `publish.sh` after any change to hooks, config, or checkout layout.
 
 ## Run the check
@@ -50,15 +65,17 @@ Read the report top to bottom. The sections follow the publication pipeline, so 
 
 A missing `config.env` is critical rather than cosmetic. The completion gate sources it and exits early when it is absent, so an uninstalled config does not produce an error - it produces silence, and queued work stops being noticed.
 
-### Hooks
+### Completion gate
 
-Read every settings file the runtime merges, not just `settings.json` — a hook registered in `settings.local.json` is live, and reporting it as missing sends the operator to re-register a hook that already exists.
+For Claude Code, read every settings file the runtime merges, not just `settings.json` — a hook registered in `settings.local.json` is live, and reporting it as missing sends the operator to re-register a hook that already exists.
 
 A hook event holds a *list of groups*, each with its own `hooks` list. Several unrelated tools commonly register under the same event. Search every command string in every group for the harness script name; checking only the first group reports a correctly registered hook as missing.
 
 - No Stop hook: nothing holds task completion on an unsettled queue. Work accumulates and is never published.
 - No SessionStart hook: the maintenance cycle never runs, so upgrade and prune candidates are never staged.
 - Invalid JSON: **every** hook silently stops running, not just the harness ones. Treat it as critical.
+
+For Codex, look at the `notify` program and at `AGENTS.md`; neither can block a turn, so the strongest available outcome is a reminder. For Hermes, look at what its configuration runs at end of turn. When a probe uses `find … -exec grep -l … +`, capture the output and test it: that pipeline exits with `find`'s status, which is zero whether or not `grep` matched, and reports every install as wired.
 
 ### Git configuration
 
