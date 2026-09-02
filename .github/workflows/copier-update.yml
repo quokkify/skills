@@ -27,12 +27,12 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python and Copier
-        uses: quokkify/project-toolkit/actions/setup-python@v2.19.1
+        uses: quokkify/project-toolkit/actions/setup-python@v2.19.2
         with:
           python-version: "3.14"
           package-manager: pip
           cache-dependencies: "false"
-          install-command: python -m pip install copier==9.17.2
+          install-command: python -m pip install copier==9.18.1
 
       - name: Apply the template and push the update branch
         env:
