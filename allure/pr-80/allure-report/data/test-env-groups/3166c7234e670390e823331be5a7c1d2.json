@@ -1,0 +1,1 @@
+{"id":"3166c7234e670390e823331be5a7c1d2","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_bash_guard_allows_implicit_forced_push_on_branch_that_merely_contains_protected_name","name":"test_bash_guard_allows_implicit_forced_push_on_branch_that_merely_contains_protected_name","status":"passed","testResultsByEnv":{"default":"0435dd14a737a36d163695bd15885d39"}}
