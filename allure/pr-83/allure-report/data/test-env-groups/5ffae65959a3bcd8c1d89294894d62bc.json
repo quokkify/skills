@@ -1,1 +1,1 @@
-{"id":"5ffae65959a3bcd8c1d89294894d62bc","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_binary_skill_asset_is_allowed","name":"test_binary_skill_asset_is_allowed","status":"passed","testResultsByEnv":{"default":"42764ced041495b80dbd97429cd5e7cb"}}
+{"id":"5ffae65959a3bcd8c1d89294894d62bc","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_binary_skill_asset_is_allowed","name":"test_binary_skill_asset_is_allowed","status":"passed","testResultsByEnv":{"default":"7c764f2beac5b1207e42ab32811e1574"}}

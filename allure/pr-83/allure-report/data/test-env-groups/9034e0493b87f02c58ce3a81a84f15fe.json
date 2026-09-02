@@ -1,1 +1,1 @@
-{"id":"9034e0493b87f02c58ce3a81a84f15fe","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_duplicate_skill_name_is_rejected","name":"test_duplicate_skill_name_is_rejected","status":"passed","testResultsByEnv":{"default":"6fbe0eeafea059c84bc31c462c69a6a1"}}
+{"id":"9034e0493b87f02c58ce3a81a84f15fe","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_duplicate_skill_name_is_rejected","name":"test_duplicate_skill_name_is_rejected","status":"passed","testResultsByEnv":{"default":"368169409c3a7b0605d8db8d93fa449d"}}
