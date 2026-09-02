@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python and Copier
-        uses: quokkify/project-toolkit/actions/setup-python@v2.19.2
+        uses: quokkify/project-toolkit/actions/setup-python@v2.20.0
         with:
           python-version: "3.14"
           package-manager: pip
