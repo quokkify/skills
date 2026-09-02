@@ -22,4 +22,11 @@ while read -r local_ref local_oid _remote_ref _remote_oid; do
   fi
 done
 
-exec "$ROOT/scripts/validate.sh" --full
+exec # Git exports its hook environment to this script. A suite that builds
+# temporary repository fixtures would otherwise inherit GIT_DIR and commit into
+# the repository being pushed instead of its own fixture, so clear it first.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE
+unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE
+unset GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL GIT_COMMITTER_DATE
+
+"$ROOT/scripts/validate.sh" --full
