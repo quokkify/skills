@@ -1,0 +1,1 @@
+{"id":"9da71e88434d4345e8f65d58619646b8","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_gitignored_files_are_not_repository_content","name":"test_gitignored_files_are_not_repository_content","status":"passed","testResultsByEnv":{"default":"fdf5f00e7f3197baa3041f0e161faba8"}}
