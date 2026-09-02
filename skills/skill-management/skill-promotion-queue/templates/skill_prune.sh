@@ -182,6 +182,23 @@ has_critical_flag() {
   frontmatter "$1" | grep -Eq '^[[:space:]]*critical:[[:space:]]*(true|yes)[[:space:]]*$'
 }
 
+# The usage signal only sees Skill-tool invocations. A skill whose working surface is a
+# bundled executable is normally run directly, so its use leaves no event at all and its
+# usage count stays at zero however long the log runs. Absence of use is only evidence
+# when use would have been observable.
+# Any runnable file counts, wherever it sits. Support files are as likely to live in
+# templates/ as in scripts/, so keying on one directory name would miss most of them.
+# Command substitution, not `find | read`: a reader that closes the pipe early SIGPIPEs
+# find, and under pipefail that non-zero status would silently invert this test.
+has_unobservable_entry_point() {
+  local dir="$1" matches
+  [ -d "$dir" ] || return 1
+  matches="$(find "$dir" -type f ! -name 'SKILL.md' \
+    ! -path '*/__pycache__/*' \
+    \( -perm -100 -o -name '*.sh' -o -name '*.py' \) 2>/dev/null || true)"
+  [ -n "$matches" ]
+}
+
 skill_description() {
   frontmatter "$1" | awk '
     /^description:/ { capture = 1; sub(/^description:[[:space:]]*/, ""); print; next }
@@ -295,6 +312,9 @@ while IFS="$(printf '\t')" read -r name usage_count mtime installed_sha hub_md h
   elif [ "$row_state" = "local-only" ]; then
     verdict="not-hub-managed"
     reason="no hub copy; removal belongs to whichever installer owns it, not to the lane"
+  elif has_unobservable_entry_point "$SKILLS_DIR/$name"; then
+    verdict="keep-unobservable-usage"
+    reason="ships a runnable file, so it is invoked directly rather than through the Skill tool; the usage signal cannot observe it and zero usage is not evidence"
   elif [ "${signal_days:--1}" -lt "$UNUSED_MIN_DAYS" ]; then
     verdict="keep-insufficient-signal"
     reason="usage log covers only ${signal_days} day(s); ${UNUSED_MIN_DAYS}+ are required before absence of use is evidence"
@@ -431,7 +451,7 @@ REPORT="$CANDIDATES_DIR/prune-assessment-$today.md"
 
   echo "## Summary"
   echo
-  for v in prune review-manually keep-critical keep-too-new keep-insufficient-signal not-hub-managed; do
+  for v in prune review-manually keep-critical keep-too-new keep-insufficient-signal keep-unobservable-usage not-hub-managed; do
     n="$(count_verdict "$v")"
     [ "${n:-0}" -gt 0 ] && echo "- \`$v\`: $n"
   done
@@ -448,6 +468,9 @@ REPORT="$CANDIDATES_DIR/prune-assessment-$today.md"
   echo "- \`keep-critical\` — hard keep list or \`critical: true\` frontmatter. Never removable here."
   echo "- \`not-hub-managed\` — installed without a hub copy. The lane cannot remove it; use the"
   echo "  installer that put it there."
+  echo "- \`keep-unobservable-usage\` — ships a runnable file (executable, \`.sh\` or \`.py\`)."
+  echo "  Such a skill is invoked directly, so the Skill-tool usage signal never records it"
+  echo "  and a zero count carries no information. Waiting longer cannot change that." 
   echo "- \`merge-into:<skill>\` — fold the useful part into the named skill, then re-assess."
   echo "- \`prune\` — near-duplicate; removable from the hub via the lane."
   echo
@@ -467,5 +490,5 @@ mv -f "$REPORT.tmp" "$REPORT"
 chmod 600 "$REPORT"
 
 echo "skill_prune: wrote $REPORT"
-echo "skill_prune: prune=$prune_count review-manually=$(count_verdict review-manually) keep-critical=$(count_verdict keep-critical) keep-insufficient-signal=$(count_verdict keep-insufficient-signal) keep-too-new=$(count_verdict keep-too-new) not-hub-managed=$(count_verdict not-hub-managed)"
+echo "skill_prune: prune=$prune_count review-manually=$(count_verdict review-manually) keep-critical=$(count_verdict keep-critical) keep-insufficient-signal=$(count_verdict keep-insufficient-signal) keep-too-new=$(count_verdict keep-too-new) keep-unobservable-usage=$(count_verdict keep-unobservable-usage) not-hub-managed=$(count_verdict not-hub-managed)"
 exit 0

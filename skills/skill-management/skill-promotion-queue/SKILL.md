@@ -128,9 +128,13 @@ The installer copies the scripts and the canonical publisher into the Claude con
 
 Both read a machine-local health signal (`state.tsv`: one row per installed skill with its usage count, checksums, hub path, and `in-sync` / `stale` / `local-only` state). That collection layer belongs to the `shared-skill-library-maintenance` skill and is deliberately not shipped here — without it both scripts no-op with an explanatory message instead of failing.
 
+The two checksums cover the **whole skill directory**, not just `SKILL.md`. A skill's behaviour often lives in the files beside its entry point, so a digest over `SKILL.md` alone reports a skill as in-sync while its bundled scripts have diverged — the divergence is real, invisible, and grows. Any collection layer feeding this signal must digest every file in the skill directory, excluding only generated noise such as `.DS_Store` and `__pycache__`. Both write paths follow the same rule: the upgrade candidate carries a recursive diff that names added and deleted files, and `--adopt` replaces the entire directory so a file deleted locally is also dropped from the hub copy.
+
+The usage count has a blind spot that no amount of waiting closes. It records `Skill` tool invocations, so a skill whose working surface is a bundled executable — run directly, never through the tool — stays at zero uses forever. `skill_prune.sh` therefore holds any skill that ships a runnable file — anything executable, `.sh`, or `.py`, in `scripts/`, `templates/`, or anywhere else beside the entry point — at `keep-unobservable-usage`, and never counts its silence as evidence of disuse. Absence of use is evidence only where use would have been observable.
+
 Two write paths exist, and each requires an explicit flag, never a cadence run:
 
-- `skill_upgrade.sh --adopt <skill>` copies the installed `SKILL.md` over its hub copy inside the lane worktree and commits it.
+- `skill_upgrade.sh --adopt <skill>` replaces the hub copy of the whole skill directory with the installed one inside the lane worktree and commits it, including files added and deleted locally.
 - `skill_prune.sh --apply` removes `prune`-verdict skills from the hub copy inside the lane worktree and commits the removal.
 
 Neither pushes. Both refuse a dirty lane, a lane on the wrong branch, and any path outside the lane worktree. `skill_prune.sh` additionally enforces a hard-coded keep list that `--apply` re-checks, so a core skill cannot be removed even if a verdict is wrong.
