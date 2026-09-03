@@ -94,6 +94,10 @@ if [ ! -d "$HUB_ROOT/skills" ]; then
 fi
 
 # state.tsv columns: name usage mtime installed_sha hub_path hub_sha state
+# The two checksums cover the whole skill directory, not just SKILL.md, so a change
+# confined to scripts/ or references/ still lands as `stale`. hub_path stays the path
+# of the hub SKILL.md; the directory is its parent.
+
 stale_rows() {
   awk -F'\t' '$7 == "stale" { print }' "$STATE" | sort -t"$(printf '\t')" -k2,2nr
 }
@@ -114,6 +118,7 @@ if [ -n "$ADOPT" ]; then
   hub_md="$(printf '%s' "$row" | cut -f5)"
   row_state="$(printf '%s' "$row" | cut -f7)"
   installed_md="$SKILLS_DIR/$name/SKILL.md"
+  installed_dir="$SKILLS_DIR/$name"
 
   [ "$row_state" = "stale" ] || { echo "skill_upgrade: '$name' is '$row_state', not 'stale' — nothing to adopt."; exit 0; }
   [ -f "$installed_md" ] || { echo "skill_upgrade: installed SKILL.md missing for '$name'" >&2; exit 1; }
@@ -126,6 +131,29 @@ if [ -n "$ADOPT" ]; then
     echo "skill_upgrade: hub path '$hub_md' is outside $HUB_ROOT — refusing to adopt." >&2
     exit 1
   }
+  # hub_path arrives from a machine-local file that nothing in this repository
+  # validates, and it ends up in `rm -rf`. Validate its shape before any use of it.
+  # Reject traversal textually first: in a shell `case` pattern `*` also matches `/`,
+  # so `skills/*/<name>` on its own would happily admit `skills/../../victim/<name>`.
+  rel_dir="$(dirname "$rel")"
+  case "/$rel_dir/" in
+    */../*|*/./*|*//*)
+      echo "skill_upgrade: hub path '$rel_dir' contains a relative component — refusing to adopt." >&2
+      exit 1
+      ;;
+  esac
+  case "$rel_dir" in
+    skills/*/*/*)
+      echo "skill_upgrade: hub path '$rel_dir' is nested deeper than skills/<category>/<skill>." >&2
+      exit 1
+      ;;
+    skills/*/"$name") ;;
+    *)
+      echo "skill_upgrade: '$name' resolves to unexpected hub path '$rel_dir' — refusing to adopt." >&2
+      exit 1
+      ;;
+  esac
+
   target="$LANE_WORKTREE/$rel"
   [ -f "$target" ] || { echo "skill_upgrade: '$rel' does not exist in the lane worktree — fetch/reset the lane first." >&2; exit 1; }
 
@@ -141,15 +169,55 @@ if [ -n "$ADOPT" ]; then
     exit 1
   fi
 
-  cp "$installed_md" "$target"
-  if [ -z "$(git -C "$LANE_WORKTREE" status --porcelain -- "$rel" 2>/dev/null || true)" ]; then
+  # Adopt the whole skill, not only its entry point: a divergence may be entirely
+  # inside scripts/ or references/, and copying SKILL.md alone would commit a revision
+  # that never reproduces the behaviour it documents.
+  target_dir="$LANE_WORKTREE/$rel_dir"
+  [ -d "$target_dir" ] || { echo "skill_upgrade: '$rel_dir' does not exist in the lane worktree — fetch/reset the lane first." >&2; exit 1; }
+
+  # Re-anchor on the resolved paths, so a symlinked component cannot land the removal
+  # outside the lane either. Pattern matching alone proves nothing about where a path
+  # actually points.
+  lane_real="$(cd "$LANE_WORKTREE" && pwd -P)" || exit 1
+  target_real="$(cd "$target_dir" && pwd -P)" || exit 1
+  case "$target_real" in
+    "$lane_real"/skills/*/"$name") ;;
+    *)
+      echo "skill_upgrade: '$target_real' resolves outside the lane worktree — refusing to replace it." >&2
+      exit 1
+      ;;
+  esac
+
+  # Replace the directory so files deleted locally are also dropped from the hub copy.
+  # The old copy is moved aside rather than deleted, so a failed extraction restores it
+  # instead of leaving the lane with a half-written skill.
+  backup_dir="$target_real.adopt-backup.$$"
+  rm -rf "$backup_dir"
+  mv "$target_real" "$backup_dir"
+  # mkdir before the pipeline, never inside its left side: both sides start
+  # concurrently, so the reader can reach `cd` before the writer has created the target.
+  mkdir -p "$target_real"
+  if ! ( cd "$installed_dir" \
+         && tar cf - \
+              --exclude='.DS_Store' --exclude='*/.DS_Store' \
+              --exclude='__pycache__' --exclude='*/__pycache__' \
+              --exclude='.pytest_cache' --exclude='*/.pytest_cache' \
+              . ) | ( cd "$target_real" && tar xf - ); then
+    rm -rf "$target_real"
+    mv "$backup_dir" "$target_real"
+    echo "skill_upgrade: copying '$name' into the lane failed — the lane copy was restored." >&2
+    exit 1
+  fi
+  rm -rf "$backup_dir"
+
+  git -C "$LANE_WORKTREE" add -A -- "$rel_dir"
+  if [ -z "$(git -C "$LANE_WORKTREE" status --porcelain -- "$rel_dir" 2>/dev/null || true)" ]; then
     echo "skill_upgrade: lane copy of '$name' already matches the installed version — nothing committed."
     exit 0
   fi
 
-  git -C "$LANE_WORKTREE" add -- "$rel"
-  git -C "$LANE_WORKTREE" commit -q -m "feat($name): adopt locally refined skill revision" -- "$rel"
-  echo "skill_upgrade: queued $rel in lane ${LANE:-$actual_branch}."
+  git -C "$LANE_WORKTREE" commit -q -m "feat($name): adopt locally refined skill revision" -- "$rel_dir"
+  echo "skill_upgrade: queued $rel_dir in lane ${LANE:-$actual_branch}."
   echo "Publish when ready:  bash \"$HERE/publish.sh\""
   exit 0
 fi
@@ -171,6 +239,8 @@ skipped=0
 while IFS="$(printf '\t')" read -r name usage_count mtime installed_sha hub_md hub_sha row_state; do
   [ -n "${name:-}" ] || continue
   installed_md="$SKILLS_DIR/$name/SKILL.md"
+  installed_dir="$SKILLS_DIR/$name"
+  hub_dir="$(dirname "$hub_md")"
   candidate="$CANDIDATES_DIR/$name-upgrade-$today.md"
 
   if [ ! -f "$installed_md" ] || [ ! -f "$hub_md" ]; then
@@ -185,17 +255,33 @@ while IFS="$(printf '\t')" read -r name usage_count mtime installed_sha hub_md h
     continue
   fi
 
-  diff_body="$(diff -u "$hub_md" "$installed_md" 2>/dev/null || true)"
+  # Recursive: the divergence that made this row `stale` may live entirely in a support
+  # file. `diff -ur` also reports files present on only one side, so an added or deleted
+  # script is visible rather than silently absent from the candidate.
+  diff_body="$(diff -ur -x '.DS_Store' -x '__pycache__' -x '.pytest_cache' \
+    "$hub_dir" "$installed_dir" 2>/dev/null || true)"
+  changed_files="$(printf '%s\n' "$diff_body" \
+    | awk -v installed="$installed_dir/" -v hub="$hub_dir/" '
+        function strip(path) {
+          if (index(path, installed) == 1) return substr(path, length(installed) + 1)
+          if (index(path, hub) == 1) return substr(path, length(hub) + 1)
+          return path
+        }
+        /^Only in /  { print; next }
+        /^diff -ur? / { print strip($NF) }
+      ' \
+    | awk 'NR <= 20')"
   diff_lines="$(printf '%s\n' "$diff_body" | wc -l | tr -d ' ')"
   diff_note=""
   if [ "${diff_lines:-0}" -gt "$DIFF_MAX_LINES" ]; then
     diff_body="$(printf '%s\n' "$diff_body" | awk -v n="$DIFF_MAX_LINES" 'NR <= n')"
     diff_note="
 
-(diff truncated at $DIFF_MAX_LINES of $diff_lines lines — run \`diff -u \"$hub_md\" \"$installed_md\"\` for the full change)"
+(diff truncated at $DIFF_MAX_LINES of $diff_lines lines — run \`diff -ur \"$hub_dir\" \"$installed_dir\"\` for the full change)"
   fi
 
   hub_rel="$(lane_relative_hub_path "$hub_md" 2>/dev/null || printf '%s' "$hub_md")"
+  hub_rel_dir="$(dirname "$hub_rel")"
   hub_commit="$(git -C "$HUB_ROOT" log -1 --format='%h %ad' --date=short -- "$hub_md" 2>/dev/null || true)"
 
   {
@@ -216,13 +302,14 @@ while IFS="$(printf '\t')" read -r name usage_count mtime installed_sha hub_md h
     echo "| Field | Value |"
     echo "|---|---|"
     echo "| Usage events | $usage_count |"
-    echo "| Installed SKILL.md | \`$installed_md\` |"
-    echo "| Installed sha256 | \`$installed_sha\` |"
-    echo "| Hub SKILL.md | \`$hub_rel\` |"
-    echo "| Hub sha256 | \`$hub_sha\` |"
+    echo "| Installed skill | \`$installed_dir\` |"
+    echo "| Installed digest | \`$installed_sha\` |"
+    echo "| Hub skill | \`$hub_rel_dir\` |"
+    echo "| Hub digest | \`$hub_sha\` |"
+    echo "| Files diverged | ${changed_files:+$(printf '%s' "$changed_files" | tr '\n' ' ')} |"
     echo "| Hub last commit | ${hub_commit:-unknown} |"
     echo
-    echo "## Divergence (hub -> installed)"
+    echo "## Divergence (hub -> installed, whole skill directory)"
     echo
     echo '```diff'
     printf '%s\n' "$diff_body"
@@ -231,10 +318,13 @@ while IFS="$(printf '\t')" read -r name usage_count mtime installed_sha hub_md h
     echo
     echo "## Agent task"
     echo
-    echo "1. Read both revisions in full: the hub copy \`$hub_rel\` and the installed copy."
+    echo "1. Read both revisions in full: the hub copy \`$hub_rel_dir\` and the installed copy,"
+    echo "   including every support file, not only SKILL.md."
     echo "2. Classify every hunk above as one of: a genuine improvement worth promoting, a"
     echo "   machine-local or task-specific edit that must NOT reach the hub, or drift to revert."
-    echo "3. Produce the merged SKILL.md text that keeps the improvements and drops the rest."
+    echo "3. Produce the merged content for every diverged file, keeping the improvements and"
+    echo "   dropping the rest. A change to a bundled script must stay consistent with the"
+    echo "   SKILL.md that documents it."
     echo "4. Fill the sections below, then present \`patch-existing\` for approval. A staged"
     echo "   candidate is not approval."
     echo
