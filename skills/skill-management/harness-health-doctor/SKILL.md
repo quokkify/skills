@@ -25,7 +25,7 @@ A publishing harness has five moving parts, and a fault in any one of them is si
 
 ### Do not assume one agent runtime
 
-The harness scripts are runtime-generic; only the wiring that runs them is not. Locate the harness by evidence — it lives in whichever agent home contains its `skill-harness/config.env`, whether that is `~/.claude`, `~/.codex`, `~/.hermes`, or a path given explicitly. Resolving it as "the Claude configuration directory" silently reports a healthy Codex or Hermes install as missing, and a `SKILL_HARNESS_HOME`-style override must win over any default.
+The harness scripts are runtime-generic; only the wiring that runs them is not. Locate the harness by evidence — it lives in whichever agent home contains its `skill-harness/config.env`, or at the path given explicitly through `SKILL_HARNESS_HOME`. An ordinary Hermes installation is not a publishing harness: Hermes can discover this catalogue through `config.yaml` → `skills.external_dirs` without installing or running the publishing scripts.
 
 The completion gate is the part that genuinely differs. `local-agent-bootstrap.md` asks each machine for "a completion gate appropriate to this agent runtime", so check the mechanism each installed runtime actually has, and never measure one runtime against another's configuration file:
 
@@ -33,7 +33,7 @@ The completion gate is the part that genuinely differs. `local-agent-bootstrap.m
 | --- | --- | --- |
 | Claude Code | `Stop` and `SessionStart` hooks in `settings.json` / `settings.local.json` | The Stop hook can block completion. |
 | Codex | The `notify` program in `config.toml`, or the standing instruction in `AGENTS.md` | Turn-ended notification only; it cannot block. |
-| Hermes | Whatever its configuration runs at end of turn | Reference the gate script from that configuration. |
+| Hermes | `config.yaml` → `skills.external_dirs` for skill discovery; an explicitly installed publishing harness may have its own integration | External skill discovery is read-only; it does not block turn completion. |
 
 Report each installed runtime separately. A machine with three runtimes and the gate wired into one is healthy, not two-thirds broken — but a runtime with no wiring genuinely can leave a queued commit unnoticed while working there, so say so per runtime rather than passing or failing the machine as a whole. If the harness appears under more than one agent home, warn: those installs share a single lane and will fight over it.
 
@@ -49,7 +49,7 @@ Report each installed runtime separately. A machine with three runtimes and the 
 
 ## Run the check
 
-```
+```bash
 bash skills/skill-management/harness-health-doctor/scripts/harness_doctor.sh
 ```
 
@@ -75,7 +75,7 @@ A hook event holds a *list of groups*, each with its own `hooks` list. Several u
 - No SessionStart hook: the maintenance cycle never runs, so upgrade and prune candidates are never staged.
 - Invalid JSON: **every** hook silently stops running, not just the harness ones. Treat it as critical.
 
-For Codex, look at the `notify` program and at `AGENTS.md`; neither can block a turn, so the strongest available outcome is a reminder. For Hermes, look at what its configuration runs at end of turn. When a probe uses `find … -exec grep -l … +`, capture the output and test it: that pipeline exits with `find`'s status, which is zero whether or not `grep` matched, and reports every install as wired.
+For Codex, look at the `notify` program and at `AGENTS.md`; neither can block a turn, so the strongest available outcome is a reminder. For Hermes, `skills.external_dirs` only discovers skills and is not a completion gate. This doctor does not infer publishing-harness wiring from arbitrary Hermes configuration files.
 
 ### Git configuration
 
