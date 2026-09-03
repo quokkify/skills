@@ -22,17 +22,20 @@ Classify content before moving it:
 
 1. **Portable workflow** → canonical `skills/<category>/<name>/SKILL.md` with support files inside that skill.
 2. **Thin integration** → `adapters/<tool>/` only when a tool requires configuration that cannot be expressed as a portable skill.
-3. **User-owned state** → global personas, model routing, status lines, output styles, and personal commands stay outside the shared repository.
-4. **Project-owned state** → stack, modules, package names, domain paths, and repository-specific instructions stay in the project that owns them.
+3. **Genericized global template** → `adapters/` may also publish the global layer a runtime loads before any skill runs — an instruction base, hook scripts and wiring, settings templates, subagent definitions — but only as a template *derived* from a real setup by removing everything specific to it. Publishable means no credentials, no employer or client identifiers, no person's name, no machine paths, no pinned model versions, no one user's routing policy, and no session, transcript, or memory state.
+4. **User-owned state** → any user's *actual* global configuration stays outside the shared repository: real settings files, personal commands, employer conventions, project trust lists, credentialed tool entries, and the private overlay merged over the templates at install time.
+5. **Project-owned state** → stack, modules, package names, domain paths, and repository-specific instructions stay in the project that owns them.
 
-Tool-specific syntax alone does not justify publishing an adapter. Do not create equivalent Claude, Codex, and Hermes copies merely for symmetry.
+The line between 3 and 4 is *specificity, not category*. "Global configuration" is not itself disqualifying; being one person's real configuration is. A persona is publishable when it selects roles by capability and disqualified when it encodes an employer, a private tool name, or a fixed model tier.
+
+Tool-specific syntax alone does not justify publishing an adapter. Do not create equivalent Claude, Codex, and Hermes copies merely for symmetry; prefer one runtime-neutral base plus thin per-runtime wiring, and only when the runtimes genuinely share a contract.
 
 ## Workflow
 
 1. Inventory tracked files, install scripts, discovery paths, docs, validators, and tests.
 2. Inspect content—not only directory names—for frontmatter tools/models, installer targets, hard-coded stacks, modules, packages, and private context.
 3. Choose one canonical skill directory and document official consumer discovery paths separately.
-4. Move only portable skills and genuinely thin adapters. Delete or leave out legacy global/project-owned bundles rather than blessing them through a mechanical rename.
+4. Move only portable skills, genuinely thin adapters, and global templates that have actually been genericized. Never bless a legacy global or project-owned bundle through a mechanical rename: either rewrite it into a template with the specifics removed, or leave it out.
 5. Update validators to enforce the canonical layout and reject legacy skill roots, nested grouping drift, symlinks, and public-boundary violations.
 6. Update install scripts and tests so they exercise only adapters that still exist.
 7. Search the full tree for retired installer names, old paths, project identifiers, and stale migration claims. Also audit semantic capability claims: documentation must not say an adapter prompts, routes, installs, or auto-runs behavior that the surviving adapter does not implement.
@@ -78,7 +81,9 @@ Compare checksums against the upstream revision you actually intend to match. Co
 
 - Mechanically moving every legacy tool directory into `adapters/`.
 - Treating role personas as portable skills.
-- Publishing global configuration that overwrites a user's existing setup.
+- Installing global configuration in a way that overwrites a user's existing setup. An installer must back up before writing, never silently clobber, and preserve managed blocks owned by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`. Publishing a template is allowed; destroying local state while applying it is not.
+- Publishing a global template that was copied from a real setup rather than derived from one by removing its specifics.
+- Genericizing a configuration file until it no longer works, then shipping it untested from a scratch agent home.
 - Preserving private project assumptions because they were already public.
 - Adding dot-directories as duplicate sources of truth instead of consumer-side discovery targets.
 - Claiming an integration breaks without checking the current implementation's recursive discovery behavior.
@@ -92,6 +97,7 @@ Compare checksums against the upstream revision you actually intend to match. Co
 - Exactly one canonical copy of each skill exists.
 - Every skill is discovered from the repository's canonical root.
 - Adapters contain no duplicate skill bodies or project-specific state.
+- Published global templates contain no credentials, employer or client identifiers, personal names, machine paths, pinned model versions, or runtime state, and install without overwriting existing user configuration.
 - Retired paths, installer names, persona names, and dependent workflow references have zero mandatory occurrences.
 - Portable workflows select roles by capability, use only active-backend tools, and remain executable through a bounded fallback when delegation is absent.
 - Public/privacy scans find no machine paths, credentials, private modules, package namespaces, fixed stack ownership paths, domain-document assumptions, or client context.
