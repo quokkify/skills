@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.10.0](https://github.com/quokkify/skills/compare/v0.9.3...v0.10.0) (2026-09-03)
+
+
+### Features
+
+* **skill-promotion-queue:** make the automated intake see whole skills ([#84](https://github.com/quokkify/skills/issues/84)) ([052fae9](https://github.com/quokkify/skills/commit/052fae94e948553c705894922a54187349dee792))
+* **skills:** queue reusable skill improvements ([#83](https://github.com/quokkify/skills/issues/83)) ([4774040](https://github.com/quokkify/skills/commit/47740402fe6313e71ca4260907939a1f86097b20))
+
+
+### Bug Fixes
+
+* **hooks:** clear the inherited Git environment before pre-push validation ([#82](https://github.com/quokkify/skills/issues/82)) ([36a6617](https://github.com/quokkify/skills/commit/36a6617b1469fbe4bca12d454475ef8a4364a540))
+* **release:** accept the toolkit release tag as a valid pin ([#75](https://github.com/quokkify/skills/issues/75)) ([ffda5a1](https://github.com/quokkify/skills/commit/ffda5a1f87d6774f33b9b8da7ef197887628af4d))
+
 ## [0.9.3](https://github.com/quokkify/skills/compare/v0.9.2...v0.9.3) (2026-08-24)
 
 
