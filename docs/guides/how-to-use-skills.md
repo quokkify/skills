@@ -75,6 +75,52 @@ Start a new session after changing the path or updating the checkout. External d
 
 A same-named local Hermes skill can take precedence over an external one. Resolve collisions before assuming the shared copy is active.
 
+## Install and Update with APM
+
+[Agent Package Manager (APM)](https://microsoft.github.io/apm/) can install a single skill from this repository into a consuming project. Run the command from that project's root and pin a released repository tag:
+
+```bash
+apm install quokkify/skills/skills/orchestration/agent-harness-design#v0.10.0
+```
+
+Replace the path with any entry from the [Skill Catalog](../skill-catalog.md), and replace `v0.10.0` with the release you want to consume. APM adds the dependency to `apm.yml`, writes the resolved commit and content hashes to `apm.lock.yaml`, and deploys the skill to every detected target. If the project has no detectable agent harness yet, select one explicitly, for example:
+
+```bash
+apm install --target codex quokkify/skills/skills/orchestration/agent-harness-design#v0.10.0
+```
+
+The same virtual-package form works for third-party skill repositories:
+
+```yaml
+name: my-project
+version: 1.0.0
+dependencies:
+  apm:
+    - owner/repository/path/to/skill#v1.2.3
+```
+
+After editing `apm.yml` manually, run `apm install`. Commit `apm.yml`, `apm.lock.yaml`, and the harness directories APM updates; do not commit the generated `apm_modules/` cache.
+
+To check and apply updates manually:
+
+```bash
+apm outdated
+apm update --dry-run
+apm update --yes
+```
+
+Review the manifest, lockfile, and deployed skill changes before committing them. Releases in this repository are lockstep: a `vX.Y.Z` tag versions the whole repository, including every skill subdirectory.
+
+### Renovate
+
+Renovate supports `apm.yml` starting with version `44.59.0`. Its APM manager is enabled by default and updates exact tagged refs such as `#v0.10.0`; entries without a `#<ref>` are skipped. If your Renovate configuration restricts `enabledManagers`, add `apm` to that list.
+
+When `apm.lock.yaml` exists, Renovate runs `apm install` after changing `apm.yml` so the lockfile and deployed harness files stay synchronized. The Renovate runner must therefore be able to execute the `apm` CLI: use an install-capable binary source or preinstall APM for a self-hosted runner. No repository-specific custom manager is required.
+
+Review a Renovate pull request like any other executable agent-context change: inspect the skill diff and require the normal validation and security checks before merge.
+
+References: [APM dependency management](https://microsoft.github.io/apm/consumer/manage-dependencies/), [APM update commands](https://microsoft.github.io/apm/consumer/update-and-refresh/), and [Renovate's APM manager](https://docs.renovatebot.com/modules/manager/apm/).
+
 ## Safe Checkout Updates
 
 From a clean direct checkout on `main`:
