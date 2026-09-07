@@ -1,0 +1,1 @@
+{"id":"b911e753936fef4c7403440f39564397","fullName":"tests.test_harness_health_doctor.HarnessDoctorTests#test_claude_settings_path_with_spaces_is_probed_as_one_path","name":"test_claude_settings_path_with_spaces_is_probed_as_one_path","status":"passed","testResultsByEnv":{"default":"973230e33ca1f4909fadb72cc4ac0101"}}
