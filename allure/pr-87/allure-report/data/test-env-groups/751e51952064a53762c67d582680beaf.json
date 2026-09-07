@@ -1,1 +1,1 @@
-{"id":"751e51952064a53762c67d582680beaf","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_global_hooks_path_is_set","name":"test_global_hooks_path_is_set","status":"passed","testResultsByEnv":{"default":"92e28ea05b1433fec9ee24e8b804a9d1"}}
+{"id":"751e51952064a53762c67d582680beaf","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_global_hooks_path_is_set","name":"test_global_hooks_path_is_set","status":"passed","testResultsByEnv":{"default":"d416e9a83d14e7190e86b2d65fb6bdda"}}

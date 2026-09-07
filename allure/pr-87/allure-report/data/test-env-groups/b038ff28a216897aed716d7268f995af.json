@@ -1,1 +1,1 @@
-{"id":"b038ff28a216897aed716d7268f995af","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_missing_npx_is_nonfatal","name":"test_missing_npx_is_nonfatal","status":"passed","testResultsByEnv":{"default":"2877cde25f54afbe5a9e3d9fc7d1888f"}}
+{"id":"b038ff28a216897aed716d7268f995af","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_missing_npx_is_nonfatal","name":"test_missing_npx_is_nonfatal","status":"passed","testResultsByEnv":{"default":"9986f20d74cc4938cd7721937cafaacc"}}
