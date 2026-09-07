@@ -99,7 +99,7 @@ dependencies:
     - owner/repository/path/to/skill#v1.2.3
 ```
 
-After editing `apm.yml` manually, run `apm install`. Commit `apm.yml`, `apm.lock.yaml`, and the harness directories APM updates; do not commit the generated `apm_modules/` cache.
+After editing `apm.yml` manually, run `apm install`. Commit `apm.yml`, `apm.lock.yaml`, `.gitignore` when APM updates it, and the harness directories APM updates; do not commit the generated `apm_modules/` cache.
 
 To check and apply updates manually:
 
