@@ -19,12 +19,19 @@ PRE_PUSH = SHARED_ADAPTER / "git-hooks" / "pre-push"
 
 class SharedAdapterHookTests(unittest.TestCase):
     def initialize_repository(self, directory: Path) -> None:
+        # These tests run the hooks under test directly, so the fixture repository needs none of
+        # its own. Without an explicit empty hooks path it inherits a globally configured
+        # core.hooksPath - which every machine that installed the shared git hooks has - and those
+        # hooks then reject the deliberately malformed commits the tests build.
+        hooks_directory = directory / ".git" / "disabled-hooks"
         for command in (
             ["git", "init", "-q"],
             ["git", "config", "user.email", "hooks@example.test"],
             ["git", "config", "user.name", "Hook Tests"],
+            ["git", "config", "core.hooksPath", str(hooks_directory)],
         ):
             subprocess.run(command, cwd=directory, check=True)
+        hooks_directory.mkdir(parents=True, exist_ok=True)
         (directory / "tracked.py").write_text("value = 1\n", encoding="utf-8")
         subprocess.run(["git", "add", "tracked.py"], cwd=directory, check=True)
         subprocess.run(["git", "commit", "-qm", "baseline"], cwd=directory, check=True)
