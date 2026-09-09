@@ -15,8 +15,10 @@ concurrency:
 
 jobs:
   release:
-    uses: quokkify/project-toolkit/.github/workflows/release-please.yml@v2.20.1
+    uses: quokkify/project-toolkit/.github/workflows/release-please.yml@v2.21.0
     with:
       mode: manifest
       config-file: .github/release-please/config.json
       manifest-file: .github/release-please/manifest.json
+      enrich-release-notes: true
+      enrichment-script: .github/scripts/enrich_release_notes.py
