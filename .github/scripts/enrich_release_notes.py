@@ -15,6 +15,7 @@ RICH_HEADINGS = {
     "usage example": "Usage Examples",
     "migration": "Migration",
     "breaking change": "Breaking Changes",
+    "dependencies": "📦 Dependencies",
 }
 MARKER = "<!-- project-toolkit:rich-release-notes pr={number} -->"
 MARKER_PREFIX = "<!-- project-toolkit:rich-release-notes "
@@ -23,6 +24,9 @@ BLOCK_START = "<!-- project-toolkit:rich-block:start -->"
 BLOCK_END = "<!-- project-toolkit:rich-block:end -->"
 REPOSITORY_PATTERN = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
 SAFE_PATH_PATTERN = re.compile(r"[A-Za-z0-9._/-]+")
+DEPENDENCY_TITLE_PATTERN = re.compile(r"^(?:chore|deps)\(deps\):\s+", re.IGNORECASE)
+BARE_CHORE_TITLE_PATTERN = re.compile(r"^chore:\s+", re.IGNORECASE)
+DEPENDENCIES_HEADING = "### 📦 Dependencies"
 
 
 class EnrichmentError(RuntimeError):
@@ -138,7 +142,7 @@ def _remove_legacy_block(top: str) -> str:
 
 
 def _render_entries(prs: Iterable[Mapping[str, object]], excluded: set[str]) -> str:
-    entries: list[tuple[int, str, dict[str, str]]] = []
+    entries: list[tuple[int, str, dict[str, str], bool]] = []
     seen: set[str] = set()
     for pr in prs:
         number = str(pr.get("number", "")).strip()
@@ -146,6 +150,10 @@ def _render_entries(prs: Iterable[Mapping[str, object]], excluded: set[str]) -> 
             continue
         seen.add(number)
         sections = extract_rich_sections(str(pr.get("body", "")))
+        if not sections and pr.get("legacy_dependency") is True:
+            title = str(pr.get("title", "")).strip()
+            if title:
+                sections = {"dependencies": title}
         # PR bodies are untrusted; reserved delimiters must not be able to
         # terminate or forge the machine-owned block on a later rerun.
         title = str(pr.get("title", "")).strip()
@@ -159,23 +167,80 @@ def _render_entries(prs: Iterable[Mapping[str, object]], excluded: set[str]) -> 
             "</summary",
         )
         untrusted = [title.casefold(), *(value.casefold() for value in sections.values())]
-        if sections and not any(
+        is_dependency = bool(DEPENDENCY_TITLE_PATTERN.match(title))
+        # Native dependency PRs do not have a rich section in their body, but
+        # their title is still useful context in the enriched block.  Ordinary
+        # bare chore PRs, on the other hand, must not create a synthetic note.
+        if not sections and BARE_CHORE_TITLE_PATTERN.match(title):
+            continue
+        if (sections or is_dependency) and not any(
             marker in value
             for value in untrusted
             for marker in reserved
         ):
-            entries.append((int(number), title, sections))
+            entries.append((int(number), title, sections, pr.get("legacy_dependency") is True))
     entries.sort(key=lambda item: item[0])
     blocks: list[str] = []
-    for number_value, title, sections in entries:
+    dependency_heading_written = False
+    for number_value, title, sections, legacy_dependency in entries:
         number = str(number_value)
+        has_dependency_section = "dependencies" in sections
+        if has_dependency_section and not dependency_heading_written:
+            blocks.append(DEPENDENCIES_HEADING)
+            dependency_heading_written = True
         blocks.append(MARKER.format(number=number))
-        if title:
+        if has_dependency_section:
+            blocks.append(sections["dependencies"])
+        elif title and not legacy_dependency:
             blocks.append(f"#### {title}")
         for key, heading in RICH_HEADINGS.items():
+            if key == "dependencies":
+                continue
             if key in sections:
-                blocks.extend((f"### {heading}", sections[key], ""))
+                content = re.sub(
+                    rf"^\s*{re.escape(DEPENDENCIES_HEADING)}\s*$\n?",
+                    "",
+                    sections[key],
+                    flags=re.MULTILINE,
+                ).strip()
+                blocks.extend((f"### {heading}", content, ""))
     return "\n".join(blocks).rstrip()
+
+
+LEGACY_DEPENDENCY_COMMIT = re.compile(
+    r"^chore\(deps\):.*?\(#(?P<number>[0-9]+)\)\s*$"
+)
+VERSION_HEADING = re.compile(
+    r"^##[ \t]+(?:\[(?P<linked>[0-9]+\.[0-9]+\.[0-9]+)\]\([^)]*\)|"
+    r"(?P<plain>[0-9]+\.[0-9]+\.[0-9]+))"
+)
+
+
+def legacy_dependency_pr_numbers(changelog: str) -> list[int]:
+    """Find pre-native dependency PRs since the previous generated release."""
+    versions = []
+    for line in changelog.splitlines():
+        match = VERSION_HEADING.match(line)
+        if match:
+            versions.append(match.group("linked") or match.group("plain"))
+    if len(versions) < 2:
+        return []
+    completed = _run_git(["log", f"v{versions[1]}..HEAD", "--format=%s"])
+    numbers = {
+        int(match.group("number"))
+        for line in completed.stdout.splitlines()
+        if (match := LEGACY_DEPENDENCY_COMMIT.fullmatch(line.strip()))
+    }
+    return sorted(numbers)
+
+
+def _run_git(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+    """Run git without a shell and fail closed on missing history."""
+    completed = subprocess.run(["git", *arguments], text=True, capture_output=True, check=False)
+    if completed.returncode:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise EnrichmentError(f"git {' '.join(arguments)} failed: {detail}")
+    return completed
 
 
 def enrich_changelog(changelog: str, prs: Iterable[Mapping[str, object]]) -> str:
@@ -489,6 +554,8 @@ def prepare_release_enrichment(
         {path for _, path in release_targets}, key=lambda path: path.as_posix()
     )
     numbers_by_path: dict[Path, list[int]] = {}
+    legacy_by_path: dict[Path, set[int]] = {}
+    legacy_numbers: set[int] = set()
     all_numbers: set[int] = set()
     for changelog_path in changelog_paths:
         try:
@@ -497,7 +564,11 @@ def prepare_release_enrichment(
             raise EnrichmentError(f"cannot read generated changelog {changelog_path}: {exc}") from exc
         numbers = source_pr_numbers(changelog, repository)
         numbers_by_path[changelog_path] = numbers
+        legacy = set(legacy_dependency_pr_numbers(changelog)) - set(numbers)
+        legacy_by_path[changelog_path] = legacy
+        legacy_numbers.update(legacy)
         all_numbers.update(numbers)
+        all_numbers.update(legacy)
 
     source_prs: dict[int, dict[str, Any]] = {}
     for number in sorted(all_numbers):
@@ -514,12 +585,18 @@ def prepare_release_enrichment(
             "number": number,
             "title": str(source.get("title", "")),
             "body": str(source.get("body") or ""),
+            "legacy_dependency": number in legacy_numbers,
         }
 
     rendered_numbers: set[int] = set()
     for changelog_path in changelog_paths:
         original = changelog_path.read_text(encoding="utf-8")
-        selected = [source_prs[number] for number in numbers_by_path[changelog_path]]
+        selected = [
+            {**source_prs[number], "legacy_dependency": number in legacy_by_path[changelog_path]}
+            for number in sorted(
+                set(numbers_by_path[changelog_path]) | legacy_by_path[changelog_path]
+            )
+        ]
         updated = enrich_changelog(original, selected)
         changelog_path.write_text(updated, encoding="utf-8", newline="\n")
         top = _version_ranges(updated)
