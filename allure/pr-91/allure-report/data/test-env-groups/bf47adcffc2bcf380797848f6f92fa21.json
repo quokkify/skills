@@ -1,1 +1,1 @@
-{"id":"bf47adcffc2bcf380797848f6f92fa21","fullName":"tests.test_release_configuration.ReleaseConfigurationTests#test_legacy_release_files_are_absent","name":"test_legacy_release_files_are_absent","status":"passed","testResultsByEnv":{"default":"3cc80e1497c52c91ca1fa22ddf95ef7b"}}
+{"id":"bf47adcffc2bcf380797848f6f92fa21","fullName":"tests.test_release_configuration.ReleaseConfigurationTests#test_legacy_release_files_are_absent","name":"test_legacy_release_files_are_absent","status":"passed","testResultsByEnv":{"default":"733b89142756cf86ab347d7b97e05f40"}}

@@ -1,1 +1,1 @@
-{"id":"6eb015408137546a472fc58416f7852e","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_codex_agents_is_absolute_symlink","name":"test_codex_agents_is_absolute_symlink","status":"passed","testResultsByEnv":{"default":"75cd28bd56d931586a3ee138b0cab467"}}
+{"id":"6eb015408137546a472fc58416f7852e","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_codex_agents_is_absolute_symlink","name":"test_codex_agents_is_absolute_symlink","status":"passed","testResultsByEnv":{"default":"e680e9f0655f2dda1994126d8d4e6058"}}

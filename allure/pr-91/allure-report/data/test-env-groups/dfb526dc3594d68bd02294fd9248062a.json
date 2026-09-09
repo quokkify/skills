@@ -1,1 +1,1 @@
-{"id":"dfb526dc3594d68bd02294fd9248062a","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_local_secret_store_path_is_rejected","name":"test_local_secret_store_path_is_rejected","status":"passed","testResultsByEnv":{"default":"477414e1fd51b54950d0970919f3e084"}}
+{"id":"dfb526dc3594d68bd02294fd9248062a","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_local_secret_store_path_is_rejected","name":"test_local_secret_store_path_is_rejected","status":"passed","testResultsByEnv":{"default":"79c3d61ae3778130a1c7f895a2e6cba2"}}
