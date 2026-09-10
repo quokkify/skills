@@ -19,7 +19,13 @@ RICH_HEADINGS = {
 }
 MARKER = "<!-- project-toolkit:rich-release-notes pr={number} -->"
 MARKER_PREFIX = "<!-- project-toolkit:rich-release-notes "
-MARKER_PATTERN = re.compile(r"^<!-- project-toolkit:rich-release-notes pr=([0-9]+) -->$")
+MARKER_PATTERN = re.compile(r"<!-- project-toolkit:rich-release-notes pr=([0-9]+) -->")
+STANDALONE_MARKER_PATTERN = re.compile(
+    r"^\s*<!-- project-toolkit:rich-release-notes pr=([0-9]+) -->\s*$"
+)
+INLINE_MARKER_PATTERN = re.compile(
+    r"^\s*[-*+]\s+.+?\s+<!-- project-toolkit:rich-release-notes pr=([0-9]+) -->\s*$"
+)
 BLOCK_START = "<!-- project-toolkit:rich-block:start -->"
 BLOCK_END = "<!-- project-toolkit:rich-block:end -->"
 REPOSITORY_PATTERN = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
@@ -31,6 +37,38 @@ DEPENDENCIES_HEADING = "### 📦 Dependencies"
 
 class EnrichmentError(RuntimeError):
     """Raised when release metadata is unsafe or ambiguous."""
+
+
+def _render_dependency_title(title: str, *, number: str, pr: Mapping[str, object]) -> str:
+    """Render a title-only dependency with visible source attribution."""
+    description = DEPENDENCY_TITLE_PATTERN.sub("", title, count=1).strip() or "Dependency update"
+    pr_url = pr.get("pr_url")
+    attribution = f"([#{number}]({pr_url}))" if isinstance(pr_url, str) and pr_url else f"(#{number})"
+    commit_url = pr.get("commit_url")
+    commit_sha = pr.get("commit_sha")
+    if isinstance(commit_url, str) and commit_url and isinstance(commit_sha, str) and commit_sha:
+        attribution += f" ([{commit_sha[:7]}]({commit_url}))"
+    return f"- {description} {attribution}"
+
+
+def _render_dependency_content(content: str) -> str:
+    """Normalize dependency entries to bullets without losing Markdown links."""
+    rendered: list[str] = []
+    for line in content.splitlines():
+        line = DEPENDENCY_TITLE_PATTERN.sub("", line.strip(), count=1).strip()
+        if not line:
+            continue
+        if not re.match(r"^(?:[-*+] |\d+[.)] )", line):
+            line = f"- {line}"
+        rendered.append(line)
+    return "\n".join(rendered) or "- Dependency update"
+
+
+def _add_dependency_marker(content: str, marker: str) -> str:
+    """Keep the source marker inside the dependency list item."""
+    lines = content.splitlines()
+    lines[0] = f"{lines[0]} {marker}"
+    return "\n".join(lines)
 
 
 def _without_comments(lines: Iterable[str]) -> str:
@@ -92,7 +130,7 @@ def _version_ranges(changelog: str) -> list[tuple[int, int]]:
 
 
 def _rich_numbers(text: str) -> set[str]:
-    """Read only canonical machine marker lines outside fenced Markdown."""
+    """Read canonical markers outside fences, not arbitrary prose."""
     numbers: set[str] = set()
     fence: tuple[str, int] | None = None
     for line in text.splitlines():
@@ -105,7 +143,9 @@ def _rich_numbers(text: str) -> set[str]:
                 fence = None
             continue
         if fence is None:
-            marker = MARKER_PATTERN.fullmatch(line.strip())
+            marker = None
+            if line.count(MARKER_PREFIX) == 1:
+                marker = STANDALONE_MARKER_PATTERN.fullmatch(line) or INLINE_MARKER_PATTERN.fullmatch(line)
             if marker:
                 numbers.add(marker.group(1))
     return numbers
@@ -142,7 +182,7 @@ def _remove_legacy_block(top: str) -> str:
 
 
 def _render_entries(prs: Iterable[Mapping[str, object]], excluded: set[str]) -> str:
-    entries: list[tuple[int, str, dict[str, str], bool]] = []
+    entries: list[tuple[int, str, dict[str, str], bool, Mapping[str, object]]] = []
     seen: set[str] = set()
     for pr in prs:
         number = str(pr.get("number", "")).strip()
@@ -178,21 +218,37 @@ def _render_entries(prs: Iterable[Mapping[str, object]], excluded: set[str]) -> 
             for value in untrusted
             for marker in reserved
         ):
-            entries.append((int(number), title, sections, pr.get("legacy_dependency") is True))
+            entries.append((int(number), title, sections, pr.get("legacy_dependency") is True, pr))
+    entries.sort(key=lambda item: item[0])
+    # Keep every dependency bullet together. Markdown treats a heading,
+    # paragraph, or another list as a boundary, so rendering in PR-number
+    # order would split the dependency list when a rich non-dependency PR is
+    # interleaved between dependency PRs. A mixed entry must also defer its
+    # non-dependency sections until this first phase is complete.
     entries.sort(key=lambda item: item[0])
     blocks: list[str] = []
     dependency_heading_written = False
-    for number_value, title, sections, legacy_dependency in entries:
+    for number_value, title, sections, legacy_dependency, pr in entries:
         number = str(number_value)
         has_dependency_section = "dependencies" in sections
-        if has_dependency_section and not dependency_heading_written:
+        if not has_dependency_section:
+            continue
+        if not dependency_heading_written:
             blocks.append(DEPENDENCIES_HEADING)
             dependency_heading_written = True
-        blocks.append(MARKER.format(number=number))
-        if has_dependency_section:
-            blocks.append(sections["dependencies"])
-        elif title and not legacy_dependency:
-            blocks.append(f"#### {title}")
+        content = sections["dependencies"]
+        if legacy_dependency and content == title:
+            content = _render_dependency_title(title, number=number, pr=pr)
+        else:
+            content = _render_dependency_content(content)
+        blocks.append(_add_dependency_marker(content, MARKER.format(number=number)))
+    for number_value, title, sections, legacy_dependency, _pr in entries:
+        number = str(number_value)
+        has_dependency_section = "dependencies" in sections
+        if not has_dependency_section:
+            blocks.append(MARKER.format(number=number))
+            if title and not legacy_dependency:
+                blocks.append(f"#### {title}")
         for key, heading in RICH_HEADINGS.items():
             if key == "dependencies":
                 continue
@@ -586,6 +642,12 @@ def prepare_release_enrichment(
             "title": str(source.get("title", "")),
             "body": str(source.get("body") or ""),
             "legacy_dependency": number in legacy_numbers,
+            "pr_url": str(source.get("html_url") or ""),
+            "commit_sha": str(source.get("merge_commit_sha") or ""),
+            "commit_url": (
+                f"https://github.com/{repository}/commit/{source['merge_commit_sha']}"
+                if source.get("merge_commit_sha") else ""
+            ),
         }
 
     rendered_numbers: set[int] = set()
