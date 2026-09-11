@@ -1,1 +1,1 @@
-{"id":"27d00ec2a3d94f26b0beea406684613d","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_malformed_state_fails_closed","name":"test_malformed_state_fails_closed","status":"passed","testResultsByEnv":{"default":"ac48be2608174a30a690ecb5f90da112"}}
+{"id":"27d00ec2a3d94f26b0beea406684613d","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_malformed_state_fails_closed","name":"test_malformed_state_fails_closed","status":"passed","testResultsByEnv":{"default":"ef78665c61067c180fce4e299876a504"}}
