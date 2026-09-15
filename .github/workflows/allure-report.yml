@@ -33,6 +33,8 @@ jobs:
       pr-number: ${{ steps.resolve.outputs.pr-number }}
       fork-pr: ${{ steps.resolve.outputs.fork-pr }}
       artifact_manifest: ${{ steps.resolve.outputs.artifact_manifest }}
+      materialize-root: ${{ steps.resolve.outputs.materialize-root }}
+      source-artifacts-directory: ${{ steps.resolve.outputs.source-artifacts-directory }}
     steps:
       - name: Resolve PR and validate source artifacts
         id: resolve
@@ -43,12 +45,22 @@ jobs:
             const expectedArtifacts = [
               "allure-results-python-1",
             ];
-
+            const artifactPrefix = "allure-results-";
+            const minimumArtifacts = 1;
+            const maximumArtifacts = 50;
+            const componentWorkflowPath = ".github/workflows/validate.yml";
+            const externalWorkflowPath = ".github/workflows/validate.yml";
+            const componentMode = true;
+            const externalMode = false;
+            const materializeRoot = componentMode ? ".allure-input/results" : ".allure-input/source-artifacts";
+            const sourceArtifactsDirectory = componentMode ? "" : ".allure-input/source-artifacts";
             const skip = (message) => {
               core.warning(message);
               core.setOutput("ready", "false");
             };
-            if (run.path !== ".github/workflows/validate.yml") {
+            const componentRun = componentMode && run.path === componentWorkflowPath;
+            const externalRun = externalMode && run.path === externalWorkflowPath;
+            if (!componentRun && !externalRun) {
               skip(`Ignore unexpected source workflow path: ${run.path}`);
               return;
             }
@@ -92,16 +104,23 @@ jobs:
               per_page: 100,
             });
             const allureArtifacts = artifacts.filter((artifact) =>
-              artifact.name.startsWith("allure-results-")
+              artifact.name.startsWith(componentRun ? "allure-results-" : artifactPrefix)
             );
             const actualNames = allureArtifacts.map((artifact) => artifact.name).sort();
-
             const expectedNames = [...expectedArtifacts].sort();
-            if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
+            if (componentRun && JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
               core.setFailed(`Allure artifact contract mismatch. Expected ${expectedNames.join(", ")}; received ${actualNames.join(", ") || "none"}.`);
               return;
             }
-
+            if (externalRun && actualNames.length === 0) {
+              skip("No external Allure artifacts found; report generation skipped.");
+              return;
+            }
+            if (externalRun && (actualNames.length < minimumArtifacts || actualNames.length > maximumArtifacts ||
+                new Set(actualNames).size !== actualNames.length)) {
+              core.setFailed(`External Allure artifact contract mismatch. Expected ${minimumArtifacts}-${maximumArtifacts} unique artifacts with prefix ${artifactPrefix}; received ${actualNames.length}.`);
+              return;
+            }
             if (allureArtifacts.some((artifact) => artifact.expired)) {
               core.setFailed("One or more required Allure artifacts have expired.");
               return;
@@ -115,13 +134,16 @@ jobs:
               return;
             }
             core.setOutput("artifact_manifest", JSON.stringify(
-
-              expectedArtifacts.map((name) => {
+              componentRun ? expectedArtifacts.map((name) => {
                 const artifact = allureArtifacts.find((candidate) => candidate.name === name);
                 return { name, id: Number(artifact.id) };
-              })
-
+              }) : allureArtifacts.map((artifact) => ({
+                name: artifact.name,
+                id: Number(artifact.id),
+              }))
             ));
+            core.setOutput("materialize-root", materializeRoot);
+            core.setOutput("source-artifacts-directory", sourceArtifactsDirectory);
             const pull = matches[0];
             core.setOutput("ready", "true");
             core.setOutput("pr-number", String(pull.number));
@@ -153,13 +175,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARCHIVE_ROOT: ${{ runner.temp }}/allure-archives
           OUTPUT_ROOT: ${{ runner.temp }}/allure-expanded
-          MATERIALIZE_ROOT: ${{ github.workspace }}/.allure-input/results
+          MATERIALIZE_ROOT: ${{ github.workspace }}/${{ needs.resolve.outputs.materialize-root }}
         run: python .github/allure/safe_extract.py
       - name: Build Allure report without write privileges
-        uses: quokkify/project-toolkit/actions/allure-report@v2.21.2
+        uses: quokkify/project-toolkit/actions/allure-report@v2.21.4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           results-directory: .allure-input/results
+          source-artifacts-directory: ${{ needs.resolve.outputs.source-artifacts-directory }}
           report-directory: allure-report
           config-file: .github/allure/allurerc.mjs
           source-run-id: ${{ github.event.workflow_run.id }}
@@ -341,7 +364,7 @@ jobs:
         run: python .github/allure/safe_extract.py
       - name: Publish Allure HTML to GitHub Pages
         if: ${{ steps.freshness.outputs.fresh == 'true' }}
-        uses: quokkify/project-toolkit/actions/deploy-gh-pages-subdir@v2.21.2
+        uses: quokkify/project-toolkit/actions/deploy-gh-pages-subdir@v2.21.4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           publish-dir: allure-report
