@@ -1,1 +1,1 @@
-{"id":"44aa881fb1e3914db6078ce2dfb9a68a","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_successful_new_branch_check_is_silent","name":"test_successful_new_branch_check_is_silent","status":"passed","testResultsByEnv":{"default":"53261fa5c91d7922ca9f7c84c4efb14f"}}
+{"id":"44aa881fb1e3914db6078ce2dfb9a68a","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_successful_new_branch_check_is_silent","name":"test_successful_new_branch_check_is_silent","status":"passed","testResultsByEnv":{"default":"3a6dc3419ae45a6af52195f948e1f2ad"}}

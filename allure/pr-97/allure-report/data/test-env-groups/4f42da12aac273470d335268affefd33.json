@@ -1,1 +1,1 @@
-{"id":"4f42da12aac273470d335268affefd33","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_flat_skill_without_category_is_rejected","name":"test_flat_skill_without_category_is_rejected","status":"passed","testResultsByEnv":{"default":"61e07bf4b25f6a4843f630ebe4a853b8"}}
+{"id":"4f42da12aac273470d335268affefd33","fullName":"tests.test_validate_repo.RepositoryValidationTests#test_flat_skill_without_category_is_rejected","name":"test_flat_skill_without_category_is_rejected","status":"passed","testResultsByEnv":{"default":"d76cda5c0043838b40c5719154d67927"}}
