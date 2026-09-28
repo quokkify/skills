@@ -169,7 +169,7 @@ class SharedAdapterHookTests(unittest.TestCase):
 
             for hook, config_key, hook_input in (
                 (PRE_COMMIT, "skills-hub.check.pre-commit", ""),
-                (PRE_PUSH, "skills-hub.check.pre-push", "refs/heads/main HEAD refs/heads/main 0000000000000000000000000000000000000000\n"),
+                (PRE_PUSH, "skills-hub.check.pre-push", "refs/heads/main HEAD refs/heads/main HEAD\n"),
             ):
                 with self.subTest(hook=hook.name):
                     subprocess.run(["git", "config", config_key, "check.sh"], cwd=repository, check=True)
@@ -217,6 +217,58 @@ class SharedAdapterHookTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("trailing whitespace", result.stdout)
+
+    def test_pre_push_checks_each_commit_on_existing_ref_without_remote_query(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            self.initialize_repository(repository)
+            baseline_oid = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=repository, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            pushed_file = repository / "pushed.txt"
+            pushed_file.write_text("trailing space \n", encoding="utf-8")
+            subprocess.run(["git", "add", "pushed.txt"], cwd=repository, check=True)
+            subprocess.run(["git", "commit", "-qm", "bad earlier commit"], cwd=repository, check=True)
+            pushed_file.write_text("clean\n", encoding="utf-8")
+            subprocess.run(["git", "add", "pushed.txt"], cwd=repository, check=True)
+            subprocess.run(["git", "commit", "-qm", "clean tip"], cwd=repository, check=True)
+            local_oid = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=repository, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            hook_input = f"refs/heads/main {local_oid} refs/heads/main {baseline_oid}\n"
+
+            result = subprocess.run(
+                ["bash", str(PRE_PUSH), "origin", str(repository / "unavailable.git")],
+                cwd=repository,
+                input=hook_input,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("trailing whitespace", result.stdout)
+            self.assertNotIn("remote references are unavailable", result.stderr)
+
+    def test_pre_push_reports_unavailable_remote_for_new_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            self.initialize_repository(repository)
+            local_oid = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=repository, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            hook_input = f"refs/heads/new {local_oid} refs/heads/new {'0' * 40}\n"
+
+            result = subprocess.run(
+                ["bash", str(PRE_PUSH), "origin", str(repository / "unavailable.git")],
+                cwd=repository,
+                input=hook_input,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("remote references are unavailable", result.stderr)
+            self.assertIn("fatal:", result.stderr)
 
     def test_pre_push_uses_advertised_remote_refs_instead_of_stale_tracking_refs(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
