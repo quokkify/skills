@@ -15,18 +15,6 @@ if [ -f "$GIT_ROOT/.skills-hooks-disable" ] || { [ -n "$GIT_DISABLE_FILE" ] && [
   exit 0
 fi
 
-REMOTE_TIPS=()
-REMOTE_QUERY_OK=0
-if [ -n "${2:-}" ] && REMOTE_REFS="$(git -C "$GIT_ROOT" ls-remote --refs "$2" 2>/dev/null)"; then
-  REMOTE_QUERY_OK=1
-  while read -r remote_tip remote_ref; do
-    [ -n "${remote_tip:-}" ] || continue
-    if git -C "$GIT_ROOT" cat-file -e "$remote_tip^{commit}" 2>/dev/null; then
-      REMOTE_TIPS+=("$remote_tip")
-    fi
-  done <<< "$REMOTE_REFS"
-fi
-
 while read -r local_ref local_oid remote_ref remote_oid; do
   [ -n "${local_oid:-}" ] || continue
   case "$local_oid" in
@@ -34,30 +22,35 @@ while read -r local_ref local_oid remote_ref remote_oid; do
   esac
   case "${remote_oid:-}" in
     0000000000000000000000000000000000000000)
-      if [ -n "${2:-}" ]; then
-        # We attempted ls-remote because a remote URL was provided
-        if [ "$REMOTE_QUERY_OK" -ne 1 ]; then
-          printf '%s\\n' "Cannot validate a new pushed ref because remote references are unavailable." >&2
-          exit 1
-        fi
-      else
-        # No remote URL provided, so we cannot do remote validation; skip this ref
-        continue
+      if [ -z "${2:-}" ]; then
+        printf '%s\n' "Cannot validate a new pushed ref without a remote URL." >&2
+        exit 1
       fi
+      if ! REMOTE_REFS="$(git -C "$GIT_ROOT" ls-remote --refs --heads --tags "$2")"; then
+        printf '%s\n' "Cannot validate a new pushed ref because remote references are unavailable." >&2
+        exit 1
+      fi
+      REMOTE_TIPS=()
+      while read -r remote_tip remote_ref; do
+        [ -n "${remote_tip:-}" ] || continue
+        if git -C "$GIT_ROOT" cat-file -e "$remote_tip^{commit}" 2>/dev/null; then
+          REMOTE_TIPS+=("$remote_tip")
+        fi
+      done <<< "$REMOTE_REFS"
       REVISION_ARGS=("$local_oid")
       if [ "${#REMOTE_TIPS[@]}" -gt 0 ]; then
         REVISION_ARGS+=(--not "${REMOTE_TIPS[@]}")
       fi
-      NEW_COMMITS="$(git -C "$GIT_ROOT" rev-list "${REVISION_ARGS[@]}")"
-      while IFS= read -r commit_oid; do
-        [ -n "$commit_oid" ] || continue
-        git -C "$GIT_ROOT" diff-tree --check --no-commit-id --root -r -m --diff-filter=ACMR "$commit_oid" --
-      done <<< "$NEW_COMMITS"
       ;;
     *)
-      git -C "$GIT_ROOT" diff --check --diff-filter=ACMR "$remote_oid" "$local_oid" --
+      REVISION_ARGS=("$local_oid" "^$remote_oid")
       ;;
   esac
+  NEW_COMMITS="$(git -C "$GIT_ROOT" rev-list "${REVISION_ARGS[@]}")"
+  while IFS= read -r commit_oid; do
+    [ -n "$commit_oid" ] || continue
+    git -C "$GIT_ROOT" diff-tree --check --no-commit-id --root -r -m --diff-filter=ACMR "$commit_oid" --
+  done <<< "$NEW_COMMITS"
 done
 
 CHECK_PATH="$(git -C "$GIT_ROOT" config --path --get skills-hub.check.pre-push 2>/dev/null || true)"
