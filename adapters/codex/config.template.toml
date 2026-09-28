@@ -137,6 +137,10 @@ description = "Documentation specialist that verifies APIs, framework behavior, 
 config_file = "agents/docs-researcher.toml"
 nickname_candidates = ["librarian", "reader"]
 
+[agents.project_toolkit_migration]
+description = "Experimental project-toolkit migration and local readiness diagnosis."
+config_file = "agents/project-toolkit-migration.toml"
+
 # --- Skills ----------------------------------------------------------------
 
 # Discovery order for `$skill-name` invocation (`/skills` lists what resolved):
