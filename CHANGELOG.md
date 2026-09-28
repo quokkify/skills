@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/quokkify/skills/compare/v0.11.0...v0.11.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **git-hooks:** avoid full remote ref scan on pre-push ([#98](https://github.com/quokkify/skills/issues/98)) ([971fbdb](https://github.com/quokkify/skills/commit/971fbdbea7012032adc8078538fedeef64e7d963))
+
 ## [0.11.0](https://github.com/quokkify/skills/compare/v0.10.0...v0.11.0) (2026-09-10)
 
 
