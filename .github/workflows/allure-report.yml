@@ -164,7 +164,7 @@ jobs:
       contents: read
     steps:
       - name: Check out trusted report configuration
-        uses: quokkify/project-toolkit/actions/checkout@v2.23.2
+        uses: quokkify/project-toolkit/actions/checkout@v2.23.4
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -180,7 +180,7 @@ jobs:
           MATERIALIZE_ROOT: ${{ github.workspace }}/${{ needs.resolve.outputs.materialize-root }}
         run: python .github/allure/safe_extract.py
       - name: Build Allure report without write privileges
-        uses: quokkify/project-toolkit/actions/allure-report@v2.23.2
+        uses: quokkify/project-toolkit/actions/allure-report@v2.23.4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           results-directory: .allure-input/results
@@ -348,7 +348,7 @@ jobs:
             core.setOutput("fresh", "true");
       - name: Check out trusted extractor
         if: ${{ steps.freshness.outputs.fresh == 'true' }}
-        uses: quokkify/project-toolkit/actions/checkout@v2.23.2
+        uses: quokkify/project-toolkit/actions/checkout@v2.23.4
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -366,7 +366,7 @@ jobs:
         run: python .github/allure/safe_extract.py
       - name: Publish Allure HTML to GitHub Pages
         if: ${{ steps.freshness.outputs.fresh == 'true' }}
-        uses: quokkify/project-toolkit/actions/deploy-gh-pages-subdir@v2.23.2
+        uses: quokkify/project-toolkit/actions/deploy-gh-pages-subdir@v2.23.4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           publish-dir: allure-report
