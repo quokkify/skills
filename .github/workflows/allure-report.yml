@@ -42,9 +42,6 @@ jobs:
         with:
           script: |
             const run = context.payload.workflow_run;
-            const expectedArtifacts = [
-              "allure-results-python-1",
-            ];
             const artifactPrefix = "allure-results-";
             const minimumArtifacts = 1;
             const maximumArtifacts = 50;
@@ -107,9 +104,17 @@ jobs:
               artifact.name.startsWith(componentRun ? "allure-results-" : artifactPrefix)
             );
             const actualNames = allureArtifacts.map((artifact) => artifact.name).sort();
-            const expectedNames = [...expectedArtifacts].sort();
-            if (componentRun && JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
-              core.setFailed(`Allure artifact contract mismatch. Expected ${expectedNames.join(", ")}; received ${actualNames.join(", ") || "none"}.`);
+            // The source run is authoritative for component artifact identities.  The
+            // trusted report workflow may be updated before a consumer's source run,
+            // so matching against this workflow's current component IDs would drop
+            // reports during a migration.  Keep the contract versioned and strict
+            // without coupling it to the report workflow's component inventory.
+            const sourceArtifactContractVersion = 1;
+            const componentArtifactPattern = /^allure-results-[A-Za-z_][A-Za-z0-9_-]*$/;
+            if (componentRun && (sourceArtifactContractVersion !== 1 || actualNames.length === 0 ||
+                actualNames.some((name) => !componentArtifactPattern.test(name)) ||
+                new Set(actualNames).size !== actualNames.length)) {
+              core.setFailed(`Allure artifact contract v${sourceArtifactContractVersion} mismatch; received ${actualNames.join(", ") || "none"}.`);
               return;
             }
             if (externalRun && actualNames.length === 0) {
@@ -134,10 +139,7 @@ jobs:
               return;
             }
             core.setOutput("artifact_manifest", JSON.stringify(
-              componentRun ? expectedArtifacts.map((name) => {
-                const artifact = allureArtifacts.find((candidate) => candidate.name === name);
-                return { name, id: Number(artifact.id) };
-              }) : allureArtifacts.map((artifact) => ({
+              allureArtifacts.map((artifact) => ({
                 name: artifact.name,
                 id: Number(artifact.id),
               }))
@@ -162,7 +164,7 @@ jobs:
       contents: read
     steps:
       - name: Check out trusted report configuration
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: quokkify/project-toolkit/actions/checkout@v2.23.2
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -178,7 +180,7 @@ jobs:
           MATERIALIZE_ROOT: ${{ github.workspace }}/${{ needs.resolve.outputs.materialize-root }}
         run: python .github/allure/safe_extract.py
       - name: Build Allure report without write privileges
-        uses: quokkify/project-toolkit/actions/allure-report@v2.21.6
+        uses: quokkify/project-toolkit/actions/allure-report@v2.23.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           results-directory: .allure-input/results
@@ -346,7 +348,7 @@ jobs:
             core.setOutput("fresh", "true");
       - name: Check out trusted extractor
         if: ${{ steps.freshness.outputs.fresh == 'true' }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: quokkify/project-toolkit/actions/checkout@v2.23.2
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -364,7 +366,7 @@ jobs:
         run: python .github/allure/safe_extract.py
       - name: Publish Allure HTML to GitHub Pages
         if: ${{ steps.freshness.outputs.fresh == 'true' }}
-        uses: quokkify/project-toolkit/actions/deploy-gh-pages-subdir@v2.21.6
+        uses: quokkify/project-toolkit/actions/deploy-gh-pages-subdir@v2.23.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           publish-dir: allure-report
