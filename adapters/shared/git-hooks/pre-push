@@ -26,17 +26,15 @@ while read -r local_ref local_oid remote_ref remote_oid; do
         printf '%s\n' "Cannot validate a new pushed ref without a remote URL." >&2
         exit 1
       fi
-      if ! REMOTE_REFS="$(git -C "$GIT_ROOT" ls-remote --refs --heads --tags "$2")"; then
-        printf '%s\n' "Cannot validate a new pushed ref because remote references are unavailable." >&2
-        exit 1
-      fi
+      # A new remote ref has no remote_oid to use as the revision boundary.
+      # Avoid enumerating every server ref; use locally cached remote-tracking refs.
       REMOTE_TIPS=()
-      while read -r remote_tip remote_ref; do
+      while read -r remote_tip; do
         [ -n "${remote_tip:-}" ] || continue
         if git -C "$GIT_ROOT" cat-file -e "$remote_tip^{commit}" 2>/dev/null; then
           REMOTE_TIPS+=("$remote_tip")
         fi
-      done <<< "$REMOTE_REFS"
+      done < <(git -C "$GIT_ROOT" for-each-ref --format="%(objectname)" refs/remotes/)
       REVISION_ARGS=("$local_oid")
       if [ "${#REMOTE_TIPS[@]}" -gt 0 ]; then
         REVISION_ARGS+=(--not "${REMOTE_TIPS[@]}")
