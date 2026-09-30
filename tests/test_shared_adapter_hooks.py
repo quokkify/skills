@@ -249,7 +249,7 @@ class SharedAdapterHookTests(unittest.TestCase):
             self.assertIn("trailing whitespace", result.stdout)
             self.assertNotIn("remote references are unavailable", result.stderr)
 
-    def test_pre_push_reports_unavailable_remote_for_new_ref(self) -> None:
+    def test_pre_push_checks_new_ref_without_querying_remote_refs(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)
             self.initialize_repository(repository)
@@ -266,11 +266,10 @@ class SharedAdapterHookTests(unittest.TestCase):
                 text=True,
             )
 
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("remote references are unavailable", result.stderr)
-            self.assertIn("fatal:", result.stderr)
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
 
-    def test_pre_push_uses_advertised_remote_refs_instead_of_stale_tracking_refs(self) -> None:
+    def test_pre_push_rechecks_commits_missing_from_stale_tracking_refs(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             repository = root / "repository"
@@ -308,8 +307,8 @@ class SharedAdapterHookTests(unittest.TestCase):
                 text=True,
             )
 
-            self.assertEqual(result.returncode, 0)
-            self.assertEqual(result.stdout, "")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("trailing whitespace", result.stdout)
 
     def test_successful_new_branch_check_is_silent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
