@@ -27,6 +27,8 @@ Validate the exact artifact that will be committed, pushed, or reviewed. A green
    - Cross-check documentation claims against the adapter files that actually ship; a notes-only adapter must not be described as providing personas, model routing, or executable setup.
    - Search for both legacy identifiers and concrete project fingerprints such as framework versions, fixed directory conventions, and domain-rule filenames. A canonical portable skill that mandates a named role or tool without a capability-based fallback is a functional portability failure.
 9. After every fix commit, re-check the exact PR head plus top-level comments, submitted reviews, inline comments, and active review threads.
+   - When a check, report, or bot comment is stale for the current head, read the annotations of cancelled runs for "higher priority waiting request" before changing the posting logic; the message names the colliding concurrency group.
+   - When the default branch fails after a merge in a step the change does not touch, confirm the external dependency (for example, that the reported packages resolve) and rerun only the failed jobs before treating it as a regression.
 
 ## Safety requirements
 
@@ -36,6 +38,7 @@ Validate the exact artifact that will be committed, pushed, or reviewed. A green
 - Reject local links that resolve outside the repository, even when the external target exists.
 - Handle malformed UTF-8 as an aggregated validation error rather than an uncaught crash.
 - Verify PATH-installed tool versions before treating local output as equivalent to pinned CI output.
+- Key every `cancel-in-progress` concurrency group by each dimension of an independent stream: triggering workflow, configured source or scope, head repository, and branch. A group keyed only by branch lets a sibling trigger, or a sibling call of the same reusable workflow, cancel the run that owns the current head's result. Never add a run ID or commit SHA to the key; that disables cancellation of superseded runs. Test the rendered group expressions, not only their presence.
 - Treat privacy pattern checks and Gitleaks as complements to manual review, not proof that content is safe.
 - Assert a pinned dependency by its stable identity, and enforce digest immutability as a separate check. A validator that compares against one specific digest reports the guard as missing on every legitimate bump.
 
