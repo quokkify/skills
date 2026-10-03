@@ -1,0 +1,1 @@
+{"id":"1d3e4f07cb7129078953926f89c996c1.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_pre_push_checks_earlier_commit_when_pushing_new_branch","name":"test_pre_push_checks_earlier_commit_when_pushing_new_branch","status":"passed","testResultsByEnv":{"default":"9be06443e868a2be18f1f2885b9122f9"}}
