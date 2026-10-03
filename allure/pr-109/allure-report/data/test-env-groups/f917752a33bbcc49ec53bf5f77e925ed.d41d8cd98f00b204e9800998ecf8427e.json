@@ -1,0 +1,1 @@
+{"id":"f917752a33bbcc49ec53bf5f77e925ed.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_deletion_failure_is_reported_and_retained_for_retry","name":"test_deletion_failure_is_reported_and_retained_for_retry","status":"passed","testResultsByEnv":{"default":"bdbc830341d22afc4c5755b71819e6b7"}}
