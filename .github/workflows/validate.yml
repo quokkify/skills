@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: quokkify/project-toolkit/actions/checkout@v2.24.0
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -109,13 +109,13 @@ jobs:
             git diff --check "$BASE_SHA..$HEAD_SHA"
           fi
 
-  python-1:
-    name: python (.)
-    uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@v2.20.1
+  app-python:
+    name: "App Python"
+    uses: quokkify/project-toolkit/.github/workflows/python-ci.yml@v2.24.0
     with:
       working-directory: "."
       install-command: "python -m pip install pytest allure-pytest"
       test-command: "python -m pytest --alluredir=allure-results tests/"
       upload-test-artifacts: true
       test-artifact-path: "allure-results"
-      test-artifact-name: allure-results-python-1
+      test-artifact-name: allure-results-app-python

@@ -45,9 +45,11 @@ present_runtimes="$(
 
 AGENT_HOME=""
 harness_homes=""
+harness_home_explicit=0
 if [ -n "${SKILL_HARNESS_HOME:-}" ]; then
   AGENT_HOME="$SKILL_HARNESS_HOME"
   harness_homes="$SKILL_HARNESS_HOME"
+  harness_home_explicit=1
 else
   harness_homes="$(
     printf '%s\n' "$present_runtimes" | while IFS="$(printf '\t')" read -r kind path; do
@@ -139,9 +141,14 @@ harness_present=0
 if [ -d "$HARNESS_DIR" ]; then
   harness_present=1
   report_ok "Harness directory: $(redact "$HARNESS_DIR")"
-else
+elif [ "$harness_home_explicit" -eq 1 ]; then
   report_fail "Harness directory missing: $(redact "$HARNESS_DIR")"
-  note_step "Install the harness, or ignore this report if this machine is not a publishing lane."
+  note_step "Install the harness, or unset SKILL_HARNESS_HOME on a machine that is not a publishing lane."
+elif [ -n "$present_runtimes" ]; then
+  report_info "No publishing harness selected; agent runtimes remain available for ordinary skill use"
+else
+  report_warn "No agent runtime home found under the usual locations"
+  note_step "Set SKILL_HARNESS_HOME to the agent home that owns the harness, if this is a publishing lane."
 fi
 
 # publish_queue.py is executed as `python3 publish_queue.py`, so it is a library
@@ -260,12 +267,12 @@ gate_wired=0
 # register under the same event, so every command in every group must be searched.
 check_claude_runtime() {
   home="$1"
-  found=""
+  found=()
   for candidate in "$home/settings.json" "$home/settings.local.json"; do
-    [ -f "$candidate" ] && found="$found $candidate"
+    [ -f "$candidate" ] && found+=("$candidate")
   done
 
-  if [ -z "$found" ]; then
+  if [ "${#found[@]}" -eq 0 ]; then
     report_warn "Claude Code: no settings file under $(redact "$home"); the completion gate is not wired"
     note_step "Register completion_gate.sh (Stop) and skill_cycle.sh (SessionStart) in $(redact "$home")/settings.json."
     return 0
@@ -275,7 +282,7 @@ check_claude_runtime() {
     return 0
   fi
 
-  for settings_file in $found; do
+  for settings_file in "${found[@]}"; do
     scan="$(python3 - "$settings_file" <<'PY' 2>/dev/null
 import json, sys
 
@@ -347,21 +354,14 @@ check_codex_runtime() {
   fi
 }
 
-# Hermes drives skills from its own configuration; the gate belongs to whatever it
-# runs at end of turn.
+# Hermes skills are discovered through skills.external_dirs in config.yaml. That is
+# an ordinary read-only skill catalogue integration, not a publishing harness or a
+# completion-gate contract. Only an explicitly installed harness is checked above;
+# do not scan arbitrary Hermes YAML/TOML files or imply that Hermes completion is
+# blocked by a Claude-compatible gate.
 check_hermes_runtime() {
   home="$1"
-  # Capture the match: `find -exec grep -l ... +` exits with find's status, which is 0
-  # whether or not grep matched anything, and would report every Hermes install wired.
-  hermes_match="$(find "$home" -maxdepth 2 -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.toml' \) \
-    -exec grep -l 'completion_gate\.sh' {} + 2>/dev/null || true)"
-  if [ -n "$hermes_match" ]; then
-    report_ok "Hermes: completion_gate.sh referenced from its configuration"
-    gate_wired=1
-  else
-    report_warn "Hermes: nothing wires the completion gate; a queued commit can go unnoticed on this runtime"
-    note_step "Hermes: invoke completion_gate.sh at end of turn from its configuration under $(redact "$home")."
-  fi
+  report_info "Hermes: skills.external_dirs provides skill discovery; no publishing gate is required"
 }
 
 # A `while read` loop would run in a subshell and lose gate_wired; feed it from a

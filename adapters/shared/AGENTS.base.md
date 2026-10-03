@@ -109,6 +109,16 @@ Agent and model selection:
 Break work into units that are atomic but meaningful. A cohesive feature is one task; do not
 fragment it, and do not bundle unrelated changes together.
 
+Never pay for the same answer twice. A subagent costs about as much as a small task on its own, so
+delegation has to buy something you would otherwise have to do yourself:
+
+- Once a research agent is launched, either wait for its findings or do not launch it. Reading the
+  same files yourself while it runs pays for the answer twice, and its report arrives after the
+  work it was meant to inform is already done.
+- Do not delegate research into an area that is already established in the current context. The
+  second task in the same part of the codebase rarely needs a fresh exploration pass.
+- Give every delegated agent a question it alone can answer. "Understand this area" is not one.
+
 ## Authoring and Review Are Separate Passes
 
 - An authoring pass creates or revises content. A review pass evaluates it afterwards, in a
@@ -119,6 +129,10 @@ fragment it, and do not bundle unrelated changes together.
 - Cost policy: one mid-tier reviewer for routine changes; a second reviewer only for a genuinely
   different risk surface; the deepest tier only for security-sensitive, architectural, or
   interdependent changes.
+- Batch the review. One pass over the finished change beats a pass after every step: the
+  intermediate states are about to be rewritten anyway, and each pass re-reads the same files.
+- Apply review findings with targeted edits. Rewriting a whole file to change a few lines is the
+  most common silent cost of a review iteration, and it buries the actual fix in the diff.
 - Severity handling: minor issues are noted and work continues; major issues are fixed before
   completion; critical issues stop the work and are reported.
 
@@ -162,6 +176,10 @@ elsewhere in the codebase.
 
 - When an orchestrated workflow defines phases, follow them in order. Do not skip assessment and
   planning to start editing files.
+- Size the ceremony to the task. Phase-driven orchestration is for multi-file, ambiguous, or
+  risky work. When a request touches one or two files in an area you already understand, go from a
+  short scoping read to the change and a single validation pass, and say that is what you are
+  doing — the full flow can cost more than the work it governs.
 - Do not run pipelines or test suites locally when the user says they will trigger them. Wait and
   read their output instead.
 - Do not add optional dependencies (loggers, reporters, telemetry) or auto-configure integrations

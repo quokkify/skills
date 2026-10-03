@@ -22,17 +22,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out full repository history
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: quokkify/project-toolkit/actions/checkout@v2.24.0
         with:
           fetch-depth: 0
 
       - name: Set up Python and Copier
-        uses: quokkify/project-toolkit/actions/setup-python@v2.20.1
+        uses: quokkify/project-toolkit/actions/setup-python@v2.24.0
         with:
           python-version: "3.14"
           package-manager: pip
           cache-dependencies: "false"
-          install-command: python -m pip install copier==9.18.1
+          install-command: python -m pip install copier==9.18.2
 
       - name: Apply the template and push the update branch
         env:
@@ -46,17 +46,83 @@ jobs:
           if [[ -z "$ref" ]]; then
             ref="$(gh release view --repo quokkify/project-toolkit --json tagName --jq .tagName)"
           fi
+
+          # Manual refs are an explicit trust boundary: only published, stable,
+          # exact release tags may select the template used with contents:write.
+          if [[ ! "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            printf 'Refused template ref %s: only exact SemVer release tags are allowed.\n' "$ref" >&2
+            exit 1
+          fi
+          release_json="$(gh release view "$ref" --repo quokkify/project-toolkit --json tagName,publishedAt,isDraft,isPrerelease)"
+          if ! jq -e --arg expected "$ref" '
+            .tagName == $expected and
+            (.publishedAt | type == "string" and length > 0) and
+            (.isDraft == false) and
+            (.isPrerelease == false)
+          ' <<<"$release_json" >/dev/null; then
+            printf 'Refused template ref %s: it is not an exact published stable release tag.\n' "$ref" >&2
+            exit 1
+          fi
           echo "Updating to project-toolkit $ref"
 
           git switch -C "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          answers = yaml.safe_load(Path('.copier-answers.yml').read_text())
+          components = answers.get('components') if isinstance(answers, dict) else None
+          missing = [
+              str(component.get('path', index))
+              for index, component in enumerate(components or [])
+              if isinstance(component, dict)
+              and ('id' not in component or 'name' not in component)
+          ]
+          if missing:
+              raise SystemExit(
+                  'Breaking component migration requires explicit id and name for: '
+                  + ', '.join(missing)
+              )
+          PY
+
           command=(copier update --trust --defaults --conflict=rej --skip-tasks --vcs-ref "$ref")
           if [[ "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             command+=(--data "toolkit_version=$ref")
           fi
           "${command[@]}" .
+
+          # Copier deliberately preserves files with local edits, even when the
+          # answers already name this ref. Verify the executable release helper
+          # against the selected template revision on every run, including a
+          # same-ref update. Do not overwrite a consumer customization here.
+          helper=".github/scripts/enrich_release_notes.py"
+          release_please="$(python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          answers = yaml.safe_load(Path('.copier-answers.yml').read_text())
+          print('true' if isinstance(answers, dict) and answers.get('release_please') is True else 'false')
+          PY
+          )"
+          if [[ "$release_please" == "true" && ! -f "$helper" ]]; then
+            printf 'Refusing template update: %s is missing while release_please is enabled. Restore the helper, then rerun.\n' "$helper" >&2
+            exit 1
+          fi
+          if [[ -f "$helper" ]]; then
+            template_helper="$(mktemp)"
+            trap 'rm -f "$template_helper"' EXIT
+            git fetch --quiet --depth=1 https://github.com/quokkify/project-toolkit.git \
+              "refs/tags/$ref"
+            git show "FETCH_HEAD:templates/project/template/.github/scripts/enrich_release_notes.py.jinja" \
+              > "$template_helper"
+            if ! cmp -s "$template_helper" "$helper"; then
+              printf 'Refusing template update: %s differs from project-toolkit %s. Reconcile this project-owned/customized helper with the template, then rerun.\n' "$helper" "$ref" >&2
+              exit 1
+            fi
+          fi
 
           # A partial update is never pushed. Conflicts fail the run the same way the fleet
           # automation fails a repository, so the branch never holds a half-applied template
@@ -68,12 +134,14 @@ jobs:
             exit 1
           fi
 
-          if git diff --quiet && git diff --cached --quiet; then
+          # Stage before checking for changes so Copier-created untracked files
+          # are included in the no-op decision.
+          git add --all
+          if git diff --cached --quiet; then
             printf 'Already up to date with %s; nothing to push.\n' "$ref" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
-          git add --all
           git diff --cached --check
           git commit -m "chore(template): update shared project template"
 
