@@ -1,1 +1,0 @@
-{"id":"97694334bbc95b453bdd4e1aee376614","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_pre_push_checks_each_commit_on_existing_ref_without_remote_query","name":"test_pre_push_checks_each_commit_on_existing_ref_without_remote_query","status":"passed","testResultsByEnv":{"default":"37c4dc47742844469b0d201692e4a40a"}}

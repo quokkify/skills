@@ -1,1 +1,0 @@
-{"id":"3501b06484d11482b762e1dc066cd1e9.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_failing_npx_prints_warning_but_keeps_installed_files","name":"test_failing_npx_prints_warning_but_keeps_installed_files","status":"passed","testResultsByEnv":{"default":"66d6e565f7aa19fbd1e9e529a1a2e64e"}}

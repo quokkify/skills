@@ -1,1 +1,0 @@
-{"id":"e8c8055dace5a311e1ec3926f02d3d6d.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_dry_run_uses_same_lock_as_real_run","name":"test_dry_run_uses_same_lock_as_real_run","status":"passed","testResultsByEnv":{"default":"341637b6ce08386707e8bf77b0a5a1fc"}}
