@@ -2,7 +2,7 @@
 
 **A portable operating layer for AI agents: shared skills, recoverable configuration, and safer execution harnesses.**
 
-Generated with `quokkify/project-toolkit` at `v2.19.0`. Run `copier update` to apply future template changes; the toolkit owns the versions inside the workflows it renders, and Renovate updates the remaining action references independently.
+Generated with `quokkify/ci-kit` at `v2.19.0`. Run `copier update` to apply future template changes; the toolkit owns the versions inside the workflows it renders, and Renovate updates the remaining action references independently.
 
 ![Skills ecosystem: public hub, private configuration vault, and agent harness](https://raw.githubusercontent.com/quokkify/.github/main/assets/diagrams/skills-ecosystem.svg)
 
@@ -160,7 +160,7 @@ Gitleaks `8.30.1` or newer must be available on `PATH` or through `GITLEAKS_BIN`
 
 ## Update Project Scaffolding
 
-The repository records its `quokkify/project-toolkit` template source and answers in [`.copier-answers.yml`](.copier-answers.yml). From a clean checkout, review and apply template updates with:
+The repository records its `quokkify/ci-kit` template source and answers in [`.copier-answers.yml`](.copier-answers.yml). From a clean checkout, review and apply template updates with:
 
 ```bash
 copier update --trust
