@@ -12,7 +12,7 @@ MANIFEST_PATH = REPOSITORY_ROOT / ".github" / "release-please" / "manifest.json"
 WORKFLOW_PATH = REPOSITORY_ROOT / ".github" / "workflows" / "release.yml"
 ANSWERS_PATH = REPOSITORY_ROOT / ".copier-answers.yml"
 
-TOOLKIT_RELEASE_WORKFLOW = "quokkify/project-toolkit/.github/workflows/release-please.yml"
+TOOLKIT_RELEASE_WORKFLOW = "quokkify/ci-kit/.github/workflows/release-please.yml"
 TOOLKIT_USES_MARKER = f"uses: {TOOLKIT_RELEASE_WORKFLOW}@"
 
 

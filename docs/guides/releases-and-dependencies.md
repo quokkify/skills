@@ -1,6 +1,6 @@
 # Releases and dependency updates
 
-This repository uses Release Please for versioning and changelog generation, and Renovate for pinned GitHub Actions updates. The workflows rendered by the `quokkify/project-toolkit` Copier template are the exception: the toolkit owns the versions inside them and delivers them through `copier update`.
+This repository uses Release Please for versioning and changelog generation, and Renovate for pinned GitHub Actions updates. The workflows rendered by the `quokkify/ci-kit` Copier template are the exception: the toolkit owns the versions inside them and delivers them through `copier update`.
 
 ## Release flow
 
@@ -42,7 +42,7 @@ It executes `renovate-config-validator --strict .github/renovate.json`. Renovate
 
 ## Toolkit references
 
-Every workflow that calls `quokkify/project-toolkit` references it at the version recorded as `toolkit_version` in `.copier-answers.yml`, in one of two accepted forms:
+Every workflow that calls `quokkify/ci-kit` references it at the version recorded as `toolkit_version` in `.copier-answers.yml`, in one of two accepted forms:
 
 - the exact release tag, for example `@v2.19.0` — what the template renders, and what every consumer that calls the toolkit's release workflow uses;
 - a full 40-character commit digest carrying that tag as a comment, for example `@7bc13e13… # v2.19.0`.
