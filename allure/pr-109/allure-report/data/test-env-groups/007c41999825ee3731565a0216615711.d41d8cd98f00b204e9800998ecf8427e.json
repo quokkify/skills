@@ -1,1 +1,0 @@
-{"id":"007c41999825ee3731565a0216615711.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_sidecar_nftables_recipe.SidecarNftablesRecipeTests#test_recipe_applies_expected_atomic_ruleset","name":"test_recipe_applies_expected_atomic_ruleset","status":"passed","testResultsByEnv":{"default":"caf030ab7bcd90d2949b8b7a99647a88"}}
