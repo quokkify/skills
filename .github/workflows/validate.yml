@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out repository
-        uses: quokkify/ci-kit/actions/checkout@v3.0.1
+        uses: quokkify/ci-kit/actions/checkout@v3.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -115,7 +115,7 @@ jobs:
 
   app-python:
     name: "App Python"
-    uses: quokkify/ci-kit/.github/workflows/python-ci.yml@v3.0.1
+    uses: quokkify/ci-kit/.github/workflows/python-ci.yml@v3.0.2
     with:
       working-directory: "."
       install-command: "python -m pip install pytest allure-pytest"
