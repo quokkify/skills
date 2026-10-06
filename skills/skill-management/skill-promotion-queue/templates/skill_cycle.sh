@@ -152,7 +152,13 @@ sync_hub() {
     log "skip hub-sync — hub branch has no upstream"
     return 0
   fi
-  quiet_fetch "$hub" || log "warn hub-sync — fetch failed; comparing with the last fetched refs"
+  # Cached refs prove nothing about freshness: if they happen to equal HEAD while the
+  # upstream has moved on, the hub would pass as current and stage false candidates.
+  if ! quiet_fetch "$hub"; then
+    hub_stuck="hub fetch failed, so the checkout cannot be confirmed current"
+    log "skip hub-sync — $hub_stuck"
+    return 0
+  fi
   if ! behind="$(git -C "$hub" rev-list --count 'HEAD..@{u}' 2>/dev/null)"; then
     log "skip hub-sync — cannot compare the hub with its upstream"
     return 0
@@ -175,7 +181,11 @@ sync_hub() {
 
 sync_hub
 run_step "health-review" "$HEALTH_DIR/health-review.sh"
-run_step "skill_upgrade" "$HERE/skill_upgrade.sh"
+if [ -z "$hub_stuck" ] || [ "${SKILL_UPGRADE_ALLOW_STALE_HUB:-0}" = "1" ]; then
+  run_step "skill_upgrade" "$HERE/skill_upgrade.sh"
+else
+  log "skip skill_upgrade — $hub_stuck"
+fi
 run_step "skill_prune" "$HERE/skill_prune.sh"
 
 after="$(list_candidates)"
@@ -203,7 +213,7 @@ fi
 if [ -n "$hub_stuck" ]; then
   {
     printf 'Skill cycle: %s (%s).\n' "$hub_stuck" "${SKILL_HARNESS_MAIN:-}"
-    printf '  Upgrade candidates are suppressed until it is fast-forwarded.\n'
+    printf '  Upgrade candidates are suppressed until the hub checkout is fetched and fast-forwarded.\n'
   } >> "$NOTICE" 2>/dev/null || true
 fi
 

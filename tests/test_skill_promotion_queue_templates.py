@@ -404,7 +404,7 @@ class StaleHubTests(TemplateFixture):
 
     def run_cycle(self) -> Path:
         harness = self.root / "harness"
-        harness.mkdir()
+        harness.mkdir(exist_ok=True)
         (harness / "skill_cycle.sh").write_bytes(CYCLE.read_bytes())
         self.write(harness / "config.env", f"SKILL_HARNESS_MAIN={self.hub}\n")
         result = self.run_template(harness / "skill_cycle.sh", "--force")
@@ -444,6 +444,20 @@ class StaleHubTests(TemplateFixture):
         self.run_cycle()
         self.assertEqual(self.git(self.hub, "rev-parse", "HEAD"), before)
         self.assertIn("cannot fast-forward and is 1 commit(s) behind", self.cycle_log())
+
+    def test_cycle_skips_staging_when_the_fetch_fails(self) -> None:
+        """Cached refs equal HEAD, upstream moved on and is unreachable: stage nothing."""
+        self.stale_demo(behind=0)
+        self.push_upstream("unreachable")
+        self.git(self.hub, "remote", "set-url", "origin", str(self.root / "missing.git"))
+        harness = self.root / "harness"
+        harness.mkdir()
+        (harness / "skill_upgrade.sh").write_bytes(UPGRADE.read_bytes())
+
+        self.run_cycle()
+        self.assertEqual(self.candidates(), [])
+        self.assertIn("skip skill_upgrade — hub fetch failed", self.cycle_log())
+        self.assertIn("suppressed", (harness / ".cycle-notice").read_text(encoding="utf-8"))
 
     def test_adopt_fetches_before_trusting_the_hub(self) -> None:
         """Refs from the last fetch say current; upstream moved since. --adopt must notice."""
