@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Cadence driver for the whole skill-maintenance chain: refresh the health signal, stage
-# upgrade candidates for skills that diverged from the hub, and refresh the prune
-# assessment. Stages and reports only — it never publishes, deletes, or edits a skill.
+# Cadence driver for the whole skill-maintenance chain: fast-forward the hub checkout when
+# safe, refresh the health signal, stage upgrade candidates for skills that diverged from
+# the hub, and refresh the prune assessment. Stages and reports only — it never
+# publishes, deletes, or edits a skill.
 #
 # Registered as an async SessionStart hook, so it must be silent, bounded, and incapable
 # of failing a session start: every step is optional, every failure is swallowed, and the
@@ -38,7 +39,7 @@ case "${1:-}" in
   -h|--help)
     echo "Usage: skill_cycle.sh [--force]"
     echo
-    echo "  Runs health-review -> skill_upgrade -> skill_prune at most once every"
+    echo "  Runs hub-sync -> health-review -> skill_upgrade -> skill_prune at most once every"
     echo "  SKILL_CYCLE_INTERVAL_DAYS days (currently ${INTERVAL_DAYS}). --force ignores the stamp."
     exit 0
     ;;
@@ -118,8 +119,73 @@ run_step() {
   return 0
 }
 
+# Fetch without ever prompting: an unattended or scripted run must fail fast instead of
+# waiting on a terminal, askpass dialog, or credential-manager sign-in. Low-speed and
+# keepalive limits bound a stalled transfer. SSH options are added only when git would
+# otherwise run plain OpenSSH; a configured GIT_SSH_COMMAND, GIT_SSH, or core.sshCommand
+# is left exactly as set, since a wrapper or plink may reject `-o`.
+quiet_fetch() {
+  local repo="$1"
+  if [ -z "${GIT_SSH_COMMAND:-}" ] && [ -z "${GIT_SSH:-}" ] \
+    && [ -z "$(git -C "$repo" config core.sshCommand 2>/dev/null || true)" ]; then
+    set -- env GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
+  else
+    set -- env
+  fi
+  "$@" GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= SSH_ASKPASS= GCM_INTERACTIVE=never \
+    git -C "$repo" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --quiet >/dev/null 2>&1
+}
+
+# Divergence is measured against SKILL_HARNESS_MAIN, which nothing else in the loop
+# advances. Fast-forward it only when that is provably safe; otherwise leave it as is
+# and let skill_upgrade.sh refuse to stage against it. Never resets, rebases, or stashes.
+# A hub left behind is surfaced in the notice: from then on the intake stages nothing,
+# and without the notice that silence would look like a healthy library.
+hub_stuck=""
+sync_hub() {
+  local hub="${SKILL_HARNESS_MAIN:-}" behind
+  if [ -z "$hub" ] || [ ! -e "$hub/.git" ]; then
+    log "skip hub-sync — SKILL_HARNESS_MAIN is not a git checkout"
+    return 0
+  fi
+  if ! git -C "$hub" rev-parse --verify --quiet '@{u}' >/dev/null 2>&1; then
+    log "skip hub-sync — hub branch has no upstream"
+    return 0
+  fi
+  # Cached refs prove nothing about freshness: if they happen to equal HEAD while the
+  # upstream has moved on, the hub would pass as current and stage false candidates.
+  if ! quiet_fetch "$hub"; then
+    hub_stuck="hub fetch failed, so the checkout cannot be confirmed current"
+    log "skip hub-sync — $hub_stuck"
+    return 0
+  fi
+  if ! behind="$(git -C "$hub" rev-list --count 'HEAD..@{u}' 2>/dev/null)"; then
+    log "skip hub-sync — cannot compare the hub with its upstream"
+    return 0
+  fi
+  if [ "$behind" = "0" ]; then
+    log "ok   hub-sync (already current)"
+    return 0
+  fi
+  if [ -n "$(git -C "$hub" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+    hub_stuck="hub checkout has uncommitted tracked changes and is $behind commit(s) behind its upstream"
+  elif git -C "$hub" merge --ff-only --quiet '@{u}' >/dev/null 2>&1; then
+    log "ok   hub-sync (fast-forwarded $behind commit(s))"
+    return 0
+  else
+    hub_stuck="hub checkout cannot fast-forward and is $behind commit(s) behind its upstream"
+  fi
+  log "skip hub-sync — $hub_stuck"
+  return 0
+}
+
+sync_hub
 run_step "health-review" "$HEALTH_DIR/health-review.sh"
-run_step "skill_upgrade" "$HERE/skill_upgrade.sh"
+if [ -z "$hub_stuck" ] || [ "${SKILL_UPGRADE_ALLOW_STALE_HUB:-0}" = "1" ]; then
+  run_step "skill_upgrade" "$HERE/skill_upgrade.sh"
+else
+  log "skip skill_upgrade — $hub_stuck"
+fi
 run_step "skill_prune" "$HERE/skill_prune.sh"
 
 after="$(list_candidates)"
@@ -142,6 +208,13 @@ if [ -n "$new_files" ]; then
   log "cycle end — $new_count new candidate file(s), stale=$stale_count, ok=$steps_ok fail=$steps_failed"
 else
   log "cycle end — no new candidates, stale=$stale_count, ok=$steps_ok fail=$steps_failed"
+fi
+
+if [ -n "$hub_stuck" ]; then
+  {
+    printf 'Skill cycle: %s (%s).\n' "$hub_stuck" "${SKILL_HARNESS_MAIN:-}"
+    printf '  Upgrade candidates are suppressed until the hub checkout is fetched and fast-forwarded.\n'
+  } >> "$NOTICE" 2>/dev/null || true
 fi
 
 if [ -f "$LOG" ]; then

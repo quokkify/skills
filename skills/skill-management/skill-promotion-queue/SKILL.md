@@ -108,7 +108,7 @@ For another machine or runtime, start with `templates/local-agent-bootstrap.md`.
 | `publish.sh` | — | Thin wrapper around `scripts/publish_queue.py`. `--target primary\|secondary`. |
 | `skill_upgrade.sh` | — | Stages an upgrade candidate per skill whose installed `SKILL.md` diverged from the hub. |
 | `skill_prune.sh` | — | Verdict report for never-triggered skills. Deletes nothing on its own. |
-| `skill_cycle.sh` | SessionStart (async) | Chains the three above on a cadence. Silent, always exits 0. |
+| `skill_cycle.sh` | SessionStart (async) | Fast-forwards the hub checkout when safe, then chains the three above on a cadence. Silent, always exits 0. |
 
 Install them on a machine with:
 
@@ -131,6 +131,8 @@ Both read a machine-local health signal (`state.tsv`: one row per installed skil
 The two checksums cover the **whole skill directory**, not just `SKILL.md`. A skill's behaviour often lives in the files beside its entry point, so a digest over `SKILL.md` alone reports a skill as in-sync while its bundled scripts have diverged — the divergence is real, invisible, and grows. Any collection layer feeding this signal must digest every file in the skill directory, excluding only generated noise such as `.DS_Store` and `__pycache__`. Both write paths follow the same rule: the upgrade candidate carries a recursive diff that names added and deleted files, and `--adopt` replaces the entire directory so a file deleted locally is also dropped from the hub copy.
 
 The usage count has a blind spot that no amount of waiting closes. It records `Skill` tool invocations, so a skill whose working surface is a bundled executable — run directly, never through the tool — stays at zero uses forever. `skill_prune.sh` therefore holds any skill that ships a runnable file — anything executable, `.sh`, or `.py`, in `scripts/`, `templates/`, or anywhere else beside the entry point — at `keep-unobservable-usage`, and never counts its silence as evidence of disuse. Absence of use is evidence only where use would have been observable.
+
+Divergence is relative to `SKILL_HARNESS_MAIN`, and nothing in the publishing loop advances that checkout: improvements reach the default branch through the lane PR, never through it. A checkout left behind its upstream therefore reports every change merged since as a local divergence, re-stages the same candidates every cycle, and turns `--adopt` into a silent revert of upstream work. `skill_cycle.sh` fetches the checkout without prompting and fast-forwards it only when no tracked file is modified and the move is a pure fast-forward; it never resets, rebases, or stashes, and when it cannot advance a checkout that is behind it says so in the cycle notice. `skill_upgrade.sh` compares the checkout with its upstream and, when it is behind, stages nothing and refuses `--adopt` with a non-zero exit. Staging trusts the refs the cycle just fetched, and the cycle skips staging altogether when that fetch fails, because cached refs prove nothing about freshness; `--adopt` fetches again first, because it writes to the lane and may run long after the last cycle. `SKILL_UPGRADE_ALLOW_STALE_HUB=1` overrides the guard for offline use; a checkout without an upstream only draws a warning. A candidate that keeps coming back unchanged usually means a stale hub, not a pending improvement — compare the installed copy with the upstream default branch before reviewing it.
 
 Two write paths exist, and each requires an explicit flag, never a cadence run:
 

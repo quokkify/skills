@@ -30,6 +30,7 @@ TEMPLATES = (
     REPOSITORY_ROOT / "skills" / "skill-management" / "skill-promotion-queue" / "templates"
 )
 UPGRADE = TEMPLATES / "skill_upgrade.sh"
+CYCLE = TEMPLATES / "skill_cycle.sh"
 PRUNE = TEMPLATES / "skill_prune.sh"
 
 SKILL_BODY = "---\nname: {name}\ndescription: {name} does a thing\n---\n\nBody.\n"
@@ -321,6 +322,161 @@ class UnobservableUsageTests(TemplateFixture):
         result = self.run_template(PRUNE)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("keep-unobservable-usage=0", result.stdout)
+
+
+class StaleHubTests(TemplateFixture):
+    """Regression guard: divergence measured against a hub checkout behind its upstream."""
+
+    def git(self, cwd: Path, *arguments: str) -> str:
+        environment = dict(os.environ)
+        environment.update(GIT_IDENTITY)
+        environment["GIT_CONFIG_GLOBAL"] = os.devnull
+        return subprocess.run(
+            ["git", *arguments], cwd=cwd, env=environment, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    def stale_demo(self, *, behind: int) -> None:
+        """A stale `demo` skill, with the hub checkout `behind` commits behind its upstream."""
+        hub = self.hub_skill("demo")
+        self.install_skill("demo", files={"scripts/run.sh": "echo improved\n"})
+        self.write_state([("demo", 0, "stale", str(hub / "SKILL.md"))])
+
+        self.git(self.hub, "init", "-q", "-b", "main")
+        self.git(self.hub, "add", "-A")
+        self.git(self.hub, "commit", "-q", "-m", "seed")
+        upstream = self.root / "upstream.git"
+        self.git(self.root, "clone", "-q", "--bare", str(self.hub), str(upstream))
+        self.git(self.hub, "remote", "add", "origin", str(upstream))
+        self.git(self.hub, "fetch", "-q", "origin")
+        self.git(self.hub, "branch", "-q", "--set-upstream-to=origin/main")
+
+        other = self.root / "other"
+        self.git(self.root, "clone", "-q", str(upstream), str(other))
+        for index in range(behind):
+            self.write(other / f"merged-{index}.md", "merged upstream\n")
+            self.git(other, "add", "-A")
+            self.git(other, "commit", "-q", "-m", f"merged {index}")
+        if behind:
+            self.git(other, "push", "-q", "origin", "main")
+            self.git(self.hub, "fetch", "-q", "origin")
+
+    def push_upstream(self, name: str) -> None:
+        other = self.root / "other"
+        self.write(other / f"{name}.md", "merged upstream later\n")
+        self.git(other, "add", "-A")
+        self.git(other, "commit", "-q", "-m", name)
+        self.git(other, "push", "-q", "origin", "main")
+
+    def cycle_log(self) -> str:
+        return (self.config / "skill-health" / "cycle.log").read_text(encoding="utf-8")
+
+    def candidates(self) -> list[Path]:
+        return sorted((self.config / "skill-candidates").glob("*-upgrade-*.md"))
+
+    def test_hub_behind_upstream_stages_nothing(self) -> None:
+        self.stale_demo(behind=2)
+
+        result = self.run_template(UPGRADE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("2 commit(s) behind", result.stdout)
+        self.assertEqual(self.candidates(), [])
+
+    def test_adopt_against_a_stale_hub_is_refused(self) -> None:
+        self.stale_demo(behind=1)
+
+        result = self.run_template(UPGRADE, "--adopt", "demo")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("1 commit(s) behind", result.stderr)
+
+    def test_current_hub_still_stages_candidates(self) -> None:
+        self.stale_demo(behind=0)
+
+        result = self.run_template(UPGRADE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(self.candidates()), 1)
+
+    def test_override_stages_despite_a_stale_hub(self) -> None:
+        self.stale_demo(behind=1)
+
+        result = self.run_template(UPGRADE, extra_env={"SKILL_UPGRADE_ALLOW_STALE_HUB": "1"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(self.candidates()), 1)
+
+    def run_cycle(self) -> Path:
+        harness = self.root / "harness"
+        harness.mkdir(exist_ok=True)
+        (harness / "skill_cycle.sh").write_bytes(CYCLE.read_bytes())
+        self.write(harness / "config.env", f"SKILL_HARNESS_MAIN={self.hub}\n")
+        result = self.run_template(harness / "skill_cycle.sh", "--force")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return harness
+
+    def test_cycle_fast_forwards_a_clean_hub(self) -> None:
+        self.stale_demo(behind=0)
+        self.push_upstream("late")
+
+        self.run_cycle()
+        self.assertEqual(
+            self.git(self.hub, "rev-parse", "HEAD"), self.git(self.root / "other", "rev-parse", "HEAD")
+        )
+        self.assertIn("fast-forwarded 1 commit(s)", self.cycle_log())
+
+    def test_cycle_leaves_a_dirty_hub_untouched(self) -> None:
+        self.stale_demo(behind=1)
+        before = self.git(self.hub, "rev-parse", "HEAD")
+        self.write(self.hub / "skills" / "cat" / "demo" / "SKILL.md", "local edit\n")
+
+        harness = self.run_cycle()
+        self.assertEqual(self.git(self.hub, "rev-parse", "HEAD"), before)
+        self.assertEqual(
+            (self.hub / "skills" / "cat" / "demo" / "SKILL.md").read_text(encoding="utf-8"), "local edit\n"
+        )
+        self.assertIn("uncommitted tracked changes and is 1 commit(s) behind", self.cycle_log())
+        self.assertIn("suppressed", (harness / ".cycle-notice").read_text(encoding="utf-8"))
+
+    def test_cycle_leaves_a_diverged_hub_untouched(self) -> None:
+        self.stale_demo(behind=1)
+        self.write(self.hub / "local.md", "local commit\n")
+        self.git(self.hub, "add", "-A")
+        self.git(self.hub, "commit", "-q", "-m", "local")
+        before = self.git(self.hub, "rev-parse", "HEAD")
+
+        self.run_cycle()
+        self.assertEqual(self.git(self.hub, "rev-parse", "HEAD"), before)
+        self.assertIn("cannot fast-forward and is 1 commit(s) behind", self.cycle_log())
+
+    def test_cycle_skips_staging_when_the_fetch_fails(self) -> None:
+        """Cached refs equal HEAD, upstream moved on and is unreachable: stage nothing."""
+        self.stale_demo(behind=0)
+        self.push_upstream("unreachable")
+        self.git(self.hub, "remote", "set-url", "origin", str(self.root / "missing.git"))
+        harness = self.root / "harness"
+        harness.mkdir()
+        (harness / "skill_upgrade.sh").write_bytes(UPGRADE.read_bytes())
+
+        self.run_cycle()
+        self.assertEqual(self.candidates(), [])
+        self.assertIn("skip skill_upgrade — hub fetch failed", self.cycle_log())
+        self.assertIn("suppressed", (harness / ".cycle-notice").read_text(encoding="utf-8"))
+
+    def test_adopt_fetches_before_trusting_the_hub(self) -> None:
+        """Refs from the last fetch say current; upstream moved since. --adopt must notice."""
+        self.stale_demo(behind=0)
+        self.push_upstream("unfetched")
+
+        result = self.run_template(UPGRADE, "--adopt", "demo")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("1 commit(s) behind", result.stderr)
+
+    def test_hub_without_upstream_only_warns(self) -> None:
+        hub = self.hub_skill("demo")
+        self.install_skill("demo", files={"scripts/run.sh": "echo improved\n"})
+        self.write_state([("demo", 0, "stale", str(hub / "SKILL.md"))])
+
+        result = self.run_template(UPGRADE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("no upstream", result.stderr)
+        self.assertEqual(len(self.candidates()), 1)
 
 
 if __name__ == "__main__":
