@@ -1,1 +1,0 @@
-{"id":"88cf6ba153d0e4ae458bea258b4315fd.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_caddy_runbook_safety.CaddyRunbookSafetyTests#test_restart_policy_round_trip_preserves_on_failure_retry_count","name":"test_restart_policy_round_trip_preserves_on_failure_retry_count","status":"passed","testResultsByEnv":{"default":"a94dc1b97fcbb56ad8a1e1a99e994e68"}}
