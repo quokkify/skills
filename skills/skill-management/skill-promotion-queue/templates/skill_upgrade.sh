@@ -42,6 +42,9 @@ Usage: skill_upgrade.sh [--top N] [--force] [--adopt <skill-name>]
   --force            overwrite an existing candidate for today instead of skipping
   --adopt <skill>    commit the installed SKILL.md over its hub copy in the lane
                      worktree (explicit approval step; never pushes)
+
+Stages nothing, and refuses --adopt, while the hub checkout is behind its upstream.
+Set SKILL_UPGRADE_ALLOW_STALE_HUB=1 to skip that check (offline use).
 EOF
 }
 
@@ -93,29 +96,53 @@ if [ ! -d "$HUB_ROOT/skills" ]; then
   exit 0
 fi
 
+# Fetch without ever prompting: an unattended or scripted run must fail fast instead of
+# waiting on a terminal, askpass dialog, or credential-manager sign-in. Low-speed and
+# keepalive limits bound a stalled transfer. SSH options are added only when git would
+# otherwise run plain OpenSSH; a configured GIT_SSH_COMMAND, GIT_SSH, or core.sshCommand
+# is left exactly as set, since a wrapper or plink may reject `-o`.
+quiet_fetch() {
+  local repo="$1"
+  if [ -z "${GIT_SSH_COMMAND:-}" ] && [ -z "${GIT_SSH:-}" ] \
+    && [ -z "$(git -C "$repo" config core.sshCommand 2>/dev/null || true)" ]; then
+    set -- env GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
+  else
+    set -- env
+  fi
+  "$@" GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= SSH_ASKPASS= GCM_INTERACTIVE=never \
+    git -C "$repo" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --quiet >/dev/null 2>&1
+}
+
 # A divergence is only meaningful against a current hub. Nothing in the queue loop
 # advances SKILL_HARNESS_MAIN, so a checkout left behind its upstream turns every change
 # merged since into a false local divergence, and --adopt would revert it in the lane.
-# This reads the refs of the last fetch and never touches the network; skill_cycle.sh
-# fetches before it runs this script.
-hub_behind_count() {
-  git -C "$HUB_ROOT" rev-parse --verify --quiet '@{u}' >/dev/null 2>&1 || return 1
-  git -C "$HUB_ROOT" rev-list --count 'HEAD..@{u}' 2>/dev/null
-}
-
-if behind="$(hub_behind_count)"; then
-  if [ "${behind:-0}" -gt 0 ] && [ "${SKILL_UPGRADE_ALLOW_STALE_HUB:-0}" != "1" ]; then
-    upstream="$(git -C "$HUB_ROOT" rev-parse --abbrev-ref '@{u}' 2>/dev/null || echo 'its upstream')"
-    stale_message="skill_upgrade: hub checkout $HUB_ROOT is $behind commit(s) behind $upstream — fast-forward it and rerun (SKILL_UPGRADE_ALLOW_STALE_HUB=1 overrides)."
-    if [ -n "$ADOPT" ]; then
-      echo "$stale_message" >&2
+# Staging reads the refs of the last fetch (skill_cycle.sh fetches just before it), but
+# --adopt fetches first: it writes to the lane, and refs a cycle interval old are exactly
+# the stale baseline this guard exists to catch.
+if [ "${SKILL_UPGRADE_ALLOW_STALE_HUB:-0}" != "1" ]; then
+  if ! git -C "$HUB_ROOT" rev-parse --verify --quiet '@{u}' >/dev/null 2>&1; then
+    echo "skill_upgrade: hub checkout $HUB_ROOT has no upstream to compare with — cannot confirm it is current." >&2
+  else
+    if [ -n "$ADOPT" ] && ! quiet_fetch "$HUB_ROOT"; then
+      echo "skill_upgrade: could not fetch $HUB_ROOT to confirm it is current — refusing to adopt (SKILL_UPGRADE_ALLOW_STALE_HUB=1 overrides)." >&2
       exit 1
     fi
-    echo "$stale_message"
-    exit 0
+    behind="$(git -C "$HUB_ROOT" rev-list --count 'HEAD..@{u}' 2>/dev/null)" || {
+      echo "skill_upgrade: cannot compare $HUB_ROOT with its upstream — nothing staged." >&2
+      [ -n "$ADOPT" ] && exit 1
+      exit 0
+    }
+    if [ "$behind" -gt 0 ]; then
+      upstream="$(git -C "$HUB_ROOT" rev-parse --abbrev-ref '@{u}' 2>/dev/null || echo 'its upstream')"
+      stale_message="skill_upgrade: hub checkout $HUB_ROOT is $behind commit(s) behind $upstream — fetch and fast-forward it, then rerun (SKILL_UPGRADE_ALLOW_STALE_HUB=1 overrides)."
+      if [ -n "$ADOPT" ]; then
+        echo "$stale_message" >&2
+        exit 1
+      fi
+      echo "$stale_message"
+      exit 0
+    fi
   fi
-else
-  echo "skill_upgrade: hub checkout $HUB_ROOT has no upstream to compare with — cannot confirm it is current." >&2
 fi
 
 # state.tsv columns: name usage mtime installed_sha hub_path hub_sha state

@@ -324,13 +324,13 @@ class UnobservableUsageTests(TemplateFixture):
         self.assertIn("keep-unobservable-usage=0", result.stdout)
 
 
-
 class StaleHubTests(TemplateFixture):
     """Regression guard: divergence measured against a hub checkout behind its upstream."""
 
     def git(self, cwd: Path, *arguments: str) -> str:
         environment = dict(os.environ)
         environment.update(GIT_IDENTITY)
+        environment["GIT_CONFIG_GLOBAL"] = os.devnull
         return subprocess.run(
             ["git", *arguments], cwd=cwd, env=environment, check=True, capture_output=True, text=True
         ).stdout.strip()
@@ -359,6 +359,16 @@ class StaleHubTests(TemplateFixture):
         if behind:
             self.git(other, "push", "-q", "origin", "main")
             self.git(self.hub, "fetch", "-q", "origin")
+
+    def push_upstream(self, name: str) -> None:
+        other = self.root / "other"
+        self.write(other / f"{name}.md", "merged upstream later\n")
+        self.git(other, "add", "-A")
+        self.git(other, "commit", "-q", "-m", name)
+        self.git(other, "push", "-q", "origin", "main")
+
+    def cycle_log(self) -> str:
+        return (self.config / "skill-health" / "cycle.log").read_text(encoding="utf-8")
 
     def candidates(self) -> list[Path]:
         return sorted((self.config / "skill-candidates").glob("*-upgrade-*.md"))
@@ -392,35 +402,67 @@ class StaleHubTests(TemplateFixture):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(self.candidates()), 1)
 
-    def run_cycle(self) -> None:
+    def run_cycle(self) -> Path:
         harness = self.root / "harness"
         harness.mkdir()
         (harness / "skill_cycle.sh").write_bytes(CYCLE.read_bytes())
         self.write(harness / "config.env", f"SKILL_HARNESS_MAIN={self.hub}\n")
         result = self.run_template(harness / "skill_cycle.sh", "--force")
         self.assertEqual(result.returncode, 0, result.stderr)
+        return harness
 
     def test_cycle_fast_forwards_a_clean_hub(self) -> None:
         self.stale_demo(behind=0)
-        other = self.root / "other"
-        self.write(other / "late.md", "merged after the last fetch\n")
-        self.git(other, "add", "-A")
-        self.git(other, "commit", "-q", "-m", "late")
-        self.git(other, "push", "-q", "origin", "main")
+        self.push_upstream("late")
 
         self.run_cycle()
-        self.assertEqual(self.git(self.hub, "rev-parse", "HEAD"), self.git(other, "rev-parse", "HEAD"))
+        self.assertEqual(
+            self.git(self.hub, "rev-parse", "HEAD"), self.git(self.root / "other", "rev-parse", "HEAD")
+        )
+        self.assertIn("fast-forwarded 1 commit(s)", self.cycle_log())
 
     def test_cycle_leaves_a_dirty_hub_untouched(self) -> None:
         self.stale_demo(behind=1)
         before = self.git(self.hub, "rev-parse", "HEAD")
         self.write(self.hub / "skills" / "cat" / "demo" / "SKILL.md", "local edit\n")
 
-        self.run_cycle()
+        harness = self.run_cycle()
         self.assertEqual(self.git(self.hub, "rev-parse", "HEAD"), before)
         self.assertEqual(
             (self.hub / "skills" / "cat" / "demo" / "SKILL.md").read_text(encoding="utf-8"), "local edit\n"
         )
+        self.assertIn("uncommitted tracked changes and is 1 commit(s) behind", self.cycle_log())
+        self.assertIn("suppressed", (harness / ".cycle-notice").read_text(encoding="utf-8"))
+
+    def test_cycle_leaves_a_diverged_hub_untouched(self) -> None:
+        self.stale_demo(behind=1)
+        self.write(self.hub / "local.md", "local commit\n")
+        self.git(self.hub, "add", "-A")
+        self.git(self.hub, "commit", "-q", "-m", "local")
+        before = self.git(self.hub, "rev-parse", "HEAD")
+
+        self.run_cycle()
+        self.assertEqual(self.git(self.hub, "rev-parse", "HEAD"), before)
+        self.assertIn("cannot fast-forward and is 1 commit(s) behind", self.cycle_log())
+
+    def test_adopt_fetches_before_trusting_the_hub(self) -> None:
+        """Refs from the last fetch say current; upstream moved since. --adopt must notice."""
+        self.stale_demo(behind=0)
+        self.push_upstream("unfetched")
+
+        result = self.run_template(UPGRADE, "--adopt", "demo")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("1 commit(s) behind", result.stderr)
+
+    def test_hub_without_upstream_only_warns(self) -> None:
+        hub = self.hub_skill("demo")
+        self.install_skill("demo", files={"scripts/run.sh": "echo improved\n"})
+        self.write_state([("demo", 0, "stale", str(hub / "SKILL.md"))])
+
+        result = self.run_template(UPGRADE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("no upstream", result.stderr)
+        self.assertEqual(len(self.candidates()), 1)
 
 
 if __name__ == "__main__":
