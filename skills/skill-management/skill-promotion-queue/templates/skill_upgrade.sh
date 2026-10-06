@@ -93,6 +93,31 @@ if [ ! -d "$HUB_ROOT/skills" ]; then
   exit 0
 fi
 
+# A divergence is only meaningful against a current hub. Nothing in the queue loop
+# advances SKILL_HARNESS_MAIN, so a checkout left behind its upstream turns every change
+# merged since into a false local divergence, and --adopt would revert it in the lane.
+# This reads the refs of the last fetch and never touches the network; skill_cycle.sh
+# fetches before it runs this script.
+hub_behind_count() {
+  git -C "$HUB_ROOT" rev-parse --verify --quiet '@{u}' >/dev/null 2>&1 || return 1
+  git -C "$HUB_ROOT" rev-list --count 'HEAD..@{u}' 2>/dev/null
+}
+
+if behind="$(hub_behind_count)"; then
+  if [ "${behind:-0}" -gt 0 ] && [ "${SKILL_UPGRADE_ALLOW_STALE_HUB:-0}" != "1" ]; then
+    upstream="$(git -C "$HUB_ROOT" rev-parse --abbrev-ref '@{u}' 2>/dev/null || echo 'its upstream')"
+    stale_message="skill_upgrade: hub checkout $HUB_ROOT is $behind commit(s) behind $upstream — fast-forward it and rerun (SKILL_UPGRADE_ALLOW_STALE_HUB=1 overrides)."
+    if [ -n "$ADOPT" ]; then
+      echo "$stale_message" >&2
+      exit 1
+    fi
+    echo "$stale_message"
+    exit 0
+  fi
+else
+  echo "skill_upgrade: hub checkout $HUB_ROOT has no upstream to compare with — cannot confirm it is current." >&2
+fi
+
 # state.tsv columns: name usage mtime installed_sha hub_path hub_sha state
 # The two checksums cover the whole skill directory, not just SKILL.md, so a change
 # confined to scripts/ or references/ still lands as `stale`. hub_path stays the path

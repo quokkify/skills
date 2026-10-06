@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Cadence driver for the whole skill-maintenance chain: refresh the health signal, stage
-# upgrade candidates for skills that diverged from the hub, and refresh the prune
-# assessment. Stages and reports only — it never publishes, deletes, or edits a skill.
+# Cadence driver for the whole skill-maintenance chain: fast-forward the hub checkout when
+# safe, refresh the health signal, stage upgrade candidates for skills that diverged from
+# the hub, and refresh the prune assessment. Stages and reports only — it never
+# publishes, deletes, or edits a skill.
 #
 # Registered as an async SessionStart hook, so it must be silent, bounded, and incapable
 # of failing a session start: every step is optional, every failure is swallowed, and the
@@ -38,7 +39,7 @@ case "${1:-}" in
   -h|--help)
     echo "Usage: skill_cycle.sh [--force]"
     echo
-    echo "  Runs health-review -> skill_upgrade -> skill_prune at most once every"
+    echo "  Runs hub-sync -> health-review -> skill_upgrade -> skill_prune at most once every"
     echo "  SKILL_CYCLE_INTERVAL_DAYS days (currently ${INTERVAL_DAYS}). --force ignores the stamp."
     exit 0
     ;;
@@ -118,6 +119,44 @@ run_step() {
   return 0
 }
 
+# Divergence is measured against SKILL_HARNESS_MAIN, which nothing else in the loop
+# advances. Fast-forward it only when that is provably safe; otherwise leave it as is
+# and let skill_upgrade.sh refuse to stage against it. Never resets, rebases, or stashes.
+# Prompts are disabled so an unattended run cannot block on credentials.
+sync_hub() {
+  local hub="${SKILL_HARNESS_MAIN:-}" ssh_command behind
+  if [ -z "$hub" ] || [ ! -e "$hub/.git" ]; then
+    log "skip hub-sync — SKILL_HARNESS_MAIN is not a git checkout"
+    return 0
+  fi
+  if ! git -C "$hub" rev-parse --verify --quiet '@{u}' >/dev/null 2>&1; then
+    log "skip hub-sync — hub branch has no upstream"
+    return 0
+  fi
+  ssh_command="${GIT_SSH_COMMAND:-$(git -C "$hub" config core.sshCommand 2>/dev/null || echo ssh)}"
+  if ! GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="$ssh_command -o BatchMode=yes -o ConnectTimeout=15" \
+    git -C "$hub" fetch --quiet >/dev/null 2>&1; then
+    log "skip hub-sync — fetch failed"
+    return 0
+  fi
+  behind="$(git -C "$hub" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)"
+  if [ "${behind:-0}" = "0" ]; then
+    log "ok   hub-sync (already current)"
+    return 0
+  fi
+  if [ -n "$(git -C "$hub" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+    log "skip hub-sync — hub checkout has local changes, $behind commit(s) behind"
+    return 0
+  fi
+  if git -C "$hub" merge --ff-only --quiet '@{u}' >/dev/null 2>&1; then
+    log "ok   hub-sync (fast-forwarded $behind commit(s))"
+  else
+    log "skip hub-sync — not a fast-forward, $behind commit(s) behind"
+  fi
+  return 0
+}
+
+sync_hub
 run_step "health-review" "$HEALTH_DIR/health-review.sh"
 run_step "skill_upgrade" "$HERE/skill_upgrade.sh"
 run_step "skill_prune" "$HERE/skill_prune.sh"
