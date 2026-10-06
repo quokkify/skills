@@ -1,0 +1,1 @@
+{"id":"f3e7210ea8c01a8ba52e1bf1cf8b6bdf.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_docker_image_retention_cleanup.DockerImageRetentionCleanupTests#test_dry_run_reports_deletion_without_mutating_state","name":"test_dry_run_reports_deletion_without_mutating_state","status":"passed","testResultsByEnv":{"default":"a41554f39ba8576e3fc6267444dc981e"}}
