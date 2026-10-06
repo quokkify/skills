@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/quokkify/skills/compare/v0.11.1...v0.12.0) (2026-10-06)
+
+
+### Features
+
+* **skills:** queue reusable skill improvements ([#106](https://github.com/quokkify/skills/issues/106)) ([cf9388e](https://github.com/quokkify/skills/commit/cf9388e0f84c232ec5913319e97dad45baf62a83))
+
+
+### Bug Fixes
+
+* **git-hooks:** avoid remote ref scan for new branches ([#103](https://github.com/quokkify/skills/issues/103)) ([2efb4cb](https://github.com/quokkify/skills/commit/2efb4cbcc52604459839898a829ff6ba6feebcc1))
+
 ## [0.11.1](https://github.com/quokkify/skills/compare/v0.11.0...v0.11.1) (2026-09-28)
 
 
