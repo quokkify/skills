@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.13.0](https://github.com/quokkify/skills/compare/v0.12.0...v0.13.0) (2026-10-06)
+
+
+### Features
+
+* **skills:** queue reusable skill improvements ([#112](https://github.com/quokkify/skills/issues/112)) ([fb5eea3](https://github.com/quokkify/skills/commit/fb5eea3a0fe9498ade0be656a1611061e004fab3))
+
+
+### Bug Fixes
+
+* **skill-promotion-queue:** stop staging divergence against a stale hub checkout ([#113](https://github.com/quokkify/skills/issues/113)) ([7fcb8fd](https://github.com/quokkify/skills/commit/7fcb8fd0fa6f996fd39f152071962d8ba62ad4c1))
+
 ## [0.12.0](https://github.com/quokkify/skills/compare/v0.11.1...v0.12.0) (2026-10-06)
 
 
