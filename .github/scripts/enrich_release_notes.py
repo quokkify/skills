@@ -69,7 +69,13 @@ def extract_rich_sections(body: str) -> dict[str, str]:
             continue
         if current is not None:
             result[current] += line + "\n"
-    return {key: value.strip() for key, value in result.items() if _without_comments(value.splitlines())}
+    # Release Please commits these sections into CHANGELOG.md, and a trailing space
+    # pasted from a log or used as a Markdown line break would fail `git diff --check`.
+    return {
+        key: "\n".join(line.rstrip() for line in value.strip().splitlines())
+        for key, value in result.items()
+        if _without_comments(value.splitlines())
+    }
 
 
 def _version_ranges(changelog: str) -> list[tuple[int, int]]:
