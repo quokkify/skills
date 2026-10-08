@@ -21,7 +21,7 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          pattern='^(feat|fix|perf|refactor|docs|test|ci|chore|build|style|revert)(\([a-z0-9][a-z0-9.-]*\))?!?: .+'
+          pattern='^(feat|fix|perf|refactor|docs|test|ci|chore|build|style|revert|deps)(\([a-z0-9][a-z0-9._-]*\))?!?: .+'
           if [[ "$PR_TITLE" =~ $pattern ]]; then
             echo "PR title '$PR_TITLE' follows Conventional Commits."
           else
@@ -30,7 +30,7 @@ jobs:
             echo "PR title: '$PR_TITLE'"
             echo ""
             echo "Expected format: <type>(optional-scope): <description>"
-            echo "Allowed types: feat, fix, perf, refactor, docs, test, ci, chore, build, style, revert"
+            echo "Allowed types: feat, fix, perf, refactor, docs, test, ci, chore, build, style, revert, deps"
             echo ""
             echo "Examples:"
             echo "  feat: add a reusable validation skill"
