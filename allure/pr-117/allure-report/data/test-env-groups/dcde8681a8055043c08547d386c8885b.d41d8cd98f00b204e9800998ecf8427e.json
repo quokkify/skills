@@ -1,0 +1,1 @@
+{"id":"dcde8681a8055043c08547d386c8885b.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_release_configuration.ReleaseConfigurationTests#test_pin_contract_rejects_a_second_reference_on_a_weaker_pin","name":"test_pin_contract_rejects_a_second_reference_on_a_weaker_pin","status":"passed","testResultsByEnv":{"default":"765277bfd40489d2be510f1c8dea4ad9"}}
