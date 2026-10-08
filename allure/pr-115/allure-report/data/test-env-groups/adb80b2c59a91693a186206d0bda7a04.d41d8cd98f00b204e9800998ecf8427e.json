@@ -1,1 +1,0 @@
-{"id":"adb80b2c59a91693a186206d0bda7a04.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_skill_promotion_queue_templates.StaleHubTests#test_cycle_skips_staging_when_the_fetch_fails","name":"test_cycle_skips_staging_when_the_fetch_fails","status":"passed","testResultsByEnv":{"default":"141c1ea6192e2eb128b9b726d7519b18"}}
