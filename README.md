@@ -117,6 +117,16 @@ skills:
 
 The same example is available at [`adapters/hermes/config.example.yaml`](adapters/hermes/config.example.yaml). Start a new Hermes session after changing the discovery path. A same-named profile-local skill can take precedence over the shared copy, so keep shared changes on an isolated Git branch or worktree.
 
+### APM
+
+To install one released skill into a project with [Agent Package Manager](https://microsoft.github.io/apm/), pin the repository release tag and the skill's path:
+
+```bash
+apm install quokkify/skills/skills/orchestration/agent-harness-design#v0.10.0
+```
+
+APM records the dependency in `apm.yml`, locks its exact source revision in `apm.lock.yaml`, and deploys it to the detected agent harnesses. See [Install and update with APM](docs/guides/how-to-use-skills.md#install-and-update-with-apm) for manual updates, third-party skills, and Renovate automation.
+
 ## Browse the Hub
 
 The repository currently contains **19 portable skills** spanning:
