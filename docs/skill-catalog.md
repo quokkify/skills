@@ -22,6 +22,8 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 
 ## repository
 
+- [`project-toolkit-migration`](../skills/repository/project-toolkit-migration/SKILL.md) — experimental assisted adoption and migration of Copier templates, local diagnosis, and durable verified lessons.
+
 - [`repository-quality-gates`](../skills/repository/repository-quality-gates/SKILL.md) — design exact-artifact validators, Git hooks, and CI gates.
 - [`secure-git-checkout-operations`](../skills/repository/secure-git-checkout-operations/SKILL.md) — safely update long-lived Git checkouts consumed by automation.
 - [`codebase-onboarding`](../skills/repository/codebase-onboarding/SKILL.md) — map an unfamiliar repository's architecture, entry points, conventions, data flow, and safe verification commands.
