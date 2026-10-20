@@ -59,7 +59,7 @@ See the repository [SECURITY.md](https://github.com/quokkify/skills/blob/main/SE
 
 ### Claude Code and Codex
 
-Install the repository skills normally. In Claude Code, invoke the installed `skill-review` skill when significant work produces a reusable lesson; this repository publishes no global Claude prompt that does so automatically. The optional Codex `AGENTS.md` adapter adds a post-task review prompt. By default, promotion requires task-specific approval before a branch or pull request is created. A durable repository-scoped opt-in may instead route eligible changes through `skill-promotion-queue`.
+Install the repository skills normally. In Claude Code, invoke the installed `skill-review` skill when significant work produces a reusable lesson; the shared global instruction base (`adapters/shared/AGENTS.base.md`, installed by `scripts/bootstrap.sh`) carries a "Skill Library Self-Improvement" section that prompts this review. The optional Codex `AGENTS.md` adapter adds a post-task review prompt as well. By default, promotion requires task-specific approval before a branch or pull request is created. A durable repository-scoped opt-in may instead route eligible changes through `skill-promotion-queue`.
 
 ### Hermes
 

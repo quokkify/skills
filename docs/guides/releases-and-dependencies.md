@@ -44,8 +44,8 @@ It executes `renovate-config-validator --strict .github/renovate.json`. Renovate
 
 Every workflow that calls `quokkify/ci-kit` references it at the version recorded as `toolkit_version` in `.copier-answers.yml`, in one of two accepted forms:
 
-- the exact release tag, for example `@v2.19.0` — what the template renders, and what every consumer that calls the toolkit's release workflow uses;
-- a full 40-character commit digest carrying that tag as a comment, for example `@7bc13e13… # v2.19.0`.
+- the exact release tag, for example `@v3.2.1` — what the template renders, and what every consumer that calls the toolkit's release workflow uses;
+- a full 40-character commit digest carrying that tag as a comment, for example `@7bc13e13… # v3.2.1`.
 
 The template-owned check in `.github/workflows/validate.yml` enforces this across every workflow, and `tests/test_release_configuration.py` asserts it for the release caller. A tag is mutable and a digest is not, so the digest form remains available for a deliberate, hand-maintained pin. It is not the default here: [ADR-0002](../adr/0002-reference-project-toolkit-by-release-tag.md) records why this repository references the toolkit by tag and what that trades away.
 

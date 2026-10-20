@@ -16,7 +16,7 @@ Layers 1 and 2 are public because they contain no one's actual configuration. La
 
 Install the portable skills with the skills CLI. Claude Code supports personal skills under `~/.claude/skills` and project skills under `.claude/skills`.
 
-Global configuration is separate and optional. The templates under `adapters/shared/` and `adapters/claude/` are genericized: a runtime-neutral instruction base, lifecycle hook scripts, settings and hook wiring, subagent definitions, and an injectable `CLAUDE.md` block. They contain no employer identifiers, credentials, machine paths, or pinned personal model versions. Copy them manually for now; a one-command installer that merges your private overlay over the templates arrives in a follow-up change, and any such installer must back up rather than overwrite existing files.
+Global configuration is separate and optional. The templates under `adapters/shared/` and `adapters/claude/` are genericized: a runtime-neutral instruction base, lifecycle hook scripts, settings and hook wiring, subagent definitions, and an injectable `CLAUDE.md` block. They contain no employer identifiers, credentials, machine paths, or pinned personal model versions. Install them with `scripts/bootstrap.sh`, which merges an optional private overlay over the templates and backs up rather than overwrites existing files, or copy them manually.
 
 ## Codex
 

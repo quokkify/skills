@@ -113,7 +113,7 @@ This creates a controlled feedback loop:
 
 ## Current Repository Scope
 
-This repository implements the public skills hub, provider adapters including genericized global templates, validation/synchronization tooling, and reusable harness-design guidance. The private overlay and configuration vault is an architectural companion, not a public package shipped here. A merging installer for the templates is planned and not yet shipped.
+This repository implements the public skills hub, provider adapters including genericized global templates, validation/synchronization tooling, and reusable harness-design guidance. The private overlay and configuration vault is an architectural companion, not a public package shipped here. `scripts/bootstrap.sh` installs the templates with staged writes, timestamped backups, and managed-block merges.
 
 Use these entry points:
 
