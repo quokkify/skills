@@ -454,11 +454,28 @@ def install_skills(args):
         )
 
 
+def warn_missing_companions(args, root):
+    runtimes = ("claude", "codex") if args.provider == "all" else (args.provider,)
+    hook = root / "adapters/shared/hooks/sessionstart-prerequisites.sh"
+    for runtime in runtimes:
+        try:
+            output = subprocess.run(
+                ["bash", str(hook), runtime], input="", text=True, capture_output=True, timeout=30
+            ).stdout
+            context = json.loads(output)["hookSpecificOutput"]["additionalContext"] if output.strip() else ""
+        except (OSError, subprocess.SubprocessError, json.JSONDecodeError, KeyError, TypeError):
+            continue
+        for line in context.splitlines():
+            if line.startswith("- "):
+                print(f"Warning: {runtime} requires {line[2:]}", file=sys.stderr)
+
+
 def main():
     args = parse_args()
-    plans, changes, git_dir, old_hooks, args, _ = build_plan(args)
+    plans, changes, git_dir, old_hooks, args, root = build_plan(args)
     show_plan(plans, args.dry_run)
     if args.dry_run:
+        warn_missing_companions(args, root)
         return 0
     apply(plans, changes, git_dir, old_hooks, args)
     try:
@@ -467,6 +484,7 @@ def main():
         print(f"Warning: official skills installation failed: {exc}", file=sys.stderr)
     if args.provider in ("codex", "all"):
         print("Codex hook handlers were installed. Open the Codex TUI and run /hooks to review and approve them.")
+    warn_missing_companions(args, root)
     print("Bootstrap installation complete.")
     return 0
 

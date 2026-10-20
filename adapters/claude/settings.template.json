@@ -9,6 +9,10 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/sessionstart-repo-context.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/sessionstart-prerequisites.sh\" claude"
           }
         ]
       }

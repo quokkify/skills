@@ -28,7 +28,7 @@ Sub-agents should NOT use this skill. It is for the parent orchestrator only.
 When choosing sub-agent instructions, prefer sources in this order:
 
 1. Project-local role and configuration metadata such as `AGENTS.md`, `.codex/agents/`, `.codex/config.toml`, or the active environment's supported role registry
-2. If the target repo uses Everything Claude Code, treat ECC project-local guidance as the primary role and workflow source of truth
+2. On Claude Code, the oh-my-claudecode agent catalog and workflows
 3. Bundled portable references in `references/subagents.md`
 
 If the target project already defines stack-specific roles, use those roles as the source of truth for delegation.
@@ -48,21 +48,13 @@ Resolve the orchestration backend before Phase 2:
 
 Use native subagents through the Agent tool first (`Task(...)` is a legacy compatibility alias).
 
-If the target repo uses ECC, prefer ECC roles such as:
-- `planner`
-- `architect`
-- `tdd-guide`
-- `code-reviewer`
-- `security-reviewer`
-- `doc-updater`
-- `docs-lookup`
-- language- or stack-specific reviewers/resolvers
+oh-my-claudecode is a required companion on Claude Code and owns the agent catalog and model routing. Delegate to its agents — for example `explore`, `planner`, `architect`, `executor`, `code-reviewer`, `security-reviewer`, `verifier`, `document-specialist` — and read the available types at run time instead of hardcoding a roster.
 
 #### Codex
 
 Use built-in agent roles from `.codex/agents/` or equivalent local configuration first.
 
-In ECC-style repos, the default Codex role mapping is:
+The default Codex role mapping is:
 - research and codebase evidence -> `explorer`
 - documentation and API verification -> `docs_researcher`
 - correctness, regression, security, and missing tests review -> `reviewer`
@@ -79,37 +71,16 @@ Use `dmux` or separate worktrees when:
 
 When using `dmux`, follow the target repo's local workflow guidance first. Use a non-skill workflow reference or explicitly approved orchestration documentation as the fallback pattern; do not read another skill's `SKILL.md`.
 
-## ECC Integration
+## Companion Integration
 
-When the target repository uses Everything Claude Code:
-
-- Keep this skill as the top-level orchestration layer
-- Use ECC as the source of roles, quality rules, review expectations, and docs/security capabilities
-- Prefer ECC project-local guidance over portable defaults
-- Reuse ECC conventions instead of restating them from scratch
-
-### ECC Conventions to Preserve
-
-- Plan before execution for complex work
-- TDD for features and bug fixes where practical
-- Review immediately after modifications
-- Security review for sensitive paths and before commits
-- Validation should include build, typecheck, lint, tests, and security-oriented checks as appropriate
-- Prefer skills-first and project-local workflow surfaces
-- Preserve ECC's practical tempo: brief planning, focused execution, and validation without unnecessary orchestration overhead
-
-### ECC Capability Mapping
-
-- Planning and decomposition -> ECC `planner` / `architect`, or orchestrator synthesis if no planner backend exists
-- Research and docs lookup -> ECC `docs-lookup`, `documentation-lookup`, Codex `docs_researcher`, or equivalent
-- Implementation guidance -> ECC `tdd-guide`, language reviewers, project rules
-- Implementation execution in Codex -> orchestrator-selected worker agents with explicit ownership and handoff packets
-- Review -> ECC `code-reviewer`, `security-reviewer`, Codex `reviewer`
-- Validation -> ECC `verification-loop` conventions plus project-local commands
+- Keep this skill as the top-level phase structure; let the runtime's companions supply the roles and discipline inside each phase
+- On Claude Code, oh-my-claudecode supplies agents, model routing, and the plan, execute, review, and verify workflows
+- On every runtime, superpowers supplies process discipline: brainstorming before design, test-driven development, systematic debugging, and verification before completion
+- Prefer project-local guidance over both, and reuse companion conventions instead of restating them
 
 ### Cost-Aware Selection
 
-Preserve ECC's cheapest-capable-agent behavior:
+Keep cheapest-capable-agent selection:
 - Mechanical, pattern-based, low-risk implementation -> cheapest capable executor
 - Clear, scoped, multi-file implementation -> mid-tier executor
 - High-ambiguity, architectural, or recovery work -> strongest executor
@@ -203,11 +174,11 @@ Use the environment's native mechanism first. Prefer project-local role docs whe
 
 ### Suggested Role Mapping
 
-- Claude + ECC:
+- Claude + oh-my-claudecode:
+  - `explore` for codebase evidence
   - `planner` / `architect` for decomposition or system shape
-  - `docs-lookup` for documentation verification
-  - stack-specific reviewers for codebase/domain investigation when appropriate
-- Codex + ECC:
+  - `document-specialist` for documentation verification
+- Codex:
   - `explorer` for read-only evidence gathering
   - `docs_researcher` for primary-doc verification
   - `reviewer` when research overlaps with risk analysis
@@ -236,7 +207,7 @@ Your job as orchestrator is to:
 
 **Actor: ORCHESTRATOR**
 
-Synthesize findings into an implementation plan that aligns with local conventions and ECC expectations:
+Synthesize findings into an implementation plan that aligns with local conventions:
 - Group changes by non-conflicting files
 - Order groups by dependency graph
 - Select execution mode per group: orchestrator direct, native subagent, or fallback `dmux`/worktree
@@ -257,7 +228,7 @@ For substantial or high-risk work, present the plan before execution. For clearl
 5. Reserve the orchestrator for cross-cutting integration and unblockers
 6. Optimize for cost as well as capability; cheapest capable agent wins by default
 
-### ECC Planning Expectations
+### Planning Expectations
 
 - Prefer TDD or test-first sequencing when feasible
 - Account for immediate review after modifications
@@ -291,9 +262,9 @@ Execution is not Claude-only. Choose the backend that fits the environment and t
 
 #### Claude
 
-Use subagents through the Agent tool for independent implementation tracks. Prefer ECC development and review roles where available.
+Use subagents through the Agent tool for independent implementation tracks. Prefer oh-my-claudecode development and review agents.
 
-When Claude/ECC-style model tiers are available, use this bias:
+When model tiers are available, use this bias:
 - Mechanical changes, rote propagation, pattern application, focused edits -> junior / haiku-class
 - Normal implementation with clear specs -> middle / sonnet-class
 - Complex refactoring, ambiguous recovery, architecture-sensitive execution -> senior / opus-class
@@ -331,11 +302,11 @@ Use for independent parallel writers or cross-harness tasks that need isolation.
 - Whether tests/docs are part of the assignment
 - A reminder not to revert unrelated work from other agents or the user
 
-### ECC Execution Expectations
+### Execution Expectations
 
 - Prefer test-first or test-with-change sequencing where practical
-- Use ECC reviewers or equivalent immediately after meaningful modifications
-- Use stack-specific ECC capabilities when the task is domain-sensitive
+- Use companion or project reviewers immediately after meaningful modifications
+- Use stack-specific project capabilities when the task is domain-sensitive
 - Preserve local architecture and workflow conventions instead of replacing them with generic patterns
 - When the backend supports model selection, prefer the lowest-cost executor that can safely complete the task
 
@@ -352,15 +323,15 @@ You SHOULD prefer `plan -> executor -> handoff -> next executor -> validation` o
 
 The orchestrator runs the most relevant local verification commands for the target project, for example typecheck, tests, build, lint, security checks, or framework-specific health checks.
 
-In ECC-style repos, validation should follow the spirit of `verification-loop`: build, typecheck, lint, tests, security-oriented checks, and diff review as appropriate.
+Validation should cover build, typecheck, lint, tests, security-oriented checks, and diff review as appropriate.
 
 Run validation after the implementation batch or after a major dependency group completes. Do not repeatedly re-open long research loops unless validation reveals a real unknown.
 
 ### Step 2: Delegate to Validators
 
 If the code is in a reviewable state, delegate to validators/reviewers:
-- Claude + ECC: `code-reviewer`, `security-reviewer`, stack-specific reviewers, `doc-updater` where relevant
-- Codex + ECC: `reviewer`, `docs_researcher` for claim verification, `explorer` for regression tracing when needed
+- Claude + oh-my-claudecode: `code-reviewer`, `security-reviewer`, `verifier`
+- Codex: `reviewer`, `docs_researcher` for claim verification, `explorer` for regression tracing when needed
 - Fallback: separate `dmux` review panes or independent review passes
 
 Validators can run in PARALLEL if they check different parts.
@@ -421,5 +392,5 @@ Portability rules:
 - You MUST prepare a compact handoff packet before delegated execution steps
 - You MUST prefer fast plan-to-execution flow in Codex unless uncertainty or risk justifies deeper research
 - You MUST validate after execution
-- You MUST use ECC conventions when the target repo is ECC-based
+- You MUST use the runtime's required companions when they are installed, and report them when they are missing
 - You MUST ask the user when a decision has non-obvious product, architecture, or risk consequences

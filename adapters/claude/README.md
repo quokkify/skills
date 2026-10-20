@@ -49,7 +49,7 @@ A genericized template of `~/.claude/settings.json`. It is valid JSON, so it car
 the fields are documented here instead.
 
 - `model`, `effortLevel`, `theme` — starting defaults; adjust freely.
-- `hooks` — three events wired (`SessionStart`, `PreToolUse`, `Stop`). Each entry invokes
+- `hooks` — three events wired (`SessionStart`, `PreToolUse`, `Stop`); `SessionStart` also runs `sessionstart-prerequisites.sh claude`, which reports a missing oh-my-claudecode or superpowers install. Each entry invokes
   a hook script directly under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/`. The
   `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` indirection is intentional and portable across
   machines — keep it. Hook payloads arrive as JSON on stdin, the same contract Codex CLI uses, so

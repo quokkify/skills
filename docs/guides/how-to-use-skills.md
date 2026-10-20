@@ -89,7 +89,7 @@ The helper updates the repository only. If you copied the Codex adapter into ano
 
 ## Environment-Aware Orchestration
 
-The portable orchestration skills prefer instructions from the target project before their bundled defaults. When a project provides Everything Claude Code or another local role catalog, those project-local roles remain authoritative.
+The portable orchestration skills prefer instructions from the target project before their bundled defaults. When a project provides its own local role catalog, those project-local roles remain authoritative; otherwise Claude Code uses the oh-my-claudecode catalog.
 
 The execution shape intentionally differs by agent:
 

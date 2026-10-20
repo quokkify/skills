@@ -11,6 +11,12 @@
             "timeout": 20,
             "statusMessage": "Loading repository context",
             "additionalContextLimit": 4000
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/sessionstart-prerequisites.sh\" codex",
+            "timeout": 10,
+            "statusMessage": "Checking required companions"
           }
         ]
       }

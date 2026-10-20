@@ -18,6 +18,17 @@ resolves @-imports up to five hops deep, so the base may import further files it
 
 The shared base is runtime-neutral. These points are specific to this runtime.
 
+- **oh-my-claudecode is required.** It is the orchestration layer on this runtime: it owns the
+  agent catalog, model routing, and the plan → execute → review → verify workflows. Route
+  delegation through its agents and workflows instead of inventing roles or re-implementing them
+  from portable skills.
+- **superpowers is required.** Its process skills (brainstorming, test-driven development,
+  systematic debugging, verification before completion) are the discipline applied inside each
+  oh-my-claudecode step. When both offer a workflow for the same step, oh-my-claudecode drives
+  orchestration and agent routing; superpowers supplies the discipline within it.
+- **Missing companion.** The shared `sessionstart-prerequisites.sh` hook reports either one when
+  it is not installed. Then tell the user what is missing and how to install it before any
+  substantive work, and continue without it only when the user explicitly says so.
 - **Subagents** are addressed through the Task/Agent tool by agent type, with definitions in
   `~/.claude/agents/*.md` (user scope) or `.claude/agents/*.md` (project scope). Do not hardcode a
   roster in instruction files; read the available types at run time.

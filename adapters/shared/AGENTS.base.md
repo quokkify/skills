@@ -21,6 +21,17 @@ every project unless a project-level instruction file or the user overrides them
 - Make the smallest change that resolves the request; propose larger redesigns instead of
   performing them unprompted.
 
+## Required Companions
+
+- The superpowers skill set is required on every runtime. Use its process skills — brainstorming
+  before design, test-driven development, systematic debugging, verification before completion —
+  whenever one applies.
+- A runtime adapter may require more companions; the Claude Code adapter also requires
+  oh-my-claudecode.
+- At session start, confirm the required companions are installed. When one is missing, tell the
+  user what is missing and how to install it before any substantive work. Do not emulate its
+  workflows from memory, and continue without it only when the user explicitly says so.
+
 ## Interaction Style
 
 - Ask at most one round of clarifying questions before starting work. Otherwise state a reasonable
@@ -138,8 +149,6 @@ delegation has to buy something you would otherwise have to do yourself:
 
 ## Testing
 
-- Target at least 80 percent coverage on code you add or change.
-- Write the test first, watch it fail, implement the minimum to pass, then refactor.
 - After fixing a user-visible bug, add a regression test that reproduces the original failure and
   asserts the correct behavior. Label it as a regression guard. Fall back to a unit or integration
   test only when an end-to-end test is not feasible, and say why.
@@ -147,11 +156,8 @@ delegation has to buy something you would otherwise have to do yourself:
 
 ## Code Style and Scope
 
-- Prefer immutable transformations to in-place mutation, except where mutation is the idiomatic
-  pattern for the language in use.
-- Many small focused files beat few large ones. Keep functions under roughly 50 lines and files
-  well under 800.
-- Avoid nesting deeper than about four levels; prefer early returns.
+- Match the surrounding code's idiom, structure, and naming; project conventions win over any
+  default here.
 - Handle errors explicitly at every level. Never silently swallow one. Validate all input at
   system boundaries.
 - No hardcoded configuration values; use constants or configuration.
@@ -188,8 +194,6 @@ elsewhere in the codebase.
 
 ## Portable Conventions
 
-- Language nullability and idiom checks: prefer the standard library helper over ad-hoc comparisons
-  where the language provides one (for example `Objects.isNull(x)` over `x == null` in Java).
 - Place project-scoped skills and agent definitions inside the project, not in the global agent
   configuration directory, unless they are genuinely user-global. Project-local definitions take
   precedence and stay co-located with the code.

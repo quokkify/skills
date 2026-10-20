@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import stat
 import subprocess
 import tempfile
@@ -13,6 +14,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SHARED_ADAPTER = REPOSITORY_ROOT / "adapters" / "shared"
 COMPLETION_GATE = SHARED_ADAPTER / "hooks" / "completion-gate.sh"
 BASH_GUARD = SHARED_ADAPTER / "hooks" / "pretooluse-bash-guard.sh"
+PREREQUISITES = SHARED_ADAPTER / "hooks" / "sessionstart-prerequisites.sh"
 PRE_COMMIT = SHARED_ADAPTER / "git-hooks" / "pre-commit"
 PRE_PUSH = SHARED_ADAPTER / "git-hooks" / "pre-push"
 
@@ -409,8 +411,83 @@ class SharedAdapterHookTests(unittest.TestCase):
                         continue
                     for registration in registrations:
                         for handler in registration["hooks"]:
-                            script = Path(handler["command"].split("/")[-1].rstrip('"'))
+                            script = Path(Path(shlex.split(handler["command"])[1]).name)
                             self.assertTrue((SHARED_ADAPTER / "hooks" / script).is_file())
+
+
+    def run_prerequisites(self, home: Path, runtime: str, **extra_env: str) -> subprocess.CompletedProcess[str]:
+        environment = {
+            "HOME": str(home),
+            "PATH": "/usr/bin:/bin",
+            "CLAUDE_CONFIG_DIR": str(home / ".claude"),
+            "CODEX_HOME": str(home / ".codex"),
+            **extra_env,
+        }
+        return subprocess.run(
+            ["/bin/bash", str(PREREQUISITES), runtime],
+            input=json.dumps({"hook_event_name": "SessionStart", "cwd": str(home)}),
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+
+    def prerequisites_context(self, result: subprocess.CompletedProcess[str]) -> str:
+        self.assertEqual(result.returncode, 0, result.stderr)
+        if not result.stdout.strip():
+            return ""
+        return json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+
+    def test_prerequisites_report_every_missing_claude_companion(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            context = self.prerequisites_context(self.run_prerequisites(Path(directory), "claude"))
+        self.assertIn("oh-my-claudecode: not detected", context)
+        self.assertIn("superpowers: not detected", context)
+
+    def test_prerequisites_are_silent_when_claude_companions_are_installed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            config = home / ".claude"
+            config.mkdir()
+            (config / "CLAUDE.md").write_text("<!-- OMC:START -->\nomc\n<!-- OMC:END -->\n", encoding="utf-8")
+            (config / "settings.json").write_text(
+                json.dumps({"enabledPlugins": {"superpowers@claude-plugins-official": True}}), encoding="utf-8"
+            )
+            self.assertEqual(self.prerequisites_context(self.run_prerequisites(home, "claude")), "")
+
+    def test_prerequisites_treat_a_disabled_claude_plugin_as_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            config = home / ".claude"
+            config.mkdir()
+            (config / "settings.json").write_text(
+                json.dumps({"enabledPlugins": {"oh-my-claudecode@omc": True, "superpowers@claude-plugins-official": False}}),
+                encoding="utf-8",
+            )
+            context = self.prerequisites_context(self.run_prerequisites(home, "claude"))
+        self.assertNotIn("oh-my-claudecode", context)
+        self.assertIn("superpowers: not detected", context)
+
+    def test_prerequisites_detect_codex_superpowers_plugin_unless_disabled(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            config = home / ".codex"
+            config.mkdir()
+            self.assertIn("superpowers: not detected", self.prerequisites_context(self.run_prerequisites(home, "codex")))
+            (config / "config.toml").write_text('[plugins."superpowers@openai-curated"]\nenabled = true\n', encoding="utf-8")
+            self.assertEqual(self.prerequisites_context(self.run_prerequisites(home, "codex")), "")
+            (config / "config.toml").write_text('[plugins."superpowers@openai-curated"]\nenabled = false\n', encoding="utf-8")
+            self.assertIn("superpowers: not detected", self.prerequisites_context(self.run_prerequisites(home, "codex")))
+
+    def test_prerequisites_accept_codex_superpowers_skill_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            (home / ".agents" / "skills" / "superpowers").mkdir(parents=True)
+            self.assertEqual(self.prerequisites_context(self.run_prerequisites(home, "codex")), "")
+
+    def test_prerequisites_honor_skip_opt_out(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = self.run_prerequisites(Path(directory), "claude", SKILLS_HUB_SKIP_HOOKS="prerequisites")
+        self.assertEqual(self.prerequisites_context(result), "")
 
 
 if __name__ == "__main__":

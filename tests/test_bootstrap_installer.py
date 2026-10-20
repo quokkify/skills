@@ -240,6 +240,24 @@ class BootstrapInstallerTest(unittest.TestCase):
         self.assertTrue(pathlib.Path(self.env["CLAUDE_CONFIG_DIR"]).exists())
         self.assertTrue(pathlib.Path(self.env["XDG_CONFIG_HOME"], "git").exists())
 
+    def test_missing_companions_are_reported_as_nonfatal_warnings(self):
+        env = self.env.copy()
+        env["PATH"] = self.hermetic_path_without_npx()
+        result = self.run_bootstrap("--dry-run", env=env)
+        self.assertIn("Warning: claude requires oh-my-claudecode", result.stderr)
+        self.assertIn("Warning: claude requires superpowers", result.stderr)
+        self.assertIn("Warning: codex requires superpowers", result.stderr)
+
+    def test_installed_companions_produce_no_warning(self):
+        claude = pathlib.Path(self.env["CLAUDE_CONFIG_DIR"])
+        claude.mkdir()
+        (claude / "CLAUDE.md").write_text("<!-- OMC:START -->\nomc\n<!-- OMC:END -->\n")
+        (claude / "settings.json").write_text(json.dumps({"enabledPlugins": {"superpowers@claude-plugins-official": True}}))
+        env = self.env.copy()
+        env["PATH"] = self.hermetic_path_without_npx()
+        result = self.run_bootstrap("--provider", "claude", env=env)
+        self.assertNotIn("requires", result.stderr)
+
     def test_codex_prints_hooks_approval_instruction(self):
         result = self.run_bootstrap("--provider", "codex")
         self.assertIn("/hooks", result.stdout)
