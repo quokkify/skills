@@ -507,6 +507,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#required-companions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required companions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#claude-code" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -825,6 +836,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-require-omc-and-superpowers-companions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003: Require OMC And Superpowers Companions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -885,6 +924,17 @@
       On this page
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#required-companions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required companions
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#claude-code" class="md-nav__link">
@@ -964,6 +1014,8 @@
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/quokkify/skills.git
 <span class="nb">cd</span><span class="w"> </span>skills
 </code></pre></div>
+<h2 id="required-companions">Required companions<a class="headerlink" href="#required-companions" title="Permanent link">&para;</a></h2>
+<p>Claude Code requires <a href="https://github.com/Yeachan-Heo/oh-my-claudecode">oh-my-claudecode</a> and <a href="https://github.com/obra/superpowers">superpowers</a>; Codex requires superpowers. Hermes requires neither and must not load superpowers. The installer warns when one is missing, and a <code>SessionStart</code> hook tells the agent to report it before working. See <a href="../adr/0003-require-omc-and-superpowers-companions/">ADR-0003</a>.</p>
 <h2 id="claude-code">Claude Code<a class="headerlink" href="#claude-code" title="Permanent link">&para;</a></h2>
 <p>Install the portable skills and Claude adapter:</p>
 <div class="highlight"><pre><span></span><code>./scripts/bootstrap.sh<span class="w"> </span>--provider<span class="w"> </span>claude<span class="w"> </span>--install-skills

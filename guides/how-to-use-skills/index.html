@@ -847,6 +847,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0003-require-omc-and-superpowers-companions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003: Require OMC And Superpowers Companions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1026,7 +1054,7 @@
    <div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/agents"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks"</span>
 </code></pre></div></li>
 <li>Copy shared hook scripts (required for hooks in hooks.json to function), backing up any file already there:
-   <div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>sessionstart-repo-context.sh<span class="w"> </span>pretooluse-bash-guard.sh<span class="w"> </span>completion-gate.sh<span class="w"> </span>hook-lib.sh<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+   <div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>sessionstart-repo-context.sh<span class="w"> </span>sessionstart-prerequisites.sh<span class="w"> </span>pretooluse-bash-guard.sh<span class="w"> </span>completion-gate.sh<span class="w"> </span>hook-lib.sh<span class="p">;</span><span class="w"> </span><span class="k">do</span>
 <span class="w">  </span><span class="o">[</span><span class="w"> </span>-e<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/</span><span class="nv">$f</span><span class="s2">"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/</span><span class="nv">$f</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/</span><span class="nv">$f</span><span class="s2">.bak"</span>
 <span class="w">  </span>cp<span class="w"> </span><span class="s2">"adapters/shared/hooks/</span><span class="nv">$f</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CODEX_HOME</span><span class="s2">/hooks/"</span>
 <span class="k">done</span>
@@ -1064,7 +1092,7 @@ cp<span class="w"> </span>adapters/codex/hooks.json<span class="w"> </span><span
 <p>The helper validates one exact fetched commit with a preserved copy of the current validator, rejects ahead or diverged history, disables Git hooks during the fast-forward, and never executes fetched scripts. Concurrent branch or worktree changes cause an error rather than a false success report.</p>
 <p>The helper updates the repository only. If you copied the Codex adapter into another location, rerun its installer when <code>adapters/codex/AGENTS.md</code> changes.</p>
 <h2 id="environment-aware-orchestration">Environment-Aware Orchestration<a class="headerlink" href="#environment-aware-orchestration" title="Permanent link">&para;</a></h2>
-<p>The portable orchestration skills prefer instructions from the target project before their bundled defaults. When a project provides Everything Claude Code or another local role catalog, those project-local roles remain authoritative.</p>
+<p>The portable orchestration skills prefer instructions from the target project before their bundled defaults. When a project provides its own local role catalog, those project-local roles remain authoritative; otherwise Claude Code uses the oh-my-claudecode catalog.</p>
 <p>The execution shape intentionally differs by agent:</p>
 <ul>
 <li>Claude Code prefers user- or project-owned routing when available. The published <code>adapters/</code> templates offer a genericized starting point that selects roles by capability; they do not pin model versions or encode one user's routing policy, and a private overlay or project file always wins.</li>
