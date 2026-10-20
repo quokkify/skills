@@ -1029,8 +1029,8 @@
 <h2 id="toolkit-references">Toolkit references<a class="headerlink" href="#toolkit-references" title="Permanent link">&para;</a></h2>
 <p>Every workflow that calls <code>quokkify/ci-kit</code> references it at the version recorded as <code>toolkit_version</code> in <code>.copier-answers.yml</code>, in one of two accepted forms:</p>
 <ul>
-<li>the exact release tag, for example <code>@v2.19.0</code> — what the template renders, and what every consumer that calls the toolkit's release workflow uses;</li>
-<li>a full 40-character commit digest carrying that tag as a comment, for example <code>@7bc13e13… # v2.19.0</code>.</li>
+<li>the exact release tag, for example <code>@v3.2.1</code> — what the template renders, and what every consumer that calls the toolkit's release workflow uses;</li>
+<li>a full 40-character commit digest carrying that tag as a comment, for example <code>@7bc13e13… # v3.2.1</code>.</li>
 </ul>
 <p>The template-owned check in <code>.github/workflows/validate.yml</code> enforces this across every workflow, and <code>tests/test_release_configuration.py</code> asserts it for the release caller. A tag is mutable and a digest is not, so the digest form remains available for a deliberate, hand-maintained pin. It is not the default here: <a href="../../adr/0002-reference-project-toolkit-by-release-tag/">ADR-0002</a> records why this repository references the toolkit by tag and what that trades away.</p>
 <h2 id="configuration-files">Configuration files<a class="headerlink" href="#configuration-files" title="Permanent link">&para;</a></h2>
