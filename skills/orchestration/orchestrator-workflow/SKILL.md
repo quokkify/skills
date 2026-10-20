@@ -246,7 +246,7 @@ Synthesize findings into an implementation plan that aligns with local conventio
 - Decide where documentation updates belong if knowledge capture is needed
 - For each executable item, prepare the minimum handoff packet needed by the next executor
 
-For substantial or high-risk work, present the plan before execution. For clearly scoped tasks where the user asked for end-to-end implementation, you may proceed after stating the plan succinctly.
+For substantial or high-risk work, present the plan before execution. For clearly scoped tasks where the user asked for end-to-end implementation, proceed after a concise plan; do not end the response with an unexecuted promise — make the first tool call for that plan in the same response.
 
 ### Agent Selection Principle
 
