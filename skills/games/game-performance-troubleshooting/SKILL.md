@@ -16,7 +16,7 @@ Separate **rendering performance** from **network performance** before giving fi
 
 | Symptom / indicator | Likely class | First fixes |
 |---|---|---|
-| FPS / к/с low or jumping | device/settings/thermal/power | cap FPS, lower graphics, power mode, charger, cooling |
+| FPS low or jumping | device/settings/thermal/power | cap FPS, lower graphics, power mode, charger, cooling |
 | Ping/ms high or jumping | network/route/Wi‑Fi | Ethernet, 5 GHz Wi‑Fi, stop downloads, reboot router, check packet loss |
 | High FPS + stable ping but still stutter | frame pacing/input/driver/overlay | FPS cap near refresh rate, fullscreen, V-Sync test, disable overlays |
 | Characters teleport/rubber-band | packet loss/network | ping test, Ethernet, router/ISP path |
@@ -51,7 +51,7 @@ Menu labels and shortcuts vary by game version. Confirm them against current off
 
 ## Pitfalls
 
-- Do not equate “character jerks” with internet if FPS/к/с is visibly dropping.
+- Do not equate “character jerks” with internet if FPS is visibly dropping.
 - Do not equate a high peak FPS screenshot with smooth play; frame drops and frame pacing matter.
 - Do not over-prescribe graphics settings when the overlay shows stable FPS but ping is spiking.
 - When the user corrects the diagnosis, acknowledge and pivot immediately.

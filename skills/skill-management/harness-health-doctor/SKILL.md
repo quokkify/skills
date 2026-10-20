@@ -32,7 +32,7 @@ The completion gate is the part that genuinely differs. `local-agent-bootstrap.m
 | Runtime | Where the gate is wired | Note |
 | --- | --- | --- |
 | Claude Code | `Stop` and `SessionStart` hooks in `settings.json` / `settings.local.json` | The Stop hook can block completion. |
-| Codex | The `notify` program in `config.toml`, or the standing instruction in `AGENTS.md` | Turn-ended notification only; it cannot block. |
+| Codex | A native `Stop` hook in `hooks.json` (or `[[hooks.Stop]]` in `config.toml`), the `notify` program in `config.toml`, or the standing instruction in `AGENTS.md` | The `Stop` hook can block by returning `decision: "block"`; `notify` and `AGENTS.md` cannot. |
 | Hermes | `config.yaml` → `skills.external_dirs` for skill discovery; an explicitly installed publishing harness may have its own integration | External skill discovery is read-only; it does not block turn completion. |
 
 Report each installed runtime separately. A machine with three runtimes and the gate wired into one is healthy, not two-thirds broken — but a runtime with no wiring genuinely can leave a queued commit unnoticed while working there, so say so per runtime rather than passing or failing the machine as a whole. If the harness appears under more than one agent home, warn: those installs share a single lane and will fight over it.
@@ -75,7 +75,7 @@ A hook event holds a *list of groups*, each with its own `hooks` list. Several u
 - No SessionStart hook: the maintenance cycle never runs, so upgrade and prune candidates are never staged.
 - Invalid JSON: **every** hook silently stops running, not just the harness ones. Treat it as critical.
 
-For Codex, look at the `notify` program and at `AGENTS.md`; neither can block a turn, so the strongest available outcome is a reminder. For Hermes, `skills.external_dirs` only discovers skills and is not a completion gate. This doctor does not infer publishing-harness wiring from arbitrary Hermes configuration files.
+For Codex, look first for a native `Stop` hook in `hooks.json` that can block a turn with `decision: "block"`; the `notify` program and `AGENTS.md` cannot block, so with only those the strongest available outcome is a reminder. For Hermes, `skills.external_dirs` only discovers skills and is not a completion gate. This doctor does not infer publishing-harness wiring from arbitrary Hermes configuration files.
 
 ### Git configuration
 

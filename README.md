@@ -2,7 +2,7 @@
 
 **A portable operating layer for AI agents: shared skills, recoverable configuration, and safer execution harnesses.**
 
-Generated with `quokkify/ci-kit` at `v2.19.0`. Run `copier update` to apply future template changes; the toolkit owns the versions inside the workflows it renders, and Renovate updates the remaining action references independently.
+Generated with `quokkify/ci-kit` at `v3.2.1`. Run `copier update` to apply future template changes; the toolkit owns the versions inside the workflows it renders, and Renovate updates the remaining action references independently.
 
 ![Skills ecosystem: public hub, private configuration vault, and agent harness](https://raw.githubusercontent.com/quokkify/.github/main/assets/diagrams/skills-ecosystem.svg)
 
