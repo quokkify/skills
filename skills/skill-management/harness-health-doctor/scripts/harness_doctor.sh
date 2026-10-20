@@ -337,8 +337,8 @@ check_codex_runtime() {
   home="$1"
   wired=0
 
-  if [ -f "$home/hooks.json" ] && grep -qE 'completion[-_]gate\.sh' "$home/hooks.json" 2>/dev/null; then
-    report_ok "Codex: Stop hook registered in hooks.json (completion gate)"
+  if [ -f "$home/hooks.json" ] && grep -q 'completion_gate\.sh' "$home/hooks.json" 2>/dev/null; then
+    report_ok "Codex: completion_gate.sh registered as a Stop hook in hooks.json"
     wired=1
     gate_wired=1
   fi
@@ -355,7 +355,7 @@ check_codex_runtime() {
 
   if [ "$wired" -eq 0 ]; then
     report_warn "Codex: nothing wires the completion gate; a queued commit can go unnoticed on this runtime"
-    note_step "Codex: register completion-gate.sh as a Stop hook in $(redact "$home")/hooks.json, run completion_gate.sh from the notify program in $(redact "$home")/config.toml, or state the settle-the-queue rule in $(redact "$home")/AGENTS.md."
+    note_step "Codex: register completion_gate.sh as a Stop hook in $(redact "$home")/hooks.json, run completion_gate.sh from the notify program in $(redact "$home")/config.toml, or state the settle-the-queue rule in $(redact "$home")/AGENTS.md."
   fi
 }
 
