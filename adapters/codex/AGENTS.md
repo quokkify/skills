@@ -16,9 +16,10 @@ This repository contains portable skills under `skills/<category>/<name>/SKILL.m
 superpowers is required on Codex, and its chain owns planning and execution: `brainstorming` →
 `writing-plans` → `executing-plans` or `subagent-driven-development`, with its discipline skills
 (test-driven development, systematic debugging, verification before completion) inside each step.
-`orchestrator-workflow` supplies only the Codex delegation mechanics within that chain:
-`spawn_agent`/`wait_agent` usage, handoff packets, and the budget modes below. It does not add a
-second phase structure.
+superpowers also supplies the Codex dispatch mechanics, through
+`using-superpowers/references/codex-tools.md` and `subagent-driven-development`: clean-context
+spawns, briefs, fix rounds, waiting, and per-spawn model selection. This file adds only roles,
+hooks, and cost policy; it does not add a second phase structure.
 
 ## Native subagents
 
@@ -30,7 +31,7 @@ Tools available to the orchestrator:
 - `send_input` — feed additional context to a running subagent.
 - `wait_agent` — block on a subagent and collect its result.
 - `resume_agent` — continue a subagent with its context intact.
-- `close_agent` — tear a subagent down when its slice is finished.
+- `close_agent` — tear a subagent down when its slice is finished (multi-agent V1 only; in V2, children retire on their own).
 
 In the TUI, `/agent` inspects and drives the same machinery.
 
@@ -111,11 +112,13 @@ Project-local roles defined in the target repo's `.codex/agents` take precedence
 - `docs_researcher`: primary-doc and API verification.
 - `reviewer`: correctness, regression, security, and missing tests review.
 
+Routine implementation goes to `worker` or a write-capable project-local role.
+
 These three are the concrete `[agents.<name>]` declarations in this adapter's `config.template.toml`, backed by `agents/explorer.toml`, `agents/docs-researcher.toml`, and `agents/reviewer.toml`. They are read-only by design, so they never replace executor ownership: routine implementation still needs an explicit write-capable slice.
 
 ## Operating rules
 - Make architectural decisions at orchestrator level.
-- Run independent research or implementation tracks in parallel using `spawn_agent`, then collect with `wait_agent`.
+- Run independent investigations in parallel using `spawn_agent`, then collect with `wait_agent`. Plan tasks run one implementer at a time, as `subagent-driven-development` requires.
 - In full-stack repos, split backend and frontend work by ownership boundary before deciding whether the tracks can run in parallel.
 - In domain-heavy repos, run a separate domain-rules review whenever business rules, statuses, calculations, or critical flows change.
 - Prefer concise decision-focused reporting over long code walkthroughs.
@@ -127,32 +130,19 @@ These three are the concrete `[agents.<name>]` declarations in this adapter's `c
 - If the next implementation step is already clear, do not extend research just to satisfy process ceremony.
 - Use the cheapest capable executor or reviewer the configured model tiers allow.
 - Default execution shape should be `orchestrator plan -> one executor -> validation`, not `many agents by default`.
-- Add a second executor only for truly disjoint files or layers.
 - Add a research agent only for missing facts, not for routine repo reading.
 - Add a review agent only after implementation, unless the task is security- or architecture-sensitive from the start.
 - Keep authoring and review in separate passes; never self-approve in the same active context.
 
 ## Codex Budget Modes
 
-### Cheap default
-- 0-1 research agents
-- 1 executor
-- 0-1 reviewer
-- Sequential groups unless parallelism is obviously profitable
+superpowers sets the cost dial on Codex; do not add a mode that skips its reviews.
 
-Use this for most feature work, bug fixes, and refactors.
+- **Cheap:** `executing-plans` inline in the main thread, with the one final reviewer it requires.
+- **Thorough:** `subagent-driven-development`, with a review per task and a final whole-branch review on the strongest model.
+- **Investigations:** `dispatching-parallel-agents`, one agent per independent problem, only when the problems share no state.
 
-### Balanced
-- 1 focused researcher
-- 1-2 executors with clean ownership split
-- 1 reviewer
-
-Use this when parallel work will materially reduce elapsed time without duplicating context.
-
-### High scrutiny
-- Multiple specialized agents only for high-risk, security-sensitive, or architecture-heavy tasks
-
-Do not enter this mode unless the task risk justifies the cost.
+Pick the cheapest mode the task's risk allows.
 
 ## Recommended project usage
 

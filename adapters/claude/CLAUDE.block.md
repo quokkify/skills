@@ -28,8 +28,7 @@ The shared base is runtime-neutral. These points are specific to this runtime.
   (`test-driven-development`, `systematic-debugging`, `verification-before-completion`,
   `receiving-code-review`) inside each oh-my-claudecode step. Do not use superpowers
   `writing-plans`, `executing-plans`, or `subagent-driven-development` on this runtime;
-  oh-my-claudecode replaces them. The portable `orchestrator-workflow` skill is not used here
-  either.
+  oh-my-claudecode replaces them.
 - **Missing companion.** The shared `sessionstart-prerequisites.sh` hook reports either one when
   it is not installed. Then tell the user what is missing and how to install it before any
   substantive work, and continue without it only when the user explicitly says so.

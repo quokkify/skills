@@ -168,6 +168,18 @@ delegation has to buy something you would otherwise have to do yourself:
   test only when an end-to-end test is not feasible, and say why.
 - Fix the implementation, not the test, unless the test itself encodes the wrong expectation.
 
+## Refactoring
+
+- A refactor preserves behavior: no change to observable contracts, public APIs, or outputs.
+- Targeted refactor (files or classes named): read them, map callers and dependencies, and scope
+  the change to that surface. Exploratory refactor (no target): shortlist candidates such as
+  oversized files, tangled packages, or duplication, and confirm the shortlist with the user
+  before editing.
+- Run the relevant tests before the first edit and confirm they are green. When coverage does not
+  lock down the behavior you are about to move, add characterization tests first.
+- Keep the same tests green after every group of changes; a changed test needs a justification.
+- Follow the project's own style conventions, not a generic refactoring style.
+
 ## Code Style and Scope
 
 - Match the surrounding code's idiom, structure, and naming; project conventions win over any
