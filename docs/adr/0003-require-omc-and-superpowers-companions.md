@@ -2,7 +2,7 @@
 title: "ADR-0003: Require oh-my-claudecode and superpowers companions"
 ---
 
-# ADR-0003: Require oh-my-claudecode on Claude Code and superpowers on every runtime
+# ADR-0003: Require oh-my-claudecode on Claude Code and superpowers on Claude Code and Codex
 
 - Status: accepted
 - Date: 2026-10-20
@@ -16,13 +16,15 @@ Superpowers supplies process discipline — brainstorming, test-driven developme
 ## Decision
 
 - Claude Code requires oh-my-claudecode. It owns the agent catalog, model routing, and the plan, execute, review, and verify workflows on that runtime.
-- Every runtime requires superpowers. Its skills are the discipline applied inside each orchestration step; when both companions offer a workflow for the same step, oh-my-claudecode drives orchestration and superpowers supplies discipline.
+- Claude Code and Codex CLI require superpowers. Its skills are the discipline applied inside each orchestration step; when both companions offer a workflow for the same step, oh-my-claudecode drives orchestration and superpowers supplies discipline.
 - A shared `SessionStart` hook, `sessionstart-prerequisites.sh`, checks the companions for its runtime and tells the agent to stop and report a missing one before substantive work. `scripts/bootstrap.sh` prints the same result as non-fatal warnings.
+- Hermes requires no companion and must not load superpowers, neither the plugin nor a curated subset. See [the Hermes adapter](../../adapters/hermes/README.md) for the reasons.
 - ECC is no longer a role or rule source. The skills adapted from ECC stay, with attribution, because they are standalone and do not depend on an ECC installation.
 
 ## Alternatives considered
 
 - **Keep ECC as the preferred role catalog.** Rejected: two catalogs with overlapping role names produce unresolvable delegations, and ECC's coding-style defaults override project conventions.
+- **Require superpowers on Hermes too.** Rejected after reviewing Hermes 0.22.2: its bundled `software-development-lifecycle` skill already covers most of the same process topics, the skill index truncates descriptions to 60 characters so broad `Use when…` triggers fire on ops and chat turns, a hand-picked subset breaks on cross-skill references to `subagent-driven-development`, and Hermes can patch skills it loads from external directories, which silently edits a pinned checkout.
 - **Fail the installer when a companion is missing.** Rejected: companions are installed through each runtime's own plugin flow, which may happen after the hub is installed. The session hook enforces the requirement where the agent actually works.
 - **State the requirement in prose only.** Rejected: the requirement is mechanically checkable, and the repository's rule is that checkable rules become hooks.
 

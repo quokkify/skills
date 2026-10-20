@@ -23,11 +23,12 @@ every project unless a project-level instruction file or the user overrides them
 
 ## Required Companions
 
-- The superpowers skill set is required on every runtime. Use its process skills — brainstorming
-  before design, test-driven development, systematic debugging, verification before completion —
-  whenever one applies.
-- A runtime adapter may require more companions; the Claude Code adapter also requires
-  oh-my-claudecode.
+- Each runtime adapter states which companions it requires. Claude Code requires oh-my-claudecode
+  and superpowers; Codex CLI requires superpowers; Hermes requires none and must not load
+  superpowers.
+- Where superpowers is required, use its process skills — brainstorming before design,
+  test-driven development, systematic debugging, verification before completion — whenever one
+  applies.
 - At session start, confirm the required companions are installed. When one is missing, tell the
   user what is missing and how to install it before any substantive work. Do not emulate its
   workflows from memory, and continue without it only when the user explicitly says so.
