@@ -19,3 +19,5 @@ If one superpowers idea proves worth having, fold it into an existing Hermes ski
 - Point `external_dirs` at this checkout's `skills/` directory. Hermes walks it recursively and follows symlinks.
 - A same-named profile-local skill takes precedence over the shared copy, so make shared changes on an isolated branch or worktree.
 - Start a new Hermes session after changing the discovery path; a gateway restart is not needed.
+- Each profile has its own `config.yaml` and its own `external_dirs`. A profile that should see the hub needs the entry itself; an empty list there is a deliberate opt-out, not an inherited default.
+- Keep the clone current with `scripts/sync-shared-skills.sh` on a schedule, for example a daily user-level systemd timer. It fast-forwards `main` only and validates the fetched snapshot before switching to it. Running sessions keep the old skills until a new session starts.
