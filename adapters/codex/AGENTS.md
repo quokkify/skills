@@ -11,6 +11,15 @@ This repository contains portable skills under `skills/<category>/<name>/SKILL.m
 5. Use the bundled references in each skill directory instead of assuming Claude-specific files exist.
 6. Delegate to **native Codex subagents** (see below) rather than emulating roles inside a single thread.
 
+## Workflow ownership
+
+superpowers is required on Codex, and its chain owns planning and execution: `brainstorming` →
+`writing-plans` → `executing-plans` or `subagent-driven-development`, with its discipline skills
+(test-driven development, systematic debugging, verification before completion) inside each step.
+`orchestrator-workflow` supplies only the Codex delegation mechanics within that chain:
+`spawn_agent`/`wait_agent` usage, handoff packets, and the budget modes below. It does not add a
+second phase structure.
+
 ## Native subagents
 
 Codex CLI has first-class subagents. Multi-agent support is stable and enabled by default, so there is no feature flag to turn on and nothing to emulate.
@@ -92,22 +101,10 @@ Native subagents make parallelism cheap to *start*, not cheap to *run* — each 
 
 ## Role mapping
 
-### Prefer project-local roles when present
-- `planner`: task decomposition and execution plan.
-- `architect`: architecture fit, boundaries, dependency impact.
-- `backend-developer`: server-side implementation for the target stack.
-- `frontend-developer`: client-side implementation for the target stack.
-- `domain-rules-reviewer`: domain logic and business-rule compliance.
-- `plan-reviewer`: final cross-check against the approved plan.
+Project-local roles defined in the target repo's `.codex/agents` take precedence over everything below.
 
-### Portable fallback roles
-- `code-researcher`: exhaustive codebase analysis.
-- `diff-researcher`: git history and diff analysis.
-- `web-researcher`: official docs and best practices.
-- `ui-researcher`: UI structure and behavior analysis.
-- `implementation-generalist`: standard implementation within one slice.
-- `validation-generalist`: standard correctness checks.
-- `test-engineer`: regression-focused coverage updates.
+### Built-in roles
+- `default`, `worker`, and `explorer`, provided by Codex itself.
 
 ### Roles shipped with this adapter
 - `explorer`: read-only codebase evidence and regression tracing.
@@ -119,7 +116,6 @@ These three are the concrete `[agents.<name>]` declarations in this adapter's `c
 ## Operating rules
 - Make architectural decisions at orchestrator level.
 - Run independent research or implementation tracks in parallel using `spawn_agent`, then collect with `wait_agent`.
-- Keep the phases explicit even inside a single thread: assessment -> research -> planning -> execution -> validation.
 - In full-stack repos, split backend and frontend work by ownership boundary before deciding whether the tracks can run in parallel.
 - In domain-heavy repos, run a separate domain-rules review whenever business rules, statuses, calculations, or critical flows change.
 - Prefer concise decision-focused reporting over long code walkthroughs.

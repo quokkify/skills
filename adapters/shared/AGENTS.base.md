@@ -33,7 +33,20 @@ every project unless a project-level instruction file or the user overrides them
   user what is missing and how to install it before any substantive work. Do not emulate its
   workflows from memory, and continue without it only when the user explicitly says so.
 
+### Precedence
+
+When instructions conflict, the higher source wins:
+
+1. User and project instructions.
+2. The runtime's orchestration companion workflow (oh-my-claudecode on Claude Code).
+3. Superpowers process discipline.
+4. The defaults in this file.
+
 ## Interaction Style
+
+These defaults apply only when no required companion process skill applies. When superpowers
+brainstorming applies to new feature or design work, its one-question-at-a-time approval flow
+governs instead.
 
 - Ask at most one round of clarifying questions before starting work. Otherwise state a reasonable
   assumption explicitly and proceed.
@@ -180,6 +193,8 @@ before continuing, rotate anything that may have been exposed, and check for the
 elsewhere in the codebase.
 
 ## Workflow Boundaries
+
+The sizing rules below apply only when no required companion process skill applies.
 
 - When an orchestrated workflow defines phases, follow them in order. Do not skip assessment and
   planning to start editing files.

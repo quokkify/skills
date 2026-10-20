@@ -1,25 +1,25 @@
 ---
 name: orchestrator-workflow
-description: FOR MAIN ORCHESTRATOR ONLY. Orchestrates complex development tasks through 5 phases - Initial Assessment, Deep Research, Planning, Execution, Validation. Sub-agents should NOT use this skill - they have their own instructions.
+description: FOR MAIN ORCHESTRATOR ONLY. Delegation backend guide for runtimes without an orchestration companion (Codex, other harnesses) - backend resolution, handoff packets, cost-aware selection, execution policy, validation, and a refactor mode. Not used on Claude Code, where oh-my-claudecode replaces it. Sub-agents should NOT use this skill.
 ---
 
 # Orchestrator Workflow
 
-You are the main orchestrator. You coordinate planning, delegation, integration, and final quality gates across whatever agent backend the current environment supports.
+You are the main orchestrator. This skill is a delegation backend guide: it tells you how to resolve, brief, run, and validate sub-agents on a runtime that has no orchestration companion of its own, such as Codex CLI or another harness.
 
-Keep the original 5-phase structure, but resolve delegation and validation strategy from the active environment instead of assuming a Claude-only setup.
+It does not own the top-level workflow. Where a process companion is required — superpowers on Codex — that companion's chain owns planning and execution, and this skill supplies only the delegation mechanics inside it. On Claude Code, oh-my-claudecode replaces this skill entirely; do not use it there.
 
 This skill is orchestration-first, not delegation-dogmatic:
 - Prefer delegation for broad research, independent implementation tracks, and independent review perspectives
 - Do synthesis, scoping, integration, small unblockers, and cross-agent reconciliation yourself
-- In Codex, do not stall the workflow just because a perfect sub-agent mapping is unavailable
+- Do not stall the work just because a perfect sub-agent mapping is unavailable
 
-Default tempo matters. In Codex, prefer a fast execution loop over ceremony:
+Default tempo matters. Prefer a fast execution loop over ceremony:
 - Plan quickly from targeted evidence
 - Delegate execution when file ownership is clear
 - Build a compact handoff packet before each delegated task
 - Validate after the implementation group completes
-- Avoid turning Phase 2 into a mandatory long-form research session
+- Do not turn research into a mandatory long-form session
 
 Sub-agents should NOT use this skill. It is for the parent orchestrator only.
 
@@ -28,57 +28,48 @@ Sub-agents should NOT use this skill. It is for the parent orchestrator only.
 When choosing sub-agent instructions, prefer sources in this order:
 
 1. Project-local role and configuration metadata such as `AGENTS.md`, `.codex/agents/`, `.codex/config.toml`, or the active environment's supported role registry
-2. On Claude Code, the oh-my-claudecode agent catalog and workflows
-3. Bundled portable references in `references/subagents.md`
+2. The runtime's built-in and shipped roles listed in `references/subagents.md`
 
-If the target project already defines stack-specific roles, use those roles as the source of truth for delegation.
+If the target project already defines stack-specific roles, use those roles as the source of truth for delegation. Never invent a role name the active backend does not expose.
 
-## Environment Strategy
+## Delegation Backend Resolution
 
-Resolve the orchestration backend before Phase 2:
+Resolve the backend before research or multi-agent execution:
 
-1. Detect whether you are operating in Claude Code, Codex, or another harness
+1. Detect which harness you are running in and which native sub-agent mechanism it exposes
 2. Detect whether the target repo provides project-local agent roles, skills, or orchestration conventions
 3. Choose the strongest native backend first
-4. Fall back to `dmux` plus worktrees only when native multi-agent support is missing or insufficient
+4. When native sub-agents are missing, use separate git worktrees for independent parallel writers
 
-### Backend Preference
+Then explicitly decide:
 
-#### Claude Code
+1. Which project-local roles exist
+2. Which tasks actually benefit from delegation
+3. Which tasks should stay on the orchestrator critical path
 
-Use native subagents through the Agent tool first (`Task(...)` is a legacy compatibility alias).
+Use this decision rule:
 
-oh-my-claudecode is a required companion on Claude Code and owns the agent catalog and model routing. Delegate to its agents — for example `explore`, `planner`, `architect`, `executor`, `code-reviewer`, `security-reviewer`, `verifier`, `document-specialist` — and read the available types at run time instead of hardcoding a roster.
+- Delegate when the work is parallelizable, independent, or benefits from an isolated review or research perspective
+- Keep work local when it blocks the immediate next step, requires tight integration, or would cost more to delegate than to do directly
+- Never block execution on a missing specialized writer role if the orchestrator can safely complete the task
 
-#### Codex
+### Codex
 
-Use built-in agent roles from `.codex/agents/` or equivalent local configuration first.
-
-The default Codex role mapping is:
+Use `spawn_agent` to start a sub-agent, `wait_agent` to collect its result, and `close_agent` when its slice is finished. The default role mapping is:
 - research and codebase evidence -> `explorer`
 - documentation and API verification -> `docs_researcher`
 - correctness, regression, security, and missing tests review -> `reviewer`
+- routine implementation -> `worker`, or a write-capable project-local role
 
-If Codex roles cover only part of the workflow, keep the orchestrator on the main thread for synthesis, integration, targeted edits, and verification command execution.
-
-#### Fallback: `dmux` / worktrees
-
-Use `dmux` or separate worktrees when:
-- native subagents are unavailable
-- you need multiple independent parallel writers
-- the task benefits from isolation across branches or harnesses
-- cross-harness execution is explicitly useful
-
-When using `dmux`, follow the target repo's local workflow guidance first. Use a non-skill workflow reference or explicitly approved orchestration documentation as the fallback pattern; do not read another skill's `SKILL.md`.
+The shipped `explorer`, `docs_researcher`, and `reviewer` are read-only. If roles cover only part of the work, keep the orchestrator on the main thread for synthesis, integration, targeted edits, and verification command execution.
 
 ## Companion Integration
 
-- Keep this skill as the top-level phase structure; let the runtime's companions supply the roles and discipline inside each phase
-- On Claude Code, oh-my-claudecode supplies agents, model routing, and the plan, execute, review, and verify workflows
-- On every runtime, superpowers supplies process discipline: brainstorming before design, test-driven development, systematic debugging, and verification before completion
+- Let the runtime's required process companion own the plan and execute steps; this skill supplies only delegation mechanics inside them
+- On Codex, the superpowers chain (`brainstorming` -> `writing-plans` -> `executing-plans` or `subagent-driven-development`) owns planning and execution, and its discipline skills apply inside each step
 - Prefer project-local guidance over both, and reuse companion conventions instead of restating them
 
-### Cost-Aware Selection
+## Cost-Aware Selection
 
 Keep cheapest-capable-agent selection:
 - Mechanical, pattern-based, low-risk implementation -> cheapest capable executor
@@ -89,153 +80,28 @@ Keep cheapest-capable-agent selection:
 
 Do not spend a stronger model on work that a cheaper executor can complete safely.
 
-## Delegation Backend Resolution
+Agent selection principle:
 
-Before deep research or multi-agent execution, explicitly decide:
+1. Analyze complexity, not file count
+2. Start with the simplest capable agent
+3. Use delegated writers only when file ownership is clean and parallelism is real
+4. Reserve the orchestrator for cross-cutting integration and unblockers
 
-1. Which backend is available now
-2. Which project-local roles exist
-3. Which tasks actually benefit from delegation
-4. Which tasks should stay on the orchestrator critical path
+## Research Delegation
 
-Use this decision rule:
-
-- Delegate when the work is parallelizable, independent, or benefits from an isolated review/research perspective
-- Keep work local when it blocks the immediate next step, requires tight integration, or would cost more to delegate than to do directly
-- In Codex especially, never block execution on a missing specialized writer role if the orchestrator can safely complete the task
-
-## Mandatory Flow
-
-You MUST follow this flow. Keep all 5 phases. Adapt how each phase is executed to the environment.
-
-1. Initial Assessment (orchestrator-led)
-2. Deep Research (delegation-first, but not delegation-only)
-3. Planning (orchestrator synthesis)
-4. Execution (mixed mode: orchestrator + delegated workers)
-5. Validation (orchestrator-run verification plus delegated review where useful)
-
-### Default Execution Bias
-
-Unless the task is tiny, tightly coupled, or blocked on immediate integration, prefer this default in Codex:
-1. Minimal assessment
-2. Focused research only where uncertainty is real
-3. Fast plan
-4. Delegate plan items to executor agents with explicit ownership
-5. Re-synthesize results between items using a compact handoff packet
-6. Run validation at the end of the implementation batch
-
-Do not require a separate deep-research pass when the next implementation step is already clear.
-
----
-
-## Phase 1: Initial Assessment
-
-**Actor: ORCHESTRATOR**
-
-The orchestrator performs this phase directly.
-
-What to do:
-- Quick file reads to understand task scope
-- Identify what needs deeper investigation
-- Detect environment constraints and available agent backends
-- Detect local workflow rules from project docs
-- Formulate research questions for Phase 2
-- Decide whether the task needs a heavy orchestration pass or a lighter one
-- If uncertainty has real product or architecture impact, ask the user
-
-You MAY use targeted reads, search, and config inspection. This is orientation, not exhaustive analysis.
-
-**Output**:
-- Backend choice
-- Research questions
-- Initial risk list
-- Whether execution likely needs parallel tracks
-
----
-
-## Phase 2: Deep Research
-
-**Actor: DELEGATION-FIRST** | **Mode: PARALLEL where valuable**
-
-Prefer delegating deep research to the best available backend. However, the orchestrator may do bounded research directly when:
+Delegate deep research to the best available backend, but do bounded research directly when:
 - the question is narrow
 - the answer is needed immediately on the critical path
 - the environment lacks a fitting research role
-- Codex would otherwise stall on unnecessary delegation overhead
+- delegation overhead would stall the work
 
-This phase is conditional in spirit, even though it remains explicit in the workflow. If the task is already well-scoped after Phase 1, keep Phase 2 short and move on.
-
-Use the environment's native mechanism first. Prefer project-local role docs when they exist, and otherwise use portable fallback guidance. Use roles appropriate for:
-- Code analysis and pattern investigation
-- Web documentation and best practices
-- Git history and change analysis
-- UI investigation (when applicable)
-- Security or architecture investigation when the task warrants it
-
-### Suggested Role Mapping
-
-- Claude + oh-my-claudecode:
-  - `explore` for codebase evidence
-  - `planner` / `architect` for decomposition or system shape
-  - `document-specialist` for documentation verification
-- Codex:
-  - `explorer` for read-only evidence gathering
-  - `docs_researcher` for primary-doc verification
-  - `reviewer` when research overlaps with risk analysis
-- Fallback:
-  - `dmux` panes or worktrees for independent research tracks
-
-### Critical Rules for This Phase
-
+Rules:
 - Do not broad-scan the repo yourself unless delegation is unavailable or clearly slower than direct targeted inspection
-- Do not use delegation as ceremony; every delegated researcher should have a concrete question
+- Do not use delegation as ceremony; every delegated researcher gets a concrete question
 - Launch independent researchers in parallel when possible
-- Wait for the minimum findings needed to unblock planning, not for unnecessary perfection
-- If planning is already unblocked, stop research and proceed
+- Wait for the minimum findings needed to unblock planning, then stop researching
 
-Your job as orchestrator is to:
-1. Decide which researchers to deploy
-2. Give each researcher specific questions to answer
-3. Fill narrow gaps directly if needed
-4. Gather and organize findings into a usable plan basis
-
-**Output**: Consolidated findings, with source-of-truth references and unresolved risks.
-
----
-
-## Phase 3: Planning
-
-**Actor: ORCHESTRATOR**
-
-Synthesize findings into an implementation plan that aligns with local conventions:
-- Group changes by non-conflicting files
-- Order groups by dependency graph
-- Select execution mode per group: orchestrator direct, native subagent, or fallback `dmux`/worktree
-- Select appropriate reviewers and validators early, not as an afterthought
-- Identify risks and edge cases
-- Define required tests and verification commands
-- Decide where documentation updates belong if knowledge capture is needed
-- For each executable item, prepare the minimum handoff packet needed by the next executor
-
-For substantial or high-risk work, present the plan before execution. For clearly scoped tasks where the user asked for end-to-end implementation, proceed after a concise plan; do not end the response with an unexecuted promise — make the first tool call for that plan in the same response.
-
-### Agent Selection Principle
-
-1. Analyze complexity, not file count
-2. Start with simplest capable agent
-3. Mechanical tasks > simpler agents | Complex analysis > advanced agents
-4. Use delegated writers only when file ownership is clean and parallelism is real
-5. Reserve the orchestrator for cross-cutting integration and unblockers
-6. Optimize for cost as well as capability; cheapest capable agent wins by default
-
-### Planning Expectations
-
-- Prefer TDD or test-first sequencing when feasible
-- Account for immediate review after modifications
-- Include security review for sensitive code paths
-- Keep documentation capture in the project's existing docs surface
-
-### Handoff Packet
+## Handoff Packet
 
 Before any delegated execution task, prepare a compact handoff packet containing:
 - Goal of the current item
@@ -248,40 +114,15 @@ Before any delegated execution task, prepare a compact handoff packet containing
 
 Do not dump raw history. Pass only the context needed to complete the next step correctly.
 
-**Output**: Executable plan with groups, backend assignments, handoff packets, tests, and validation gates.
+## Execution Policy
 
----
-
-## Phase 4: Execution
-
-**Actor: MIXED MODE** | **Mode: GROUPED_PARALLEL when safe**
-
-Execution is not Claude-only. Choose the backend that fits the environment and the file-conflict graph.
-
-### Execution Policy by Environment
-
-#### Claude
-
-Use subagents through the Agent tool for independent implementation tracks. Prefer oh-my-claudecode development and review agents.
-
-When model tiers are available, use this bias:
-- Mechanical changes, rote propagation, pattern application, focused edits -> junior / haiku-class
-- Normal implementation with clear specs -> middle / sonnet-class
-- Complex refactoring, ambiguous recovery, architecture-sensitive execution -> senior / opus-class
-
-#### Codex
-
-Use built-in agent roles for research/review/docs work. For implementation, prefer delegated executor agents whenever ownership is clear and the task is not purely integrative. The orchestrator may execute code changes directly only for:
+Prefer delegated executor agents whenever ownership is clear and the task is not purely integrative. The orchestrator may execute code changes directly only for:
 - small or tightly coupled edits
 - integration work
 - fixes that immediately unblock validation
 - tasks with no strong writer-role mapping
 
-Do not force a "main orchestrator never edits" rule in Codex. However, do not let the main orchestrator absorb routine executor work by default.
-
-#### `dmux` / worktrees
-
-Use for independent parallel writers or cross-harness tasks that need isolation.
+Do not force a "main orchestrator never edits" rule. However, do not let the main orchestrator absorb routine executor work by default.
 
 ### Parallelism Rules
 
@@ -296,49 +137,39 @@ Use for independent parallel writers or cross-harness tasks that need isolation.
 - Exact changes to make
 - Relevant local rules to follow (`AGENTS.md`, explicitly approved local skills, supported role configuration, and repository conventions)
 - Expected outcome
-- Context from research findings
 - The current handoff packet
 - File ownership boundaries
-- Whether tests/docs are part of the assignment
+- Whether tests or docs are part of the assignment
 - A reminder not to revert unrelated work from other agents or the user
 
-### Execution Expectations
+Prefer `plan -> executor -> handoff -> next executor -> validation` over repeated orchestration loops when dependencies are straightforward.
 
-- Prefer test-first or test-with-change sequencing where practical
-- Use companion or project reviewers immediately after meaningful modifications
-- Use stack-specific project capabilities when the task is domain-sensitive
-- Preserve local architecture and workflow conventions instead of replacing them with generic patterns
-- When the backend supports model selection, prefer the lowest-cost executor that can safely complete the task
+## Refactor Mode
 
-You SHOULD maximize real parallel execution, not artificial parallelism.
-You SHOULD prefer `plan -> executor -> handoff -> next executor -> validation` over repeated orchestration loops when dependencies are straightforward.
+Use this mode when the task is a refactor rather than a behavior change.
 
----
+- **Targeted refactor**: the user names the files or classes. Read them, map their dependencies and callers, and scope the change to that surface.
+- **Exploratory refactor**: no target is given. Do a quick scan for candidate areas — oversized files, tangled packages, duplication, areas the user calls out — and confirm the shortlist with the user before changing code.
 
-## Phase 5: Validation
+In both cases:
+- Preserve behavior. A refactor does not change observable contracts, public APIs, or outputs.
+- Run the relevant tests before the first edit and confirm they are green. If coverage does not lock down the behavior you are about to move, add characterization tests first.
+- Keep the same tests green after every group of changes, and treat any test change as a signal to justify, not a routine step.
+- Follow the target project's own style conventions rather than imposing a generic refactoring style.
 
-**Actor: ORCHESTRATOR + VALIDATORS** | **Mode: PARALLEL where useful**
+## Validation
 
 ### Step 1: Project Verification
 
-The orchestrator runs the most relevant local verification commands for the target project, for example typecheck, tests, build, lint, security checks, or framework-specific health checks.
-
-Validation should cover build, typecheck, lint, tests, security-oriented checks, and diff review as appropriate.
-
-Run validation after the implementation batch or after a major dependency group completes. Do not repeatedly re-open long research loops unless validation reveals a real unknown.
+The orchestrator runs the most relevant local verification commands for the target project, for example typecheck, tests, build, lint, security checks, or framework-specific health checks. Run them after the implementation batch or a major dependency group, not after every step.
 
 ### Step 2: Delegate to Validators
 
-If the code is in a reviewable state, delegate to validators/reviewers:
-- Claude + oh-my-claudecode: `code-reviewer`, `security-reviewer`, `verifier`
+If the code is in a reviewable state, delegate to validators:
 - Codex: `reviewer`, `docs_researcher` for claim verification, `explorer` for regression tracing when needed
-- Fallback: separate `dmux` review panes or independent review passes
+- Other harnesses: the project's review roles, or an independent review pass in a separate context
 
-Validators can run in PARALLEL if they check different parts.
-
-Apply the same cheapest-capable rule here:
-- Routine verification and correctness review -> mid-tier validator/reviewer
-- Security-sensitive or architecture-heavy review -> strongest reviewer
+Validators can run in parallel if they check different risk surfaces. Routine correctness review goes to a mid-tier reviewer; security-sensitive or architecture-heavy review goes to the strongest reviewer.
 
 ### Step 3: Handle Results
 
@@ -354,43 +185,15 @@ Apply the same cheapest-capable rule here:
 - Tests added or updated when the change warrants them
 - Documentation changes captured in the right project surface when needed
 
----
-
-## Agent Categories
-
-You have access to several categories of sub-agents. Prefer project-local roles when available:
-
-- **Planning / architecture agents**: for decomposition, design checks, and dependency analysis
-- **Research agents**: for deep investigation of code, documentation, git history, UI
-- **Development agents**: for backend, frontend, or cross-cutting implementation work
-- **Validation agents**: for verifying correctness, domain compliance, and plan adherence
-- **Testing agents**: for creating or updating test coverage
-
-Select agents based on task complexity and ownership boundaries. Check project-local docs first, then bundled references for fallback options.
-
----
-
-## Portability Note
-
-This skill originated in a Claude-oriented setup, but it should operate cleanly in Claude Code, Codex, and mixed `dmux` workflows.
-
-Portability rules:
-- Prefer the target repo's local agent and workflow guidance
-- Use Claude-native subagents in Claude
-- Use Codex-native role definitions in Codex
-- Use `dmux` plus worktrees as a portable fallback for independent parallel work
-- Keep the orchestration logic stable even when the agent backend changes
-
 ## Critical Rules Summary
 
-- You MUST follow the 5-phase flow exactly
-- You MUST resolve the delegation backend from the active environment
+- You MUST NOT use this skill on Claude Code; oh-my-claudecode replaces it there
+- You MUST let the required process companion own planning and execution where one exists
+- You MUST resolve the delegation backend from the active environment and use only roles it exposes
 - You MUST prefer project-local guidance as the source of truth
 - You MUST delegate broad research, independent implementation, and independent review when that adds value
-- You MUST allow the orchestrator to do bounded critical-path work directly, especially in Codex
+- You MUST allow the orchestrator to do bounded critical-path work directly
 - You MUST run in parallel whenever ownership is clean and dependencies allow it
 - You MUST prepare a compact handoff packet before delegated execution steps
-- You MUST prefer fast plan-to-execution flow in Codex unless uncertainty or risk justifies deeper research
 - You MUST validate after execution
-- You MUST use the runtime's required companions when they are installed, and report them when they are missing
 - You MUST ask the user when a decision has non-obvious product, architecture, or risk consequences

@@ -23,7 +23,7 @@ A portable operating layer for **Hermes**, **Claude Code**, **Codex**, and futur
 
 Reusable workflows live once under `skills/`. Provider adapters stay thin, so knowledge does not drift between runtimes.
 
-[Browse 20 skills](skill-catalog.md)
+[Browse 19 skills](skill-catalog.md)
 
 </div>
 

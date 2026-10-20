@@ -1,40 +1,32 @@
 # Sub-agent catalog
 
-These role profiles are portable defaults. They are not the top priority when the target repo already defines its own roles.
+Only roles that actually exist are listed here. Never delegate to a role name the active backend does not expose.
 
 ## Selection priority
-1. Project-local role and configuration metadata such as `AGENTS.md` or the active environment's supported role registry
-2. This bundled portable catalog
+1. Project-local roles defined in the target repo's `.codex/agents` (or the active environment's equivalent role registry) take precedence
+2. The built-in and shipped roles below
 
-## Project-local roles example
-- `planner`: turns the task into a short executable plan.
-- `architect`: checks architecture fit, boundaries, and dependency impact.
-- `backend-developer`: owns the target project's server-side paths, API contracts, business logic, permissions, and data access.
-- `frontend-developer`: owns the target project's client-side paths, routes, components, forms, state, and API integration.
-- `domain-rules-reviewer`: verifies that domain rules, statuses, and calculations still match the target project's documented source of truth.
-- `plan-reviewer`: checks that delivery matches the approved plan and highlights gaps or residual risk.
+## Codex
 
-## Portable fallback roles
+### Built-in roles
+- `default`: general-purpose sub-agent.
+- `worker`: write-capable implementation within one slice.
+- `explorer`: read-only codebase exploration.
 
-### Research
-- `code-researcher`: deep code analysis, execution paths, dependencies, and file-level evidence.
-- `diff-researcher`: git history, change intent, and migration risk.
-- `web-researcher`: official documentation and current best practices.
-- `ui-researcher`: UI structure, route flow, and interaction behavior.
+### Roles shipped with the Codex adapter
+- `explorer`: read-only codebase evidence and regression tracing. Overrides the built-in `explorer`.
+- `docs_researcher`: primary-doc and API verification.
+- `reviewer`: correctness, regression, security, and missing tests review.
 
-### Implementation
-- `implementation-generalist`: standard multi-file implementation work within one slice.
-- `backend-specialist`: server-side logic, persistence, auth, APIs, and integrations.
-- `frontend-specialist`: routes, components, forms, client state, and API consumption.
-- `test-engineer`: coverage updates and regression-focused tests.
+The shipped roles are read-only, so implementation slices go to `worker` or a write-capable project-local role.
 
-### Validation
-- `validation-generalist`: standard correctness checks across touched code.
-- `architecture-reviewer`: complex interdependent validation for higher-risk changes.
+## Claude Code
+
+Not applicable: oh-my-claudecode replaces this skill and owns the agent catalog on that runtime.
 
 ## Selection rules
-1. Prefer repo-local roles over bundled roles.
+1. Prefer repo-local roles over built-in or shipped roles.
 2. Analyze complexity and ownership boundaries, not file count alone.
 3. Start with the simplest capable role.
-4. Split backend, frontend, and domain review into separate parallel tracks when ownership does not overlap.
+4. Split independent tracks into parallel sub-agents only when ownership does not overlap.
 5. Reserve the strongest reviewer for architecture-heavy or high-ambiguity work.
