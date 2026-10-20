@@ -6,7 +6,7 @@ Hermes consumes this hub read-only through `skills.external_dirs` in its `config
 
 Hermes requires no companion. Unlike the Claude Code and Codex adapters ([ADR-0003](../../docs/adr/0003-require-omc-and-superpowers-companions.md)), it must not load superpowers — not the `hermes plugins install obra/superpowers` plugin, and not a curated subset added through `external_dirs`. Reasons, checked against Hermes 0.22.2 and superpowers 6.4.2:
 
-- **No gap to fill.** The bundled `software-development-lifecycle` skill already covers test-driven development, systematic debugging, code review, worktree isolation, subagent-driven development, and a verification checklist. This hub adds `agent-failure-recovery`, `ai-assisted-regression-testing`, and `orchestrator-workflow`.
+- **No gap to fill.** The bundled `software-development-lifecycle` skill already covers test-driven development, systematic debugging, code review, worktree isolation, subagent-driven development, and a verification checklist. This hub adds `agent-failure-recovery` and `ai-assisted-regression-testing`.
 - **Triggers over-fire.** The skill index truncates descriptions to 60 characters (`SKILL_PROMPT_DESC_LIMIT`). A long superpowers `Use when…` description loses its qualifiers, so test-driven development fires on config edits, ops scripts, and chat turns, not only on feature work.
 - **Subsets break.** `writing-plans` and `executing-plans` require `subagent-driven-development` and its scripts. A hand-picked set without it fails partway through.
 - **Pins drift.** Hermes can patch skills it loads from external directories. Through a symlinked checkout, those patches edit the pinned superpowers clone in place.

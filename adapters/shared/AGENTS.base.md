@@ -33,7 +33,20 @@ every project unless a project-level instruction file or the user overrides them
   user what is missing and how to install it before any substantive work. Do not emulate its
   workflows from memory, and continue without it only when the user explicitly says so.
 
+### Precedence
+
+When instructions conflict, the higher source wins:
+
+1. User and project instructions.
+2. The runtime's orchestration companion workflow (oh-my-claudecode on Claude Code).
+3. Superpowers process discipline.
+4. The defaults in this file.
+
 ## Interaction Style
+
+These defaults apply only when no required companion process skill applies. When superpowers
+brainstorming applies to new feature or design work, its one-question-at-a-time approval flow
+governs instead.
 
 - Ask at most one round of clarifying questions before starting work. Otherwise state a reasonable
   assumption explicitly and proceed.
@@ -155,6 +168,18 @@ delegation has to buy something you would otherwise have to do yourself:
   test only when an end-to-end test is not feasible, and say why.
 - Fix the implementation, not the test, unless the test itself encodes the wrong expectation.
 
+## Refactoring
+
+- A refactor preserves behavior: no change to observable contracts, public APIs, or outputs.
+- Targeted refactor (files or classes named): read them, map callers and dependencies, and scope
+  the change to that surface. Exploratory refactor (no target): shortlist candidates such as
+  oversized files, tangled packages, or duplication, and confirm the shortlist with the user
+  before editing.
+- Run the relevant tests before the first edit and confirm they are green. When coverage does not
+  lock down the behavior you are about to move, add characterization tests first.
+- Keep the same tests green after every group of changes; a changed test needs a justification.
+- Follow the project's own style conventions, not a generic refactoring style.
+
 ## Code Style and Scope
 
 - Match the surrounding code's idiom, structure, and naming; project conventions win over any
@@ -180,6 +205,8 @@ before continuing, rotate anything that may have been exposed, and check for the
 elsewhere in the codebase.
 
 ## Workflow Boundaries
+
+The sizing rules below apply only when no required companion process skill applies.
 
 - When an orchestrated workflow defines phases, follow them in order. Do not skip assessment and
   planning to start editing files.

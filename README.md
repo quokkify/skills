@@ -119,7 +119,7 @@ The same example is available at [`adapters/hermes/config.example.yaml`](adapter
 
 ## Browse the Hub
 
-The repository currently contains **20 portable skills** spanning:
+The repository currently contains **18 portable skills** spanning:
 
 - orchestration and agent recovery;
 - skill lifecycle and promotion;

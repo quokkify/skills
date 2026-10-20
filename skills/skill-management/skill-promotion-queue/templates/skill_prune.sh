@@ -26,7 +26,7 @@ STATE="$HEALTH_DIR/state.tsv"
 USAGE_LOG="$HEALTH_DIR/usage.jsonl"
 REVIEW="$HEALTH_DIR/health-review.sh"
 
-NEVER_KEEP_LIST="skill-review orchestrator-workflow mr"
+NEVER_KEEP_LIST="skill-review mr"
 UNUSED_MIN_DAYS="${SKILL_PRUNE_MIN_DAYS:-30}"
 DUP_STRONG="60"
 DUP_PARTIAL="35"

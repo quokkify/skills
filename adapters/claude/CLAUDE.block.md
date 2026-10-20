@@ -22,10 +22,13 @@ The shared base is runtime-neutral. These points are specific to this runtime.
   agent catalog, model routing, and the plan → execute → review → verify workflows. Route
   delegation through its agents and workflows instead of inventing roles or re-implementing them
   from portable skills.
-- **superpowers is required.** Its process skills (brainstorming, test-driven development,
-  systematic debugging, verification before completion) are the discipline applied inside each
-  oh-my-claudecode step. When both offer a workflow for the same step, oh-my-claudecode drives
-  orchestration and agent routing; superpowers supplies the discipline within it.
+- **superpowers is required.** oh-my-claudecode owns planning and execution here (its `plan`,
+  `ralplan`, `deep-interview`, `execute`, `review`, and `verify`). From superpowers, use
+  `brainstorming` for design exploration of new features and the discipline skills
+  (`test-driven-development`, `systematic-debugging`, `verification-before-completion`,
+  `receiving-code-review`) inside each oh-my-claudecode step. Do not use superpowers
+  `writing-plans`, `executing-plans`, or `subagent-driven-development` on this runtime;
+  oh-my-claudecode replaces them.
 - **Missing companion.** The shared `sessionstart-prerequisites.sh` hook reports either one when
   it is not installed. Then tell the user what is missing and how to install it before any
   substantive work, and continue without it only when the user explicitly says so.

@@ -8,8 +8,6 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 
 ## orchestration
 
-- [`orchestrator-workflow`](../skills/orchestration/orchestrator-workflow/SKILL.md) — coordinate complex implementation work through discovery, planning, execution, and validation.
-- [`refactor-workflow`](../skills/orchestration/refactor-workflow/SKILL.md) — perform controlled refactoring with explicit evidence and verification.
 - [`agent-failure-recovery`](../skills/orchestration/agent-failure-recovery/SKILL.md) — stop retry loops, re-observe world state, run one discriminating probe, and recover containably.
 - [`agent-harness-design`](../skills/orchestration/agent-harness-design/SKILL.md) — design safe, diagnosable tools, schemas, observations, permissions, and recovery contracts for autonomous agents.
 
