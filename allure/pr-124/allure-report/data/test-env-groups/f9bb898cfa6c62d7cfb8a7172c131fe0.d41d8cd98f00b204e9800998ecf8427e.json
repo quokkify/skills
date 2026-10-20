@@ -1,0 +1,1 @@
+{"id":"f9bb898cfa6c62d7cfb8a7172c131fe0.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_prerequisites_treat_a_disabled_claude_plugin_as_missing","name":"test_prerequisites_treat_a_disabled_claude_plugin_as_missing","status":"passed","testResultsByEnv":{"default":"3c05633c407bd554b97b20230e5de56b"}}
