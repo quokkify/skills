@@ -1,5 +1,4 @@
 {
-  "model": "opus",
   "effortLevel": "medium",
   "theme": "dark-ansi",
   "hooks": {
