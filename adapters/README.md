@@ -5,7 +5,7 @@ The reusable skills live once in [`../skills`](../skills). This directory contai
 - `shared/` — runtime-neutral global instruction base, cross-runtime lifecycle hook scripts, and git hooks
 - `claude/` — Claude Code connection notes, `CLAUDE.block.md`, and `settings.template.json
 - `codex/` — `README.md`, `AGENTS.md`, `config.template.toml`, `hooks.json`, and `agents/` subagent definitions
-- `hermes/config.example.yaml` — example external skill directory configuration
+- `hermes/` — `README.md` (companion policy) and `config.example.yaml` (external skill directory configuration)
 
 ## What may be published here
 
@@ -25,6 +25,6 @@ Your real configuration — employer conventions, project trust lists, credentia
 
 Do not copy skill content into an adapter. An adapter may point at a canonical skill by name; duplicating a skill body creates a second source of truth that drifts.
 
-Anything that installs these templates must back up existing files, never silently overwrite a user's configuration, and preserve managed blocks written by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`. No such installer ships yet; copy files manually until one does.
+Anything that installs these templates must back up existing files, never silently overwrite a user's configuration, and preserve managed blocks written by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`. `scripts/bootstrap.sh` follows these rules.
 
 Claude Code uses `.claude/skills` and Codex uses `.agents/skills` for project-local discovery, but those are consumer locations rather than additional sources of truth in this repository.

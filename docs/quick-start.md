@@ -11,6 +11,10 @@ git clone https://github.com/quokkify/skills.git
 cd skills
 ```
 
+## Required companions
+
+Claude Code requires [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) and [superpowers](https://github.com/obra/superpowers); Codex requires superpowers. Hermes requires neither and must not load superpowers. The installer warns when one is missing, and a `SessionStart` hook tells the agent to report it before working. See [ADR-0003](adr/0003-require-omc-and-superpowers-companions.md).
+
 ## Claude Code
 
 Install the portable skills and Claude adapter:
