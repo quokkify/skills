@@ -23,12 +23,18 @@ Validate the exact artifact that will be committed, pushed, or reviewed. A green
 6. Add CI that runs the same portable validator with pinned tool versions and minimal permissions.
 7. Run shell/workflow linting, tests, documentation build, diff checks, and both secret-scan scopes.
 8. Review the complete diff. Create or push a focused branch and open a PR only after explicit user approval or an applicable repository policy authorizes publication.
+   - For a staged-diff review, fingerprint the index, export it, run checks from the exported directory, and re-fingerprint immediately before the verdict. If the index changed, restart scope analysis instead of mixing stale findings into the current review.
    - For repository-layout migrations, inspect moved or renamed skill bodies even when Git reports 100% renames. Structural validation does not prove that legacy role names, tool-specific invocation language, home-directory fallbacks, or project-specific stack assumptions were removed.
    - Cross-check documentation claims against the adapter files that actually ship; a notes-only adapter must not be described as providing personas, model routing, or executable setup.
    - Search for both legacy identifiers and concrete project fingerprints such as framework versions, fixed directory conventions, and domain-rule filenames. A canonical portable skill that mandates a named role or tool without a capability-based fallback is a functional portability failure.
+   - Treat operational scripts, service units, and copy-paste runbooks as executable interfaces. Probe dependency failures, concurrency/locking, state preservation, required environment wiring, destructive-command gates, and secret-safe backup permissions—not only syntax and happy paths.
 9. After every fix commit, re-check the exact PR head plus top-level comments, submitted reviews, inline comments, and active review threads.
    - When a check, report, or bot comment is stale for the current head, read the annotations of cancelled runs for "higher priority waiting request" before changing the posting logic; the message names the colliding concurrency group.
    - When the default branch fails after a merge in a step the change does not touch, confirm the external dependency (for example, that the reported packages resolve) and rerun only the failed jobs before treating it as a regression.
+
+## Reusable CI migration gates
+
+When moving a consumer repository onto a shared CI toolkit, compare the committed workflow files with the template metadata and the toolkit's latest released workflow/action contract before editing. Treat metadata as declared intent, not proof of adoption. Map ownership of triggers, permissions, secrets, artifacts, and project-specific checks; remove local setup/report/upload steps only when the reusable contract preserves their paths and failure semantics. Keep production references on immutable released tags, validate the workflow and dependency-bot configuration with the same linters CI uses, and send the exact resulting revision through an independent read-only review.
 
 ## Safety requirements
 
@@ -41,6 +47,9 @@ Validate the exact artifact that will be committed, pushed, or reviewed. A green
 - Key every `cancel-in-progress` concurrency group by each dimension of an independent stream: triggering workflow, configured source or scope, head repository, and branch. A group keyed only by branch lets a sibling trigger, or a sibling call of the same reusable workflow, cancel the run that owns the current head's result. Never add a run ID or commit SHA to the key; that disables cancellation of superseded runs. Test the rendered group expressions, not only their presence.
 - Treat privacy pattern checks and Gitleaks as complements to manual review, not proof that content is safe.
 - Assert a pinned dependency by its stable identity, and enforce digest immutability as a separate check. A validator that compares against one specific digest reports the guard as missing on every legitimate bump.
+- Treat executable snippets and operational runbooks as code: test failure ordering, malformed persistent state, repeated execution, and rollback paths rather than relying on syntax checks alone.
+- Bound and normalize untrusted decimal strings before Bash arithmetic; regression-test values beyond the shell integer range, leading-zero forms, and future or otherwise out-of-range timestamps.
+- For destructive or state-replacing recipes, require idempotent second-run tests and failure injection proving a failed prerequisite cannot trigger the following mutation.
 
 ## Detailed reference
 
