@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/quokkify/skills/compare/v0.13.0...v0.14.0) (2026-10-20)
+
+
+### Features
+
+* **adapters:** require oh-my-claudecode and superpowers, drop ECC coupling ([#124](https://github.com/quokkify/skills/issues/124)) ([ad8014d](https://github.com/quokkify/skills/commit/ad8014d65e6c20671473216709be38f26f37d9e4))
+* **repository-quality-gates:** runbook, staged-diff and CI-migration gates ([#122](https://github.com/quokkify/skills/issues/122)) ([2adfc3b](https://github.com/quokkify/skills/commit/2adfc3bd52fe116ae2cb1b6751479af100c1cb82))
+
+
+### Bug Fixes
+
+* **orchestrator-workflow:** act in the same response after a plan for scoped work ([#121](https://github.com/quokkify/skills/issues/121)) ([9a8e60f](https://github.com/quokkify/skills/commit/9a8e60f88547187ca0f06d97bef5f43b808d75dc))
+
 ## [0.13.0](https://github.com/quokkify/skills/compare/v0.12.0...v0.13.0) (2026-10-06)
 
 
