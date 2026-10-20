@@ -464,6 +464,7 @@ def warn_missing_companions(args, root):
             ).stdout
             context = json.loads(output)["hookSpecificOutput"]["additionalContext"] if output.strip() else ""
         except (OSError, subprocess.SubprocessError, json.JSONDecodeError, KeyError, TypeError):
+            print(f"Warning: cannot verify {runtime} companions; confirm them manually (see ADR-0003).", file=sys.stderr)
             continue
         for line in context.splitlines():
             if line.startswith("- "):

@@ -15,6 +15,7 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 
 ## skill-management
 
+- [`harness-health-doctor`](../skills/skill-management/harness-health-doctor/SKILL.md) — diagnose a skill-improvement publishing harness read-only, end to end.
 - [`skill-review`](../skills/skill-management/skill-review/SKILL.md) — review reusable lessons and promote approved changes safely.
 - [`skill-promotion-queue`](../skills/skill-management/skill-promotion-queue/SKILL.md) — accumulate pre-authorized, public-safe skill improvements in a per-agent rolling draft pull request.
 - [`agent-knowledge-lifecycle`](../skills/skill-management/agent-knowledge-lifecycle/SKILL.md) — share, evolve, secure, and synchronize reusable agent knowledge.

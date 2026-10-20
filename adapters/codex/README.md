@@ -81,6 +81,7 @@ The `command` entries in `hooks.json` reference portable scripts under `$CODEX_H
 
 ```text
 $CODEX_HOME/hooks/sessionstart-repo-context.sh
+$CODEX_HOME/hooks/sessionstart-prerequisites.sh
 $CODEX_HOME/hooks/pretooluse-bash-guard.sh
 $CODEX_HOME/hooks/completion-gate.sh
 ```

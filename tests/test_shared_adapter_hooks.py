@@ -484,6 +484,36 @@ class SharedAdapterHookTests(unittest.TestCase):
             (home / ".agents" / "skills" / "superpowers").mkdir(parents=True)
             self.assertEqual(self.prerequisites_context(self.run_prerequisites(home, "codex")), "")
 
+    def test_prerequisites_accept_flat_npx_skills_layout_for_codex(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            skill = home / ".agents" / "skills" / "using-superpowers"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text("---\nname: using-superpowers\n---\n", encoding="utf-8")
+            self.assertEqual(self.prerequisites_context(self.run_prerequisites(home, "codex")), "")
+
+    def test_prerequisites_read_project_codex_config(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            (home / ".codex").mkdir()
+            (home / ".codex" / "config.toml").write_text('[plugins."superpowers@openai-curated"]\nenabled = true\n', encoding="utf-8")
+            environment = {"CODEX_HOME": str(home / "elsewhere")}
+            self.assertEqual(self.prerequisites_context(self.run_prerequisites(home, "codex", **environment)), "")
+
+    def test_prerequisites_report_unverifiable_without_python(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            bin_directory = home / "bin"
+            bin_directory.mkdir()
+            for tool in ("dirname", "git", "cat"):
+                for prefix in ("/usr/bin", "/bin"):
+                    if Path(prefix, tool).exists():
+                        (bin_directory / tool).symlink_to(Path(prefix, tool))
+                        break
+            result = self.run_prerequisites(home, "claude", PATH=str(bin_directory))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("could not be verified", result.stdout)
+
     def test_prerequisites_honor_skip_opt_out(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             result = self.run_prerequisites(Path(directory), "claude", SKILLS_HUB_SKIP_HOOKS="prerequisites")

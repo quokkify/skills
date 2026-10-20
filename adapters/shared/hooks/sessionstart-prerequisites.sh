@@ -24,7 +24,11 @@ WORKDIR="${HOOK_CWD:-$PWD}"
 hook_disabled prerequisites "$(hook_git_root "$WORKDIR")" && hook_allow
 
 runtime="${1:-$(hook_runtime)}"
-[ -n "$HOOK_PY" ] || hook_allow
+if [ -z "$HOOK_PY" ]; then
+  HOOK_EXIT_INTENT=deliberate
+  printf '%s\n' "Required agent companions could not be verified (shared prerequisites hook, runtime: $runtime): no python3 or python on PATH. Ask the user to confirm the required companions are installed before any substantive work."
+  exit 0
+fi
 
 missing="$(PREREQ_RUNTIME="$runtime" PREREQ_CWD="$WORKDIR" "$HOOK_PY" -c '
 import json, os, pathlib, re, shutil
@@ -56,8 +60,8 @@ def claude_plugin_enabled(config, name):
     return False
 
 
-def codex_plugin_enabled(config, name):
-    text = read(config / "config.toml")
+def codex_plugin_enabled(path, name):
+    text = read(path)
     header = re.compile(r"^\s*\[plugins\.\"" + re.escape(name) + r"@[^\"]*\"\]\s*$")
     lines = text.splitlines()
     for index, line in enumerate(lines):
@@ -90,7 +94,12 @@ if runtime == "claude":
         missing.append("superpowers: not detected. Install it with /plugin install superpowers@claude-plugins-official.")
 elif runtime == "codex":
     config = pathlib.Path(os.environ.get("CODEX_HOME") or home / ".codex")
-    has_superpowers = codex_plugin_enabled(config, "superpowers") or (home / ".agents" / "skills" / "superpowers").is_dir()
+    skills = home / ".agents" / "skills"
+    has_superpowers = (
+        any(codex_plugin_enabled(path, "superpowers") for path in (cwd / ".codex" / "config.toml", config / "config.toml"))
+        or (skills / "superpowers").is_dir()
+        or (skills / "using-superpowers" / "SKILL.md").is_file()
+    )
     if not has_superpowers:
         missing.append("superpowers: not detected. Install it from the Codex plugin marketplace: /plugins, search superpowers, Install Plugin.")
 print("\n".join("- " + item for item in missing))

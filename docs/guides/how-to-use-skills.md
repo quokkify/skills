@@ -36,7 +36,7 @@ For a manual installation of the full Codex adapter (including hooks, configurat
    ```
 3. Copy shared hook scripts (required for hooks in hooks.json to function), backing up any file already there:
    ```sh
-   for f in sessionstart-repo-context.sh pretooluse-bash-guard.sh completion-gate.sh hook-lib.sh; do
+   for f in sessionstart-repo-context.sh sessionstart-prerequisites.sh pretooluse-bash-guard.sh completion-gate.sh hook-lib.sh; do
      [ -e "$CODEX_HOME/hooks/$f" ] && cp "$CODEX_HOME/hooks/$f" "$CODEX_HOME/hooks/$f.bak"
      cp "adapters/shared/hooks/$f" "$CODEX_HOME/hooks/"
    done
