@@ -7,7 +7,21 @@
   "packages": {
     ".": {
       "package-name": "skills",
-      "initial-version": "0.1.0"
+      "initial-version": "0.1.0",
+      "changelog-sections": [
+        {"type": "feat", "section": "✨ Features"},
+        {"type": "fix", "section": "🐛 Bug Fixes"},
+        {"type": "deps", "section": "📦 Dependencies"},
+        {"type": "docs", "section": "📚 Documentation", "hidden": true},
+        {"type": "perf", "section": "🚀 Performance"},
+        {"type": "refactor", "section": "♻️ Refactoring"},
+        {"type": "revert", "section": "↩️ Reverts"},
+        {"type": "build", "section": "🛠 Build System", "hidden": true},
+        {"type": "ci", "section": "⚙️ CI", "hidden": true},
+        {"type": "test", "section": "🧪 Tests", "hidden": true},
+        {"type": "chore", "section": "🧹 Chores"},
+        {"type": "style", "section": "🎨 Style", "hidden": true}
+      ]
     }
   }
 }
