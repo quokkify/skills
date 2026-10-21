@@ -1,0 +1,3 @@
+schema_version: 1
+components:
+  - {"id": "app-python", "install_command": "python -m pip install pytest allure-pytest", "name": "App Python", "path": ".", "test_artifact_name": "allure-results-app-python", "test_artifact_path": "allure-results", "test_command": "python -m pytest --alluredir=allure-results tests/", "upload_test_artifacts": true}
