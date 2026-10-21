@@ -1,0 +1,12 @@
+_commit: v3.5.0
+_src_path: https://github.com/quokkify/ci-kit.git
+module: python
+python_components:
+  - id: app-python
+    name: App Python
+    path: .
+    install_command: python -m pip install pytest allure-pytest
+    test_command: "python -m pytest --alluredir=allure-results tests/"
+    upload_test_artifacts: true
+    test_artifact_path: allure-results
+    test_artifact_name: allure-results-app-python
