@@ -22,6 +22,7 @@ nav = [
         { "ADR-0002: Reference Project-Toolkit By Release Tag" = "adr/0002-reference-project-toolkit-by-release-tag.md" },
         { "ADR-0003: Require OMC And Superpowers Companions" = "adr/0003-require-omc-and-superpowers-companions.md" },
         { "ADR-0004: Workflow Precedence" = "adr/0004-workflow-precedence.md" },
+        { "ADR-0005: Superpowers Owns Process On Claude" = "adr/0005-superpowers-owns-process-on-claude.md" },
     ] },
     { "FAQ" = "FAQ.md" },
 ]

@@ -4,7 +4,7 @@ title: "ADR-0004: Workflow precedence between companions and the shared base"
 
 # ADR-0004: Set one workflow precedence order and give each runtime a single plan-and-execute owner
 
-- Status: accepted
+- Status: superseded in part by [ADR-0005](0005-superpowers-owns-process-on-claude.md) (Claude Code process owner and precedence order)
 - Date: 2026-10-20
 
 ## Context
@@ -16,6 +16,8 @@ title: "ADR-0004: Workflow precedence between companions and the shared base"
 - The Codex adapter and the `orchestrator-workflow` role catalog listed role names — `planner`, `backend-developer`, `code-researcher`, `implementation-generalist`, and others — that no shipped configuration defines, so delegations to them could not resolve. `refactor-workflow` duplicated the five-phase orchestration with a refactor slant and added fixed style rules that override project conventions.
 
 ## Decision
+
+> The Claude Code bullets and the precedence order below are superseded by [ADR-0005](0005-superpowers-owns-process-on-claude.md): on Claude Code the superpowers chain owns the process and oh-my-claudecode supplies agents, routing, and hooks.
 
 - The shared base states one precedence order: user and project instructions, then the runtime's orchestration companion workflow (oh-my-claudecode on Claude Code), then superpowers process discipline, then the base defaults.
 - The base's interaction and ceremony-sizing defaults apply only when no required companion process skill applies. When superpowers `brainstorming` applies to new feature or design work, its one-question-at-a-time approval flow governs.
@@ -37,5 +39,5 @@ title: "ADR-0004: Workflow precedence between companions and the shared base"
 - Each runtime has exactly one owner for planning and execution, and the precedence order resolves the remaining overlaps without per-skill tie-breakers.
 - The base's "at most one round of questions" default no longer applies to feature design work on runtimes with superpowers, so those sessions ask more questions before implementation.
 - Users of other harnesses lose the bundled fallback role names. They must define roles in the target repository or delegate to whatever the harness exposes.
-- Anyone who invoked `refactor-workflow` or `orchestrator-workflow` directly must switch to the Refactoring section of the shared base and the runtime's companion: oh-my-claudecode on Claude Code, superpowers on Codex.
+- Anyone who invoked `refactor-workflow` or `orchestrator-workflow` directly must switch to the Refactoring section of the shared base and the runtime's companion: superpowers on Claude Code (since ADR-0005) and on Codex.
 - Harnesses with neither companion lose the bundled orchestration guide and rely on the shared base's delegation rules.

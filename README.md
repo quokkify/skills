@@ -87,7 +87,7 @@ cd skills
 ./scripts/bootstrap.sh --provider claude --install-skills
 ```
 
-This installs the shared hooks, Claude settings, and managed `CLAUDE.md` block with timestamped backups. Claude Code requires oh-my-claudecode and superpowers, and Codex requires superpowers ([ADR-0003](docs/adr/0003-require-omc-and-superpowers-companions.md)); the installer warns when one is missing. Add `--overlay /path/to/private-overlay` to layer private files after the public base. The overlay is read in place and is never copied into this checkout.
+This installs the shared hooks, Claude settings, and managed `CLAUDE.md` block with timestamped backups. Claude Code requires oh-my-claudecode and superpowers, and Codex requires superpowers ([ADR-0003](docs/adr/0003-require-omc-and-superpowers-companions.md); on Claude Code superpowers owns the process and oh-my-claudecode the agents, [ADR-0005](docs/adr/0005-superpowers-owns-process-on-claude.md)); the installer warns when one is missing. Add `--overlay /path/to/private-overlay` to layer private files after the public base. The overlay is read in place and is never copied into this checkout.
 
 ### Codex
 

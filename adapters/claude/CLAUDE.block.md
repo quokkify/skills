@@ -18,17 +18,23 @@ resolves @-imports up to five hops deep, so the base may import further files it
 
 The shared base is runtime-neutral. These points are specific to this runtime.
 
-- **oh-my-claudecode is required.** It is the orchestration layer on this runtime: it owns the
-  agent catalog, model routing, and the plan → execute → review → verify workflows. Route
-  delegation through its agents and workflows instead of inventing roles or re-implementing them
-  from portable skills.
-- **superpowers is required.** oh-my-claudecode owns planning and execution here (its `plan`,
-  `ralplan`, `deep-interview`, `execute`, `review`, and `verify`). From superpowers, use
-  `brainstorming` for design exploration of new features and the discipline skills
-  (`test-driven-development`, `systematic-debugging`, `verification-before-completion`,
-  `receiving-code-review`) inside each oh-my-claudecode step. Do not use superpowers
-  `writing-plans`, `executing-plans`, or `subagent-driven-development` on this runtime;
-  oh-my-claudecode replaces them.
+- **superpowers is required and owns the process.** Run its chain end to end: `brainstorming` →
+  `writing-plans` → the execution mode the user picks at its handoff (`subagent-driven-development`
+  or `executing-plans`; each runs its own reviews and ends in `finishing-a-development-branch`).
+  Use `test-driven-development`, `systematic-debugging`, `requesting-code-review`,
+  `receiving-code-review`, and `verification-before-completion` wherever they apply. Do not swap
+  a step for an oh-my-claudecode workflow partway through the chain.
+- **oh-my-claudecode is required and owns the agents.** It supplies the agent catalog, model
+  routing, and hooks. When a superpowers skill dispatches a subagent, use `executor` for
+  implementers and fixes, and `code-reviewer` for reviewers. The skill's prompt template replaces
+  the agent's default task, including its report format. Map the skill's model tiers to
+  `haiku` (cheap), `sonnet` (standard), and `opus` (most capable), and pass the model explicitly.
+  Outside the chain, use `explore` for ad-hoc codebase search.
+- **oh-my-claudecode workflows are opt-in.** `plan`, `ralplan`, `deep-interview`, `execute`,
+  `review`, `verify`, `autopilot`, `ralph`, `team`, and `ultragoal` run only when the user types
+  the workflow's slash command or asks for it by name. A trigger keyword that the hook detects in
+  incidental text does not count. The "canonical workflows" list in the oh-my-claudecode managed
+  block does not set the process on this runtime.
 - **Missing companion.** The shared `sessionstart-prerequisites.sh` hook reports either one when
   it is not installed. Then tell the user what is missing and how to install it before any
   substantive work, and continue without it only when the user explicitly says so.

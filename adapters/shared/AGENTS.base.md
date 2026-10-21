@@ -38,9 +38,13 @@ every project unless a project-level instruction file or the user overrides them
 When instructions conflict, the higher source wins:
 
 1. User and project instructions.
-2. The runtime's orchestration companion workflow (oh-my-claudecode on Claude Code).
-3. Superpowers process discipline.
+2. The superpowers process chain, on runtimes that require superpowers.
+3. The runtime's orchestration layer — agent catalog, model routing, hooks (oh-my-claudecode on
+   Claude Code). It supplies the agents the process dispatches; it does not replace process steps.
 4. The defaults in this file.
+
+Text that a companion's tooling writes into the user's instruction file as a marker-delimited
+managed block ranks as that companion, not as a user instruction.
 
 ## Interaction Style
 
