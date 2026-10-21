@@ -14,7 +14,7 @@
         <link rel="prev" href="../0003-require-omc-and-superpowers-companions/">
       
       
-        <link rel="next" href="../../FAQ/">
+        <link rel="next" href="../0005-superpowers-owns-process-on-claude/">
       
       
         
@@ -870,6 +870,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0005-superpowers-owns-process-on-claude/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0005: Superpowers Owns Process On Claude
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -995,7 +1023,7 @@
 
 <h1 id="adr-0004-set-one-workflow-precedence-order-and-give-each-runtime-a-single-plan-and-execute-owner">ADR-0004: Set one workflow precedence order and give each runtime a single plan-and-execute owner<a class="headerlink" href="#adr-0004-set-one-workflow-precedence-order-and-give-each-runtime-a-single-plan-and-execute-owner" title="Permanent link">&para;</a></h1>
 <ul>
-<li>Status: accepted</li>
+<li>Status: superseded in part by <a href="../0005-superpowers-owns-process-on-claude/">ADR-0005</a> (Claude Code process owner and precedence order)</li>
 <li>Date: 2026-10-20</li>
 </ul>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
@@ -1006,6 +1034,9 @@
 <li>The Codex adapter and the <code>orchestrator-workflow</code> role catalog listed role names — <code>planner</code>, <code>backend-developer</code>, <code>code-researcher</code>, <code>implementation-generalist</code>, and others — that no shipped configuration defines, so delegations to them could not resolve. <code>refactor-workflow</code> duplicated the five-phase orchestration with a refactor slant and added fixed style rules that override project conventions.</li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>The Claude Code bullets and the precedence order below are superseded by <a href="../0005-superpowers-owns-process-on-claude/">ADR-0005</a>: on Claude Code the superpowers chain owns the process and oh-my-claudecode supplies agents, routing, and hooks.</p>
+</blockquote>
 <ul>
 <li>The shared base states one precedence order: user and project instructions, then the runtime's orchestration companion workflow (oh-my-claudecode on Claude Code), then superpowers process discipline, then the base defaults.</li>
 <li>The base's interaction and ceremony-sizing defaults apply only when no required companion process skill applies. When superpowers <code>brainstorming</code> applies to new feature or design work, its one-question-at-a-time approval flow governs.</li>
@@ -1027,7 +1058,7 @@
 <li>Each runtime has exactly one owner for planning and execution, and the precedence order resolves the remaining overlaps without per-skill tie-breakers.</li>
 <li>The base's "at most one round of questions" default no longer applies to feature design work on runtimes with superpowers, so those sessions ask more questions before implementation.</li>
 <li>Users of other harnesses lose the bundled fallback role names. They must define roles in the target repository or delegate to whatever the harness exposes.</li>
-<li>Anyone who invoked <code>refactor-workflow</code> or <code>orchestrator-workflow</code> directly must switch to the Refactoring section of the shared base and the runtime's companion: oh-my-claudecode on Claude Code, superpowers on Codex.</li>
+<li>Anyone who invoked <code>refactor-workflow</code> or <code>orchestrator-workflow</code> directly must switch to the Refactoring section of the shared base and the runtime's companion: superpowers on Claude Code (since ADR-0005) and on Codex.</li>
 <li>Harnesses with neither companion lose the bundled orchestration guide and rely on the shared base's delegation rules.</li>
 </ul>
 
@@ -1087,13 +1118,13 @@
         
         
           
-          <a href="../../FAQ/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
+          <a href="../0005-superpowers-owns-process-on-claude/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-0005: Superpowers Owns Process On Claude">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                FAQ
+                ADR-0005: Superpowers Owns Process On Claude
               </div>
             </div>
             <div class="md-footer__button md-icon">
