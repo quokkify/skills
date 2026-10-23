@@ -32,3 +32,8 @@ allure_source: auto
 module: legacy
 handed_off:
   - validate
+  - base
+  - security
+  - release
+  - allure
+  - renovate
