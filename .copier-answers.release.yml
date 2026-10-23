@@ -1,5 +1,5 @@
-_commit: v3.10.0
+_commit: v3.11.0
 _src_path: https://github.com/quokkify/ci-kit.git
 module: release
 release_mode: manifest
-toolkit_version: v3.10.0
+toolkit_version: v3.11.0
