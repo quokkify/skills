@@ -160,10 +160,11 @@ Gitleaks `8.30.1` or newer must be available on `PATH` or through `GITLEAKS_BIN`
 
 ## Update Project Scaffolding
 
-The repository records its `quokkify/ci-kit` template source and answers in [`.copier-answers.yml`](.copier-answers.yml). From a clean checkout, review and apply template updates with:
+The repository is built from `quokkify/ci-kit` modules; each module records its template source and answers in its own `.copier-answers.<module>.yml`. From a clean checkout, review and apply template updates with:
 
 ```bash
-copier update --trust
+python -m pip install "git+https://github.com/quokkify/ci-kit@<release>"
+ci-kit update --repo . --to <release>
 ```
 
 Repository-specific validation remains in `scripts/validate.sh`; the generated update contract and reusable CI workflow keep shared project plumbing versioned without replacing that custom gate.
