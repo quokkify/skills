@@ -42,7 +42,7 @@ It executes `renovate-config-validator --strict .github/renovate.json`. Renovate
 
 ## Toolkit references
 
-Every workflow that calls `quokkify/ci-kit` references it at the version recorded as `toolkit_version` in `.copier-answers.yml`, in one of two accepted forms:
+Every workflow that calls `quokkify/ci-kit` references it at the version recorded as `toolkit_version` in `.copier-answers.release.yml`, in one of two accepted forms:
 
 - the exact release tag, for example `@v3.2.1` — what the template renders, and what every consumer that calls the toolkit's release workflow uses;
 - a full 40-character commit digest carrying that tag as a comment, for example `@7bc13e13… # v3.2.1`.

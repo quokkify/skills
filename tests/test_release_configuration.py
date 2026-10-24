@@ -10,7 +10,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPOSITORY_ROOT / ".github" / "release-please" / "config.json"
 MANIFEST_PATH = REPOSITORY_ROOT / ".github" / "release-please" / "manifest.json"
 WORKFLOW_PATH = REPOSITORY_ROOT / ".github" / "workflows" / "release.yml"
-ANSWERS_PATH = REPOSITORY_ROOT / ".copier-answers.yml"
+ANSWERS_PATH = REPOSITORY_ROOT / ".copier-answers.release.yml"
 
 TOOLKIT_RELEASE_WORKFLOW = "quokkify/ci-kit/.github/workflows/release-please.yml"
 TOOLKIT_USES_MARKER = f"uses: {TOOLKIT_RELEASE_WORKFLOW}@"
@@ -85,7 +85,7 @@ class ReleaseConfigurationTests(unittest.TestCase):
     def toolkit_version(self) -> str:
         answers = ANSWERS_PATH.read_text(encoding="utf-8")
         version_match = re.search(r"^toolkit_version: (v\d+\.\d+\.\d+)$", answers, re.MULTILINE)
-        self.assertIn("release_please: true", answers)
+        self.assertRegex(answers, r"(?m)^module: release$")
         self.assertIsNotNone(version_match)
         assert version_match is not None
         return version_match.group(1)
