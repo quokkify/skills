@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.14.1](https://github.com/quokkify/skills/compare/v0.14.0...v0.14.1) (2026-10-30)
+
+
+### 🐛 Bug Fixes
+
+* **release:** show dependency updates in release notes ([#128](https://github.com/quokkify/skills/issues/128)) ([8dc9fd4](https://github.com/quokkify/skills/commit/8dc9fd4718a3524c4960420b36cc290627150239))
+
+
+### 🧹 Chores
+
+* **ci-kit:** hand off base, security, release, allure, renovate to modules ([#143](https://github.com/quokkify/skills/issues/143)) ([b56c73d](https://github.com/quokkify/skills/commit/b56c73d69794a07fdda5a4dd575479e6310cab93))
+* **ci-kit:** hand off validate to core module ([#135](https://github.com/quokkify/skills/issues/135)) ([48838eb](https://github.com/quokkify/skills/commit/48838ebe4f7f82e0fd53193a10470a2136e3c6cd))
+* **template:** update shared project template ([#127](https://github.com/quokkify/skills/issues/127)) ([34ce3d9](https://github.com/quokkify/skills/commit/34ce3d9c3a42c92abd03eabc4be57a3486e194b4))
+* **template:** update shared project template ([#129](https://github.com/quokkify/skills/issues/129)) ([9532238](https://github.com/quokkify/skills/commit/95322380022fd6410186c18c736798c6974a439e))
+* **template:** update shared project template ([#130](https://github.com/quokkify/skills/issues/130)) ([17ce680](https://github.com/quokkify/skills/commit/17ce68071c6ca6e7b999d28f1c0ba01d82996fe5))
+* **template:** update shared project template ([#133](https://github.com/quokkify/skills/issues/133)) ([28883b1](https://github.com/quokkify/skills/commit/28883b1ed10ed754c02133b76e31279dbccb500d))
+* **template:** update shared project template ([#134](https://github.com/quokkify/skills/issues/134)) ([e9cd70e](https://github.com/quokkify/skills/commit/e9cd70e580731d0d3635769b9535ff7d05a90d55))
+* **template:** update shared project template ([#137](https://github.com/quokkify/skills/issues/137)) ([97f4a94](https://github.com/quokkify/skills/commit/97f4a94c3d350257db086304a5cd0e6dea723fe2))
+* **template:** update shared project template ([#139](https://github.com/quokkify/skills/issues/139)) ([bbba268](https://github.com/quokkify/skills/commit/bbba2689eeaedd51d0110c4cb7f94dc41e7e5ada))
+* **template:** update shared project template ([#140](https://github.com/quokkify/skills/issues/140)) ([5142471](https://github.com/quokkify/skills/commit/5142471deec77000c856d62a421bd890d01ebe67))
+* **template:** update shared project template ([#141](https://github.com/quokkify/skills/issues/141)) ([e12add3](https://github.com/quokkify/skills/commit/e12add3b69d8957e0d9cd39981ab33ac5535d8b0))
+* **template:** update shared project template ([#142](https://github.com/quokkify/skills/issues/142)) ([69e8fc6](https://github.com/quokkify/skills/commit/69e8fc6843475c56509d5817437988816c587844))
+* **template:** update shared project template ([#144](https://github.com/quokkify/skills/issues/144)) ([7fa1d37](https://github.com/quokkify/skills/commit/7fa1d377f60d5d267932dd928823cf1479c86b69))
+* **template:** update shared project template ([#145](https://github.com/quokkify/skills/issues/145)) ([b6701e5](https://github.com/quokkify/skills/commit/b6701e5bf241441b9075b0875d18b3ec9678b31a))
+* **template:** update shared project template ([#146](https://github.com/quokkify/skills/issues/146)) ([86d3b86](https://github.com/quokkify/skills/commit/86d3b86f6685076664f07f41b6c00fe71e159f6c))
+* **template:** update shared project template ([#147](https://github.com/quokkify/skills/issues/147)) ([99dda6c](https://github.com/quokkify/skills/commit/99dda6cbbb878a2ac217b4ba6de8d38dad181e32))
+* **template:** update shared project template ([#150](https://github.com/quokkify/skills/issues/150)) ([2318df2](https://github.com/quokkify/skills/commit/2318df2d3ac1d51bda4146304d458bc389cd7249))
+* **template:** update shared project template ([#151](https://github.com/quokkify/skills/issues/151)) ([c4686d5](https://github.com/quokkify/skills/commit/c4686d55ba4ed2182f3843c39356d128d8ebff91))
+
 ## [0.14.0](https://github.com/quokkify/skills/compare/v0.13.0...v0.14.0) (2026-10-20)
 
 
