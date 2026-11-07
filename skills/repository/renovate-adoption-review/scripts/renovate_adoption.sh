@@ -45,6 +45,14 @@ read_allowlist() {
   fi
 }
 
+read_repo_url() {
+  if ! repo_url=$(gh repo view --json url --jq .url 2>&1); then
+    echo "gh failed: gh repo view" >&2
+    echo "$repo_url" >&2
+    exit 3
+  fi
+}
+
 cmd_inspect() {
   pr=""
   mode="open"
@@ -68,14 +76,15 @@ cmd_inspect() {
 
   require_tools
   allow=$(read_allowlist) || exit $?
+  read_repo_url
   if ! view=$(gh pr view "$pr" --json number,title,body,headRefName,headRefOid 2>&1); then
     echo "gh failed: gh pr view $pr" >&2
     echo "$view" >&2
     exit 3
   fi
   printf '%s' "$view" | jq -L "$script_dir" \
-    --arg mode "$mode" --argjson allow "$allow" \
-    'include "renovate_adoption"; inspect_item($mode; $allow)' \
+    --arg mode "$mode" --argjson allow "$allow" --arg self "$repo_url" \
+    'include "renovate_adoption"; inspect_item($mode; $allow; $self)' \
     || fail "jq failed while inspecting PR $pr"
 }
 
@@ -83,14 +92,15 @@ cmd_sweep() {
   [ $# -eq 0 ] || usage
   require_tools
   allow=$(read_allowlist) || exit $?
+  read_repo_url
   if ! list=$(gh pr list --author app/renovate --state open --limit 100 \
     --json number,title,body,headRefName,headRefOid 2>&1); then
     echo "gh failed: gh pr list --state open" >&2
     echo "$list" >&2
     exit 3
   fi
-  out=$(printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
-    'include "renovate_adoption"; map(inspect_item("open"; $allow))') \
+  out=$(printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" --arg self "$repo_url" \
+    'include "renovate_adoption"; map(inspect_item("open"; $allow; $self))') \
     || fail "jq failed while sweeping open PRs"
   warn_if_truncated "$list" 100
   printf '%s\n' "$out"
@@ -137,6 +147,7 @@ cmd_retro() {
   fi
 
   allow=$(read_allowlist) || exit $?
+  read_repo_url
   if [ -n "$search" ]; then
     list=$(gh pr list --author app/renovate --state merged --label dependencies \
       --search "$search" --limit "$limit" --json number,title,body,mergedAt 2>&1)
@@ -148,8 +159,8 @@ cmd_retro() {
     echo "$list" >&2
     exit 3
   }
-  out=$(printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
-    'include "renovate_adoption"; retro_items($allow)') \
+  out=$(printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" --arg self "$repo_url" \
+    'include "renovate_adoption"; retro_items($allow; $self)') \
     || fail "jq failed while aggregating merged PRs"
   [ -n "$last" ] || warn_if_truncated "$list" "$limit"
   if [ "$(printf '%s' "$out" | jq 'length')" = "0" ]; then

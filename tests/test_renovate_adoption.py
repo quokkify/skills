@@ -11,6 +11,8 @@ ROOT = Path(__file__).parents[1]
 SCRIPT = ROOT / "skills/repository/renovate-adoption-review/scripts/renovate_adoption.sh"
 FIXTURES = Path(__file__).parent / "fixtures/renovate_adoption"
 
+DEFAULT_REPO_URL = "https://github.com/quokkify/example"
+
 GH_STUB = """#!/bin/sh
 printf '%s\\n' "$*" >> "$GH_STUB_LOG"
 if [ "$GH_STUB_FAIL" = "1" ]; then
@@ -19,6 +21,7 @@ if [ "$GH_STUB_FAIL" = "1" ]; then
 fi
 case "$1 $2" in
   "pr view") cat "$GH_STUB_DIR/pr_view.json" ;;
+  "repo view") cat "$GH_STUB_DIR/repo_url" ;;
   "pr list")
     case "$*" in
       *"--state merged"*) cat "$GH_STUB_DIR/pr_list_merged.json" ;;
@@ -43,6 +46,7 @@ def make_stub(tmp: Path, fixtures: dict, fail: bool = False) -> dict:
     gh = bin_dir / "gh"
     gh.write_text(GH_STUB, encoding="utf-8")
     gh.chmod(0o755)
+    (stub_dir / "repo_url").write_text(DEFAULT_REPO_URL + "\n", encoding="utf-8")
     for name, source in fixtures.items():
         shutil.copy(FIXTURES / source, stub_dir / name)
     log = tmp / "gh.log"
@@ -57,8 +61,10 @@ def make_stub(tmp: Path, fixtures: dict, fail: bool = False) -> dict:
 
 
 class RenovateAdoptionInspectTests(unittest.TestCase):
-    def run_script(self, tmp, args, fixture="pr_view_minor.json", fail=False):
+    def run_script(self, tmp, args, fixture="pr_view_minor.json", fail=False, repo_url=None):
         env = make_stub(tmp, {"pr_view.json": fixture}, fail=fail)
+        if repo_url is not None:
+            (Path(env["GH_STUB_DIR"]) / "repo_url").write_text(repo_url + "\n", encoding="utf-8")
         cwd = tmp / "repo"
         cwd.mkdir(exist_ok=True)
         return subprocess.run(
@@ -70,7 +76,7 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
             check=False,
         )
 
-    def inspect(self, fixture, mode=None, allow=None):
+    def inspect(self, fixture, mode=None, allow=None, repo_url=None):
         with tempfile.TemporaryDirectory() as temporary:
             tmp = Path(temporary)
             repo = tmp / "repo"
@@ -84,7 +90,7 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
             args = ["inspect", "1"]
             if mode:
                 args += ["--mode", mode]
-            result = self.run_script(tmp, args, fixture=fixture)
+            result = self.run_script(tmp, args, fixture=fixture, repo_url=repo_url)
             self.assertEqual(result.returncode, 0, result.stderr)
             return json.loads(result.stdout)
 
@@ -181,6 +187,51 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
             result = self.run_script(Path(temporary), ["inspect", "1", "--mode", "x"])
             self.assertEqual(result.returncode, 2)
 
+    def test_regression_guard_self_dependency_is_skipped(self):
+        """Regression guard: updates whose sourceUrl is the consumer repo are skipped."""
+        for repo_url in (
+            "https://github.com/quokkify/q4j",
+            "https://github.com/Quokkify/Q4J.git/",
+        ):
+            for mode in ("open", "retro"):
+                out = self.inspect("pr_view_self.json", mode=mode, repo_url=repo_url)
+                self.assertEqual(out["verdict"], "skip", (repo_url, mode))
+                self.assertEqual(out["reason"], "self dependency")
+        out = self.inspect(
+            "pr_view_self.json", allow=["quokkify/q4j"], repo_url="https://github.com/quokkify/q4j"
+        )
+        self.assertEqual(out["verdict"], "skip")
+        foreign = self.inspect("pr_view_self.json", repo_url="https://github.com/quokkify/other")
+        self.assertEqual(foreign["verdict"], "candidate")
+
+    def test_regression_guard_repo_view_failure_exits_3(self):
+        """Regression guard: a failing `gh repo view` is a gh failure (exit 3)."""
+        with tempfile.TemporaryDirectory() as temporary:
+            tmp = Path(temporary)
+            env = make_stub(tmp, {"pr_view.json": "pr_view_minor.json"})
+            (Path(env["GH_STUB_DIR"]) / "repo_url").unlink()
+            (tmp / "repo").mkdir()
+            result = subprocess.run(
+                ["sh", str(SCRIPT), "inspect", "1"],
+                env=env, cwd=tmp / "repo", capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 3)
+            self.assertIn("gh failed", result.stderr)
+            self.assertEqual(result.stdout, "")
+
+    def test_regression_guard_pin_row_with_empty_from_parses_to(self):
+        """Regression guard: a pin row ` → `sha`` keeps `to` instead of null."""
+        out = self.inspect("pr_view_pin.json")
+        update = out["updates"][0]
+        self.assertIn(update["from"], ("", None))
+        self.assertEqual(update["to"], "aa4efad")
+        self.assertEqual(update["updateType"], "pin")
+
+    def test_regression_guard_update_column_overrides_computed_type(self):
+        """Regression guard: Renovate's Update column wins; unknown values fall back."""
+        out = self.inspect("pr_view_update_column.json")
+        self.assertEqual([u["updateType"] for u in out["updates"]], ["patch", "major"])
+
 
 class RenovateAdoptionBatchTests(unittest.TestCase):
     def run_batch(self, args, fixtures, fail=False, setup=None, stub_files=None):
@@ -235,6 +286,42 @@ class RenovateAdoptionBatchTests(unittest.TestCase):
         self.assertEqual(len(item["releaseNotesUrls"]), 2)
         patch = next(i for i in out if i["package"] == "actions/cache")
         self.assertEqual(patch["verdict"], "skip")
+
+    def test_regression_guard_same_short_name_different_sources_not_merged(self):
+        """Regression guard: retro groups by (package, sourceUrl), not package alone."""
+        result = self.run_batch(
+            ["retro", "--last", "5"],
+            {"pr_list_merged.json": "pr_list_merged_same_name.json"},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(len(out), 2)
+        docker = next(i for i in out if "docker" in i["sourceUrl"])
+        maven = next(i for i in out if "redis-client" in i["sourceUrl"])
+        self.assertEqual((docker["from"], docker["to"], docker["prs"]), ("8.6.0", "8.8.0", [31, 33]))
+        self.assertEqual((maven["from"], maven["to"], maven["prs"]), ("0.12.1", "0.12.2", [32]))
+
+    def test_regression_guard_retro_skips_self_dependency(self):
+        """Regression guard: retro skips updates of the consumer repo itself."""
+        result = self.run_batch(
+            ["retro", "--last", "5"],
+            {"pr_list_merged.json": "pr_list_merged_self.json"},
+            stub_files={"repo_url": "https://github.com/Quokkify/q4j.git\n"},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        item = json.loads(result.stdout)[0]
+        self.assertEqual(item["verdict"], "skip")
+        self.assertEqual(item["reason"], "self dependency")
+
+    def test_sweep_skips_self_dependency(self):
+        result = self.run_batch(
+            ["sweep"],
+            {"pr_list_open.json": "pr_list_open.json"},
+            stub_files={"repo_url": "https://github.com/actions/github-script\n"},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual((out[0]["verdict"], out[0]["reason"]), ("skip", "self dependency"))
 
     def test_retro_since_tag_resolves_to_commit_date(self):
         def setup(repo):

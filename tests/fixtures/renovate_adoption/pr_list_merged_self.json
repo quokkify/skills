@@ -1,0 +1,8 @@
+[
+  {
+    "number": 41,
+    "title": "deps",
+    "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [quokkify/q4j](https://redirect.github.com/quokkify/q4j) | maven | major | `1.0.0` \u2192 `2.0.0` |\n",
+    "mergedAt": "2026-01-01T00:00:00Z"
+  }
+]

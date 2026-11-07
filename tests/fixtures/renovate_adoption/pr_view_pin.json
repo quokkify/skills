@@ -1,0 +1,7 @@
+{
+  "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [quokkify/project-toolkit](https://redirect.github.com/quokkify/project-toolkit) | action | pinDigest |  \u2192 `aa4efad` |\n",
+  "headRefName": "renovate/x",
+  "headRefOid": "abc",
+  "number": 52,
+  "title": "deps: update"
+}

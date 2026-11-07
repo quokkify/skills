@@ -37,27 +37,42 @@ def split_row:
   split("|") | .[1:] | if length > 0 and (.[-1] | trim) == "" then .[:-1] else . end
   | map(trim);
 
-# Markdown body string -> [{package, sourceUrl, from, to, updateType}]
-def parse_updates:
+# Renovate's own Update column value -> updateType, or null when unknown.
+def renovate_type:
+  if . == "pinDigest" then "pin"
+  elif . == "major" or . == "minor" or . == "patch" or . == "digest" or . == "pin"
+       or . == "lockFileMaintenance" or . == "rollback" or . == "replacement" or . == "bump"
+  then .
+  else null end;
+
+# Markdown body string -> [{package, sourceUrl, from, to, updateType, renovateType}]
+# renovateType is internal (null without a usable Update column); parse_updates strips it.
+def parse_updates_raw:
   split("\n") as $lines
   | (first(range(0; $lines | length) | select($lines[.] | startswith("| Package |"))) // null) as $h
   | if $h == null then []
     else
       ($lines[$h] | split_row) as $head
       | (first(range(0; $head | length) | select($head[.] == "Change")) // 1) as $ci
+      | (first(range(0; $head | length) | select($head[.] == "Update")) // null) as $ui
       | $lines[($h + 2):] as $rows
       | (first(range(0; $rows | length) | select($rows[.] | startswith("|") | not))
          // ($rows | length)) as $n
       | $rows[:$n]
       | map(split_row
             | (.[0] | capture("\\[(?<name>[^\\]]+)\\]\\((?<url>[^)]+)\\)")? ) as $link
-            | ([.[$ci] | scan("`([^`]+)`") | .[0]]) as $ver
+            | (if $ui == null then null else .[$ui] | renovate_type end) as $rt
+            | (.[$ci] | split("→")) as $sides
+            | ([$sides[] | [scan("`([^`]+)`") | .[0]] | .[0]]) as $ver
             | { package: ($link.name // .[0]),
                 sourceUrl: ($link.url // null | if . == null then null else normalize_url end),
-                from: ($ver[0] // null),
-                to: ($ver[1] // null) }
-            | .updateType = classify(.from; .to))
+                from: $ver[0],
+                to: $ver[1],
+                renovateType: $rt }
+            | .updateType = (.renovateType // classify(.from; .to)))
     end;
+
+def parse_updates: parse_updates_raw | map(del(.renovateType));
 
 # Keep the release-note URLs under this update's own repository; all of them
 # when the update has no sourceUrl or none matches.
@@ -74,9 +89,17 @@ def release_notes_urls:
     | normalize_url ]
   | unique;
 
+def repo_key: ascii_downcase | sub("/+$"; "") | sub("\\.git$"; "") | sub("/+$"; "");
+
+# True when the update's source is the consumer repository itself.
+def is_self($self):
+  .sourceUrl != null and ($self | repo_key) != "" and (.sourceUrl | repo_key) == ($self | repo_key);
+
 # One update -> {verdict, reason}
-def triage($mode; $allow):
-  if (.package as $p | $allow | index($p)) != null then
+def triage($mode; $allow; $self):
+  if is_self($self) then
+    {verdict: "skip", reason: "self dependency"}
+  elif (.package as $p | $allow | index($p)) != null then
     {verdict: "candidate", reason: "allowlisted"}
   elif $mode == "retro" and (.updateType == "major" or .updateType == "minor") then
     {verdict: "candidate", reason: "\(.updateType) update"}
@@ -87,7 +110,7 @@ def triage($mode; $allow):
   end;
 
 # gh pr view JSON -> inspect item
-def inspect_item($mode; $allow):
+def inspect_item($mode; $allow; $self):
   . as $pr
   | ($pr.body // "") as $body
   | ( if ($pr.title // "") | test("lock file maintenance"; "i") then
@@ -95,7 +118,7 @@ def inspect_item($mode; $allow):
           updateType: "lockFileMaintenance"}]
       else ($body | parse_updates) end
     ) as $updates
-  | ($updates | map(. + triage($mode; $allow))) as $t
+  | ($updates | map(. + triage($mode; $allow; $self))) as $t
   | ($t | map(select(.verdict == "candidate"))) as $cand
   | ($body | release_notes_urls) as $urls
   | { pr: $pr.number, branch: $pr.headRefName, headSha: $pr.headRefOid,
@@ -111,13 +134,13 @@ def pr_updates:
       | ($p.body // "") as $b
       | ($b | release_notes_urls) as $urls
       | { pr: $p.number, mergedAt: $p.mergedAt,
-          updates: ($b | parse_updates | map(. + {releaseNotesUrls: urls_for($urls)})) });
+          updates: ($b | parse_updates_raw | map(. + {releaseNotesUrls: urls_for($urls)})) });
 
 # [{pr, mergedAt, updates}] -> [retro item] without verdict
 def aggregate:
   sort_by(.mergedAt)
   | map(. as $p | .updates[] | . + {pr: $p.pr})
-  | group_by(.package)
+  | group_by([.package, .sourceUrl])
   | map(. as $g
         | { package: $g[0].package,
             sourceUrl: ($g | map(.sourceUrl) | map(select(. != null)) | first // null),
@@ -125,11 +148,13 @@ def aggregate:
             to: $g[-1].to,
             prs: ($g | map(.pr) | unique),
             releaseNotesUrls: ($g | map(.releaseNotesUrls) | add | unique) }
-        | .updateType = classify(.from; .to))
+        | .updateType = (($g | map(.renovateType) | unique) as $rt
+                         | if ($rt | length) == 1 and $rt[0] != null then $rt[0]
+                           else classify(.from; .to) end))
   | map({package, sourceUrl, from, to, updateType, prs, releaseNotesUrls});
 
-def retro_items($allow):
-  pr_updates | aggregate | map(. + triage("retro"; $allow));
+def retro_items($allow; $self):
+  pr_updates | aggregate | map(. + triage("retro"; $allow; $self));
 
 # Top-level scalar value of a YAML key in a copier file/answers text, or null.
 def yaml_scalar($key):

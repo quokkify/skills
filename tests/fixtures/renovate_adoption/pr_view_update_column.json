@@ -1,0 +1,7 @@
+{
+  "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [example/tool](https://github.com/example/tool) | action | patch | `v1.0.0` \u2192 `v2.0.0` |\n| [example/other](https://github.com/example/other) | action | weird | `v1.0.0` \u2192 `v2.0.0` |\n",
+  "headRefName": "renovate/x",
+  "headRefOid": "abc",
+  "number": 53,
+  "title": "deps: update"
+}
