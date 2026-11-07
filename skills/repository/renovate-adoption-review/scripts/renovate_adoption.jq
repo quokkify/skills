@@ -121,6 +121,38 @@ def aggregate:
 def retro_items($allow):
   pr_updates | aggregate | map(. + triage("retro"; $allow));
 
-# Slurped GitHub git-tree responses -> sorted unique blob paths, ".jinja" stripped.
-def owned_paths:
-  [.[].tree[]? | select(.type == "blob") | .path | sub("\\.jinja$"; "")] | unique;
+# Top-level scalar value of a YAML key in a copier file/answers text, or null.
+def yaml_scalar($key):
+  split("\n") | map(select(startswith($key + ":"))) | first // null
+  | if . == null then null
+    else sub("^[^:]+:\\s*"; "") | sub("\\s+#.*$"; "") | sub("^[\"']"; "") | sub("[\"']\\s*$"; "")
+    end;
+
+# Render the subset of Jinja used by copier _subdirectory: `{{ var }}` and a
+# single `{% if var == 'x' %}A{% else %}B{% endif %}`. Anything left over is
+# unresolvable and yields null.
+def render_subdir($vars):
+  gsub("\\{%\\s*if\\s+(?<a>\\w+)\\s*==\\s*'(?<b>[^']*)'\\s*%\\}(?<t>.*?)\\{%\\s*else\\s*%\\}(?<e>.*?)\\{%\\s*endif\\s*%\\}";
+       . as $c | if ($vars | has($c.a)) then (if $vars[$c.a] == $c.b then $c.t else $c.e end) else "{%?" end)
+  | gsub("\\{\\{\\s*(?<n>\\w+)\\s*\\}\\}"; . as $c | if ($vars | has($c.n)) then $vars[$c.n] else "{{?" end)
+  | if test("\\{[{%]") then null else . end;
+
+def strip_suffix($suffix):
+  if $suffix != "" and endswith($suffix) then .[: (length - ($suffix | length))] else . end;
+
+# Input: git tree response. Args: copier.yml text, answers-file text.
+# Output: {paths, warn}; paths are consumer-relative.
+def owned_for($copier; $answers):
+  ($copier | yaml_scalar("_templates_suffix") // ".jinja") as $suffix
+  | ($copier | yaml_scalar("_subdirectory")) as $raw
+  | ([$answers | split("\n")[] | capture("^(?<k>[A-Za-z_][A-Za-z0-9_]*):[ \\t]+(?<v>.*)$")?
+      | {(.k): (.v | sub("\\s+#.*$"; "") | sub("^[\"']"; "") | sub("[\"']\\s*$"; ""))}] | add // {}) as $vars
+  | [.tree[]? | select(.type == "blob") | .path] as $blobs
+  | if $raw == null then
+      {paths: [$blobs[] | select(. != "copier.yml") | strip_suffix($suffix)], warn: null}
+    else
+      ($raw | render_subdir($vars)) as $dir
+      | if $dir == null then {paths: [], warn: "unresolvable _subdirectory: \($raw)"}
+        else {paths: [$blobs[] | select(startswith($dir + "/")) | .[($dir | length) + 1:] | strip_suffix($suffix)], warn: null}
+        end
+    end;

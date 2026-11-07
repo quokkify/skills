@@ -3,109 +3,58 @@
   "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/8d1b8ad9e5d11dee8a44f1cddf9d629306ec9705",
   "tree": [
     {
-      "path": ".github/workflows",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "8d2a6a61e13b2f7ab735293f227daf1f882496bb",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/8d2a6a61e13b2f7ab735293f227daf1f882496bb"
-    },
-    {
-      "path": ".github/workflows/validate.yml",
+      "path": "LICENSE",
       "mode": "100644",
       "type": "blob",
-      "sha": "c256828ab7129c53524341886ba6769e934c2115",
-      "size": 9172,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/c256828ab7129c53524341886ba6769e934c2115"
+      "sha": "acbee92342f5d855aa07f5702727606213e5f65e",
+      "size": 1076,
+      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/acbee92342f5d855aa07f5702727606213e5f65e"
     },
     {
-      "path": "modules/core/template/.ci",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "83e144825b9337a77b94984f3f0bc43ccb115791",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/83e144825b9337a77b94984f3f0bc43ccb115791"
-    },
-    {
-      "path": "modules/core/template/.ci/modules",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "94842e15747c6087aa99aa9588ca1cd715bcf556",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/94842e15747c6087aa99aa9588ca1cd715bcf556"
-    },
-    {
-      "path": "modules/core/template/.ci/modules/core.yml.jinja",
+      "path": "README.md",
       "mode": "100644",
       "type": "blob",
-      "sha": "258d23b7fd542d28a0423417f231c32d2970a61e",
-      "size": 18,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/258d23b7fd542d28a0423417f231c32d2970a61e"
+      "sha": "1252e5644f3d9807cab36805f977f88f42681659",
+      "size": 8938,
+      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/1252e5644f3d9807cab36805f977f88f42681659"
     },
     {
-      "path": "modules/core/template/.github",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "58f8430003a4d163dfb5353990b3b4dc8eb82ce5",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/58f8430003a4d163dfb5353990b3b4dc8eb82ce5"
-    },
-    {
-      "path": "modules/core/template/.github/workflows",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "0b8ff16e07fe8711cb25a9b5ae94e83bc75b7872",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/0b8ff16e07fe8711cb25a9b5ae94e83bc75b7872"
-    },
-    {
-      "path": "modules/core/template/.github/workflows/validate.yml.jinja",
+      "path": "copier.yml",
       "mode": "100644",
       "type": "blob",
-      "sha": "54083cb0af508845c5fb4e6191929350829c179a",
-      "size": 225,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/54083cb0af508845c5fb4e6191929350829c179a"
+      "sha": "b37ddd07fcbcecaf4a04840ee11d501c3552c4a3",
+      "size": 27080,
+      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/b37ddd07fcbcecaf4a04840ee11d501c3552c4a3"
     },
     {
-      "path": "modules/core/template/{{ _copier_conf.answers_file }}.jinja",
+      "path": "modules/java/template/.ci",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b8509af0f190ceedda5da0023ff15c7ed58b4506",
+      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/b8509af0f190ceedda5da0023ff15c7ed58b4506"
+    },
+    {
+      "path": "modules/java/template/.ci/modules",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c6974d0d98312e7c550ac68825325e3b9d283da7",
+      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/c6974d0d98312e7c550ac68825325e3b9d283da7"
+    },
+    {
+      "path": "modules/java/template/.ci/modules/java.yml.jinja",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ff3b952bcd547181c384d8e7d80b966ff953abd8",
+      "size": 489,
+      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/ff3b952bcd547181c384d8e7d80b966ff953abd8"
+    },
+    {
+      "path": "modules/java/template/{{ _copier_conf.answers_file }}.jinja",
       "mode": "100644",
       "type": "blob",
       "sha": "7fc08f71df1c42ca5133c728eddbab5edaa34ebf",
       "size": 1529,
       "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/7fc08f71df1c42ca5133c728eddbab5edaa34ebf"
-    },
-    {
-      "path": "template/.copier-answers.yml.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "7fc08f71df1c42ca5133c728eddbab5edaa34ebf",
-      "size": 1529,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/7fc08f71df1c42ca5133c728eddbab5edaa34ebf"
-    },
-    {
-      "path": "template/.github",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "dc72c07531446cd27ce92bdd79e0cc9d294b0bf5",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/dc72c07531446cd27ce92bdd79e0cc9d294b0bf5"
-    },
-    {
-      "path": "template/.github/allure",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "462def96bd50ea2dbb2ee2b61dad4ce91ecea231",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/462def96bd50ea2dbb2ee2b61dad4ce91ecea231"
-    },
-    {
-      "path": "template/.github/allure/allurerc.mjs.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "645150a93a816e1793429baeb7e2a9632f3dcbad",
-      "size": 393,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/645150a93a816e1793429baeb7e2a9632f3dcbad"
-    },
-    {
-      "path": "template/.github/allure/safe_extract.py.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "b212fa305bc733d66510abb5afc958d556801dcb",
-      "size": 17322,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/b212fa305bc733d66510abb5afc958d556801dcb"
     },
     {
       "path": "template/.github/pull_request_template.md.jinja",
@@ -114,52 +63,6 @@
       "sha": "e4dd620c31aa9a26bd526a71cd4deed2f72e595a",
       "size": 1038,
       "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/e4dd620c31aa9a26bd526a71cd4deed2f72e595a"
-    },
-    {
-      "path": "template/.github/release-please",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "52b28c865588aaf3343ba18f8a905711ae9e9165",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/52b28c865588aaf3343ba18f8a905711ae9e9165"
-    },
-    {
-      "path": "template/.github/release-please/config.json.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "99c6d8432ebc9a3481a0ede889c7f15cb560bdff",
-      "size": 1096,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/99c6d8432ebc9a3481a0ede889c7f15cb560bdff"
-    },
-    {
-      "path": "template/.github/release-please/manifest.json.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "466df71c83b8a7e33fc928e10a3b357954ff91b3",
-      "size": 19,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/466df71c83b8a7e33fc928e10a3b357954ff91b3"
-    },
-    {
-      "path": "template/.github/renovate.json.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "f2f77a63d01ba7591bf23a86ff7d7311840068dc",
-      "size": 1927,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/f2f77a63d01ba7591bf23a86ff7d7311840068dc"
-    },
-    {
-      "path": "template/.github/scripts",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "1dbc5b3db8eb3c7abf063090f7942cd812baf373",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/1dbc5b3db8eb3c7abf063090f7942cd812baf373"
-    },
-    {
-      "path": "template/.github/scripts/enrich_release_notes.py.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "cc6025226307ba40fd1b101c7742c8a7ff0d90be",
-      "size": 31222,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/cc6025226307ba40fd1b101c7742c8a7ff0d90be"
     },
     {
       "path": "template/.github/workflows",
@@ -207,29 +110,6 @@
       "sha": "460b7aadfb01ae570efa6db8a6fd9a5b8147019d",
       "size": 749,
       "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/460b7aadfb01ae570efa6db8a6fd9a5b8147019d"
-    },
-    {
-      "path": "template/README.md.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "499944319f0edfa954947749d6438937508fd365",
-      "size": 1836,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/499944319f0edfa954947749d6438937508fd365"
-    },
-    {
-      "path": "template/docs",
-      "mode": "040000",
-      "type": "tree",
-      "sha": "e109f815bb0d590980e18edbae030e8818d93286",
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/trees/e109f815bb0d590980e18edbae030e8818d93286"
-    },
-    {
-      "path": "template/docs/ci-kit.md.jinja",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "a986052f53f2de03e53ec0aa279120e83acfc7fe",
-      "size": 3664,
-      "url": "https://api.github.com/repos/quokkify/ci-kit/git/blobs/a986052f53f2de03e53ec0aa279120e83acfc7fe"
     }
   ],
   "truncated": false

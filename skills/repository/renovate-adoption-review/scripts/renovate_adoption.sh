@@ -149,7 +149,9 @@ cmd_owned_paths() {
   [ $# -eq 0 ] || usage
   require_tools
   root=$(repo_root)
-  sources=""
+  work=$(mktemp -d) || fail "mktemp failed"
+  trap 'find "$work" -delete' EXIT
+  : > "$work/results"
   for file in "$root"/.copier-answers*.yml; do
     [ -f "$file" ] || continue
     src=$(sed -n 's/^_src_path:[[:space:]]*//p' "$file" | head -n 1 | tr -d "\"'\r")
@@ -160,35 +162,40 @@ cmd_owned_paths() {
         slug=${src#https://github.com/}
         slug=${slug%.git}
         slug=${slug%/}
-        sources="$sources$slug $commit
-"
         ;;
-      *) echo "skipping non-GitHub template source: $src" >&2 ;;
+      *)
+        echo "skipping non-GitHub template source: $src" >&2
+        continue
+        ;;
     esac
+    key=$(printf '%s@%s' "$slug" "$commit" | tr -c 'A-Za-z0-9._@-' '_')
+    if [ ! -f "$work/$key.tree" ]; then
+      if ! tree=$(gh api "repos/$slug/git/trees/$commit?recursive=1" 2>&1); then
+        echo "gh failed: gh api repos/$slug/git/trees/$commit" >&2
+        echo "$tree" >&2
+        exit 3
+      fi
+      if ! copier=$(gh api "repos/$slug/contents/copier.yml?ref=$commit" \
+        -H "Accept: application/vnd.github.raw" 2>&1); then
+        echo "gh failed: gh api repos/$slug/contents/copier.yml" >&2
+        echo "$copier" >&2
+        exit 3
+      fi
+      if [ "$(printf '%s' "$tree" | jq -r '.truncated // false' 2>/dev/null)" = "true" ]; then
+        echo "warning: template tree for $slug@$commit is truncated; owned paths may be incomplete" >&2
+      fi
+      printf '%s' "$tree" > "$work/$key.tree"
+      printf '%s\n' "$copier" > "$work/$key.copier"
+    fi
+    res=$(jq -L "$script_dir" --rawfile copier "$work/$key.copier" --rawfile answers "$file" \
+      'include "renovate_adoption"; owned_for($copier; $answers)' "$work/$key.tree") \
+      || fail "jq failed while computing owned paths for $file"
+    warn=$(printf '%s' "$res" | jq -r '.warn // empty')
+    [ -z "$warn" ] || echo "warning: $warn in $file; skipping" >&2
+    printf '%s' "$res" | jq -c '.paths' >> "$work/results"
   done
 
-  trees=""
-  for entry in $(printf '%s' "$sources" | sort -u | tr ' ' '#'); do
-    slug=${entry%%#*}
-    commit=${entry#*#}
-    if ! tree=$(gh api "repos/$slug/git/trees/$commit?recursive=1" 2>&1); then
-      echo "gh failed: gh api repos/$slug/git/trees/$commit" >&2
-      echo "$tree" >&2
-      exit 3
-    fi
-    if [ "$(printf '%s' "$tree" | jq -r '.truncated // false' 2>/dev/null)" = "true" ]; then
-      echo "warning: template tree for $slug@$commit is truncated; owned paths may be incomplete" >&2
-    fi
-    trees="$trees$tree
-"
-  done
-
-  if [ -z "$trees" ]; then
-    echo '[]'
-    return
-  fi
-  printf '%s' "$trees" | jq -s -L "$script_dir" 'include "renovate_adoption"; owned_paths' \
-    || fail "jq failed while computing owned paths"
+  jq -s 'add // [] | unique' "$work/results" || fail "jq failed while merging owned paths"
 }
 
 [ $# -ge 1 ] || usage

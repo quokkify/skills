@@ -24,7 +24,11 @@ case "$1 $2" in
       *"--state merged"*) cat "$GH_STUB_DIR/pr_list_merged.json" ;;
       *) cat "$GH_STUB_DIR/pr_list_open.json" ;;
     esac ;;
-  "api "*|"api") cat "$GH_STUB_DIR/api_tree.json" ;;
+  "api "*|"api")
+    case "$*" in
+      *contents/copier.yml*) cat "$GH_STUB_DIR/copier_yml" ;;
+      *) cat "$GH_STUB_DIR/api_tree.json" ;;
+    esac ;;
   *) echo "stub: unsupported: $*" >&2; exit 1 ;;
 esac
 """
@@ -279,24 +283,31 @@ class RenovateAdoptionBatchTests(unittest.TestCase):
 
 
 class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
-    def run_owned(self, answers, fail=False, truncated=False):
-        """answers maps answers-file name -> (src_path, commit) or None for no files."""
+    SRC = "https://github.com/quokkify/ci-kit.git"
+
+    def run_owned(self, answers, fail=False, truncated=False, copier=None):
+        """answers maps answers-file name -> (src_path, commit, extra yaml lines)."""
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         tmp = Path(temporary.name)
-        env = make_stub(tmp, {"api_tree.json": "api_tree.json"}, fail=fail)
+        env = make_stub(
+            tmp, {"api_tree.json": "api_tree.json", "copier_yml": "copier_yml"}, fail=fail
+        )
+        stub_dir = Path(env["GH_STUB_DIR"])
         if truncated:
-            stub = Path(env["GH_STUB_DIR"]) / "api_tree.json"
+            stub = stub_dir / "api_tree.json"
             data = json.loads(stub.read_text(encoding="utf-8"))
             data["truncated"] = True
             stub.write_text(json.dumps(data), encoding="utf-8")
+        if copier is not None:
+            (stub_dir / "copier_yml").write_text(copier, encoding="utf-8")
         repo = tmp / "repo"
         repo.mkdir()
         subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-        for name, (src, commit) in answers.items():
+        for name, (src, commit, extra) in answers.items():
             (repo / name).write_text(
                 f"# Changes here will be overwritten by Copier\n_commit: {commit}\n"
-                f"_src_path: {src}\nproject_name: demo\n",
+                f"_src_path: {src}\n{extra}",
                 encoding="utf-8",
             )
         result = subprocess.run(
@@ -310,17 +321,73 @@ class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
         result.gh_log = Path(env["GH_STUB_LOG"]).read_text(encoding="utf-8")
         return result
 
-    def test_owned_paths_from_copier_answers(self):
-        src = ("https://github.com/quokkify/ci-kit.git", "v3.9.0")
-        result = self.run_owned({".copier-answers.yml": src, ".copier-answers.java.yml": src})
+    def ci_kit(self, module):
+        return (self.SRC, "v3.9.0", f"module: {module}\nproject_name: demo\n")
+
+    def test_owned_paths_honor_subdirectory_for_each_module(self):
+        result = self.run_owned(
+            {
+                ".copier-answers.java.yml": self.ci_kit("java"),
+                ".copier-answers.yml": self.ci_kit("legacy"),
+            }
+        )
         self.assertEqual(result.returncode, 0, result.stderr)
         out = json.loads(result.stdout)
-        self.assertIn("template/.github/pull_request_template.md", out)  # ".jinja" stripped
-        self.assertNotIn(".github/workflows", out)  # tree entries dropped
+        self.assertIn(".ci/modules/java.yml", out)  # java: prefix and ".jinja" stripped
+        self.assertIn(".github/workflows/gitleaks.yml", out)  # legacy: template/
+        self.assertIn(".github/pull_request_template.md", out)
+        for foreign in ("README.md", "LICENSE", "copier.yml"):
+            self.assertNotIn(foreign, out)
+        self.assertFalse([p for p in out if p.startswith(("template/", "modules/"))])
         self.assertFalse([p for p in out if p.endswith(".jinja")])
         self.assertEqual(out, sorted(set(out)))
+
+    def test_owned_paths_one_tree_call_per_repo_and_commit(self):
+        result = self.run_owned(
+            {
+                ".copier-answers.java.yml": self.ci_kit("java"),
+                ".copier-answers.yml": self.ci_kit("legacy"),
+            }
+        )
         calls = result.gh_log.strip().splitlines()
-        self.assertEqual(calls, ["api repos/quokkify/ci-kit/git/trees/v3.9.0?recursive=1"])
+        tree_calls = [c for c in calls if "/git/trees/" in c]
+        self.assertEqual(tree_calls, ["api repos/quokkify/ci-kit/git/trees/v3.9.0?recursive=1"])
+        copier_calls = [c for c in calls if "contents/copier.yml" in c]
+        self.assertEqual(len(copier_calls), 1)
+        self.assertIn("?ref=v3.9.0", copier_calls[0])
+
+    def test_owned_paths_unresolvable_variable_warns_and_skips(self):
+        result = self.run_owned(
+            {
+                ".copier-answers.yml": (self.SRC, "v3.9.0", "project_name: demo\n"),
+                ".copier-answers.java.yml": self.ci_kit("java"),
+            }
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("unresolvable", result.stderr)
+        out = json.loads(result.stdout)
+        self.assertIn(".ci/modules/java.yml", out)
+        self.assertNotIn(".github/workflows/gitleaks.yml", out)
+
+    def test_owned_paths_plain_variable_subdirectory(self):
+        result = self.run_owned(
+            {".copier-answers.yml": self.ci_kit("java")},
+            copier='_subdirectory: "modules/{{ module }}/template"\n_templates_suffix: .jinja\n',
+        )
+        self.assertEqual(
+            json.loads(result.stdout), [".ci/modules/java.yml", "{{ _copier_conf.answers_file }}"]
+        )
+
+    def test_owned_paths_without_subdirectory_is_whole_tree_minus_copier_yml(self):
+        result = self.run_owned(
+            {".copier-answers.yml": (self.SRC, "v3.9.0", "")},
+            copier="_templates_suffix: .jinja\n",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertIn("README.md", out)
+        self.assertIn("template/.github/pull_request_template.md", out)
+        self.assertNotIn("copier.yml", out)
 
     def test_owned_paths_without_answers_is_empty_list(self):
         result = self.run_owned({})
@@ -330,7 +397,7 @@ class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
 
     def test_owned_paths_non_github_source_is_skipped_with_warning(self):
         result = self.run_owned(
-            {".copier-answers.yml": ("https://gitlab.example.com/group/tpl.git", "v1.0.0")}
+            {".copier-answers.yml": ("https://gitlab.example.com/group/tpl.git", "v1.0.0", "")}
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), [])
@@ -338,19 +405,13 @@ class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
         self.assertEqual(result.gh_log, "")
 
     def test_owned_paths_truncated_tree_warns(self):
-        result = self.run_owned(
-            {".copier-answers.yml": ("https://github.com/quokkify/ci-kit.git", "v3.9.0")},
-            truncated=True,
-        )
+        result = self.run_owned({".copier-answers.yml": self.ci_kit("java")}, truncated=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("truncated", result.stderr)
         self.assertTrue(json.loads(result.stdout))
 
     def test_owned_paths_gh_failure_exits_3_with_empty_stdout(self):
-        result = self.run_owned(
-            {".copier-answers.yml": ("https://github.com/quokkify/ci-kit.git", "v3.9.0")},
-            fail=True,
-        )
+        result = self.run_owned({".copier-answers.yml": self.ci_kit("java")}, fail=True)
         self.assertEqual(result.returncode, 3)
         self.assertIn("gh failed", result.stderr)
         self.assertEqual(result.stdout, "")
