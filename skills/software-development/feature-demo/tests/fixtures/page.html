@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Demo fixture</title></head>
+<body style="font: 20px sans-serif; padding: 40px">
+  <h1>Acme demo</h1>
+  <button id="go">Go</button>
+  <input id="name" placeholder="Name">
+  <select id="kind"><option value="a">Alpha</option><option value="b">Beta</option></select>
+  <input id="file" type="file">
+  <p id="state"></p>
+  <script>
+    const state = { clicks: 0, name: '', kind: 'a', file: '' };
+    const render = () => { document.getElementById('state').textContent = JSON.stringify(state); };
+    document.getElementById('go').onclick = () => { state.clicks++; render(); };
+    document.getElementById('name').oninput = (e) => { state.name = e.target.value; render(); };
+    document.getElementById('kind').onchange = (e) => { state.kind = e.target.value; render(); };
+    document.getElementById('file').onchange = (e) => { state.file = e.target.files[0].name; render(); };
+    render();
+  </script>
+</body>
+</html>

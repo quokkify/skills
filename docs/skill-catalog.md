@@ -33,6 +33,7 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 - [`interaction-state-audit`](../skills/software-development/interaction-state-audit/SKILL.md) — trace UI interactions through shared state, effects, and asynchronous writers to explain incorrect final state.
 - [`ai-assisted-regression-testing`](../skills/software-development/ai-assisted-regression-testing/SKILL.md) — counter shared AI author-review assumptions with executable regression oracles across important boundaries.
 - [`browser-qa`](../skills/software-development/browser-qa/SKILL.md) — collect safe browser-based release evidence for runtime health, interactions, visual baselines, and accessibility.
+- [`feature-demo`](../skills/software-development/feature-demo/SKILL.md) — record an owner-approved, captioned demo video of a merge-request feature and publish it to a `demos` branch with a `## Demo` block.
 
 ## devops
 
