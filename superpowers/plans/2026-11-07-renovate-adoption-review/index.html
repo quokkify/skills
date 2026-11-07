@@ -1,0 +1,1298 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Portable skills, private configuration boundaries, and safer harnesses for AI agents.">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.24">
+    
+    
+      
+        <title>renovate-adoption-review Implementation Plan - Agent Skills Hub</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../../assets/stylesheets/modern/main.28978c9b.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#renovate-adoption-review-implementation-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Agent Skills Hub" class="md-header__button md-logo" aria-label="Agent Skills Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Skills Hub
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              renovate-adoption-review Implementation Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m3.55 19.09 1.41 1.41 1.8-1.79-1.42-1.42M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6c0-3.32-2.69-6-6-6m8 7h3v-2h-3m-2.76 7.71 1.8 1.79 1.41-1.41-1.79-1.8M20.45 5l-1.41-1.4-1.8 1.79 1.42 1.42M13 1h-2v3h2M6.76 5.39 4.96 3.6 3.55 5l1.79 1.81zM1 13h3v-2H1m12 9h-2v3h2"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/quokkify/skills" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    quokkify/skills
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../project-architecture/" class="md-tabs__link">
+        
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../quick-start/" class="md-tabs__link">
+          
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../adr/" class="md-tabs__link">
+          
+  
+  Decisions
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../FAQ/" class="md-tabs__link">
+        
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Agent Skills Hub" class="md-nav__button md-logo" aria-label="Agent Skills Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+
+    </a>
+    Agent Skills Hub
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/quokkify/skills" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    quokkify/skills
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../project-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../skill-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/how-to-use-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to Use These Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/reviewing-and-promoting-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviewing and Promoting Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/releases-and-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases and Dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decision Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0001-publish-generic-global-agent-adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001: Publish Generic Global Agent Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0002-reference-project-toolkit-by-release-tag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002: Reference Project-Toolkit By Release Tag
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0003-require-omc-and-superpowers-companions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003: Require OMC And Superpowers Companions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0004-workflow-precedence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004: Workflow Precedence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0005-superpowers-owns-process-on-claude/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0005: Superpowers Owns Process On Claude
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../FAQ/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Constraints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-focus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review Focus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-json-shapes-produced-by-tasks-13-consumed-by-skillmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared JSON shapes (produced by Tasks 1–3, consumed by SKILL.md)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shared JSON shapes (produced by Tasks 1–3, consumed by SKILL.md)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-1-inspect-parse-classify-triage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 1: inspect — parse, classify, triage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-2-sweep-and-retro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 2: sweep and retro
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-3-owned-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 3: owned-paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-4-skillmd-references-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 4: SKILL.md, references, catalog
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-5-canary-end-to-end-verification-no-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 5: Canary end-to-end (verification, no code)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+  
+
+
+<h1 id="renovate-adoption-review-implementation-plan">renovate-adoption-review Implementation Plan<a class="headerlink" href="#renovate-adoption-review-implementation-plan" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> Ship a portable hub skill that turns a Renovate update (open PR or a batch of merged ones) into grounded, cited adoption changes in the consumer repository.</p>
+<p><strong>Architecture:</strong> A deterministic POSIX <code>sh</code> CLI (<code>renovate_adoption.sh</code>) fetches data through <code>gh</code> and pipes it into a jq module (<code>renovate_adoption.jq</code>) that parses Renovate PR bodies, classifies update types, applies triage and aggregates retro intervals. <code>SKILL.md</code> plus <code>references/</code> drive the model-side work (sources, grounding, edits, child PR, issue). Python <code>unittest</code> tests run the CLI against recorded fixtures through a stub <code>gh</code> on <code>PATH</code>.</p>
+<p><strong>Tech Stack:</strong> POSIX sh, jq ≥ 1.6, GitHub CLI <code>gh</code>, Python 3 <code>unittest</code> (hub convention), hub <code>scripts/validate.sh</code>.</p>
+<p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-11-07-renovate-adoption-review-design.md</code></p>
+<h2 id="global-constraints">Global Constraints<a class="headerlink" href="#global-constraints" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Skill directory: <code>skills/repository/renovate-adoption-review/</code>; frontmatter <code>name: renovate-adoption-review</code>, single-line <code>description</code> ≤ 1024 chars.</li>
+<li>Helper is POSIX <code>sh</code> (<code>#!/bin/sh</code>, no bashisms), depends only on <code>gh</code> and <code>jq</code>.</li>
+<li>Exit codes: 0 success, 2 usage error, 3 <code>gh</code>/network/missing-tool failure with a message on stderr; never print an empty result on failure.</li>
+<li>Allowlist file in the consumer: <code>.github/renovate-adoption.json</code>, shape <code>{"allow": ["&lt;package&gt;", ...]}</code>; absent file = empty list.</li>
+<li>Child branch prefix <code>adopt/</code>; marker <code>&lt;!-- adoption-base: &lt;sha&gt; --&gt;</code>; finding touching more than 10 files is proposed, not applied.</li>
+<li>Public repo: no machine paths, employer data, tokens; fixtures are sanitized copies of public quokkify PRs.</li>
+<li>Tests run via <code>python3 -m unittest discover -s tests -v</code>; full gate <code>./scripts/validate.sh --full</code>.</li>
+</ul>
+<h2 id="review-focus">Review Focus<a class="headerlink" href="#review-focus" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Grouped Renovate PR (several table rows, mixed types): verdict must be <code>candidate</code> if any row qualifies, with every row listed.</li>
+<li>Docker-style versions (<code>21-jdk-alpine</code> → <code>25-jdk-alpine</code>, <code>3.12-slim</code>): classify by leading numeric components, ignore the suffix.</li>
+<li><code>0.x</code> versions: a minor bump <code>0.4 → 0.5</code> is a major (semver convention).</li>
+<li>PR body without the updates table (manual edits, lock-file maintenance): no crash; <code>skip</code> with reason.</li>
+<li><code>retro --since</code> given a tag or SHA, not a date: resolved to that commit's date via <code>git log -1 --format=%cI</code>.</li>
+</ul>
+<p>Each line has a test in the task that owns the code (Tasks 1 and 2).</p>
+<hr />
+<h2 id="file-structure">File Structure<a class="headerlink" href="#file-structure" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>skills/repository/renovate-adoption-review/scripts/renovate_adoption.sh</code></td>
+<td>CLI: arg parsing, <code>gh</code>/<code>git</code> calls, exit codes, invokes jq module</td>
+</tr>
+<tr>
+<td><code>skills/repository/renovate-adoption-review/scripts/renovate_adoption.jq</code></td>
+<td>Pure functions: parse body, classify, triage, aggregate, owned paths</td>
+</tr>
+<tr>
+<td><code>skills/repository/renovate-adoption-review/SKILL.md</code></td>
+<td>Trigger, modes, step order, grounding, guardrails, stop conditions</td>
+</tr>
+<tr>
+<td><code>skills/repository/renovate-adoption-review/references/ecosystems/*.md</code></td>
+<td>Per-ecosystem opportunity checklists</td>
+</tr>
+<tr>
+<td><code>skills/repository/renovate-adoption-review/references/templates.md</code></td>
+<td>Child PR, parent comment, retro issue, retro PR bodies</td>
+</tr>
+<tr>
+<td><code>skills/repository/renovate-adoption-review/references/stacked-pr.md</code></td>
+<td>Branch naming, drift, merge order, recovery commands</td>
+</tr>
+<tr>
+<td><code>tests/test_renovate_adoption.py</code></td>
+<td>CLI tests through stub <code>gh</code></td>
+</tr>
+<tr>
+<td><code>tests/fixtures/renovate_adoption/*.json</code></td>
+<td>Recorded <code>gh</code> outputs</td>
+</tr>
+<tr>
+<td><code>docs/skill-catalog.md</code></td>
+<td>Catalog entry</td>
+</tr>
+</tbody>
+</table>
+<h2 id="shared-json-shapes-produced-by-tasks-13-consumed-by-skillmd">Shared JSON shapes (produced by Tasks 1–3, consumed by <code>SKILL.md</code>)<a class="headerlink" href="#shared-json-shapes-produced-by-tasks-13-consumed-by-skillmd" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="c1">// update</span>
+<span class="p">{</span><span class="nt">"package"</span><span class="p">:</span><span class="w"> </span><span class="s2">"gradle/actions"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sourceUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://github.com/gradle/actions"</span><span class="p">,</span>
+<span class="w"> </span><span class="nt">"from"</span><span class="p">:</span><span class="w"> </span><span class="s2">"v5.1.0"</span><span class="p">,</span><span class="w"> </span><span class="nt">"to"</span><span class="p">:</span><span class="w"> </span><span class="s2">"v6.4.1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"updateType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"major|minor|patch|digest|pin|lockFileMaintenance|unknown"</span><span class="p">,</span>
+<span class="w"> </span><span class="nt">"releaseNotesUrls"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"https://github.com/gradle/actions/releases/tag/v6.4.1"</span><span class="p">]}</span>
+<span class="c1">// inspect / sweep item</span>
+<span class="p">{</span><span class="nt">"pr"</span><span class="p">:</span><span class="w"> </span><span class="mi">38</span><span class="p">,</span><span class="w"> </span><span class="nt">"branch"</span><span class="p">:</span><span class="w"> </span><span class="s2">"renovate/gradle-actions-6.x"</span><span class="p">,</span><span class="w"> </span><span class="nt">"headSha"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;sha&gt;"</span><span class="p">,</span>
+<span class="w"> </span><span class="nt">"updates"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">&lt;upda</span><span class="kc">te</span><span class="err">&gt;</span><span class="p">],</span><span class="w"> </span><span class="nt">"verdict"</span><span class="p">:</span><span class="w"> </span><span class="s2">"candidate|skip"</span><span class="p">,</span><span class="w"> </span><span class="nt">"reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;text&gt;"</span><span class="p">}</span>
+<span class="c1">// retro item</span>
+<span class="p">{</span><span class="nt">"package"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="nt">"sourceUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="nt">"from"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;earliest from&gt;"</span><span class="p">,</span><span class="w"> </span><span class="nt">"to"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;latest to&gt;"</span><span class="p">,</span>
+<span class="w"> </span><span class="nt">"updateType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;recomputed on interval&gt;"</span><span class="p">,</span><span class="w"> </span><span class="nt">"prs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">19</span><span class="p">],</span><span class="w"> </span><span class="nt">"releaseNotesUrls"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">],</span>
+<span class="w"> </span><span class="nt">"verdict"</span><span class="p">:</span><span class="w"> </span><span class="s2">"candidate|skip"</span><span class="p">,</span><span class="w"> </span><span class="nt">"reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;text&gt;"</span><span class="p">}</span>
+</code></pre></div>
+<hr />
+<h3 id="task-1-inspect-parse-classify-triage">Task 1: <code>inspect</code> — parse, classify, triage<a class="headerlink" href="#task-1-inspect-parse-classify-triage" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong>
+- Create: <code>skills/repository/renovate-adoption-review/scripts/renovate_adoption.sh</code>
+- Create: <code>skills/repository/renovate-adoption-review/scripts/renovate_adoption.jq</code>
+- Create: <code>tests/test_renovate_adoption.py</code>
+- Create: <code>tests/fixtures/renovate_adoption/pr_view_major.json</code>, <code>pr_view_minor.json</code>, <code>pr_view_digest.json</code>, <code>pr_view_grouped.json</code>, <code>pr_view_docker.json</code>, <code>pr_view_zero_minor.json</code>, <code>pr_view_no_table.json</code></p>
+<p><strong>Interfaces:</strong>
+- Produces: CLI <code>renovate_adoption.sh inspect &lt;pr&gt; [--mode open|retro]</code> → one inspect item on stdout. jq defs <code>parse_updates</code> (body string → <code>[update]</code>), <code>classify(from; to)</code> → updateType string, <code>triage(mode; allow)</code> (update → <code>{verdict, reason}</code>).
+- Stub contract (test helper <code>make_stub(tmp, fixtures, fail=False)</code>): writes executable <code>gh</code> on a temp <code>PATH</code> dir; it appends its argv to <code>$GH_STUB_LOG</code>, prints <code>$GH_STUB_DIR/pr_view.json</code> for <code>pr view</code>, <code>pr_list_open.json</code> / <code>pr_list_merged.json</code> for <code>pr list</code> (by <code>--state</code>), <code>api_tree.json</code> for <code>api</code>; exits 1 with stderr text when <code>GH_STUB_FAIL=1</code>.</p>
+<ul class="task-list">
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Record fixtures.</strong> From public quokkify repos run <code>gh pr view &lt;n&gt; --json number,title,body,headRefName,headRefOid</code> for a major action bump, a minor, a digest, and a grouped PR; hand-edit copies for <code>docker</code> (<code>21-jdk-alpine</code> → <code>25-jdk-alpine</code>), <code>zero_minor</code> (<code>0.4.2</code> → <code>0.5.0</code>), <code>no_table</code> (body without the table). Strip nothing but job-log URLs.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Write failing tests</strong> in <code>RenovateAdoptionInspectTests</code>:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_major_action_is_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="s2">"pr_view_major.json"</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"verdict"</span><span class="p">],</span> <span class="s2">"candidate"</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"updates"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"updateType"</span><span class="p">],</span> <span class="s2">"major"</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"updates"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"sourceUrl"</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"https://github.com/"</span><span class="p">))</span>  <span class="c1"># redirect.github.com normalized</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_digest_is_skipped</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>        <span class="c1"># verdict "skip", reason contains "digest"</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_minor_open_mode_skipped_retro_mode_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_allowlisted_minor_is_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>   <span class="c1"># writes .github/renovate-adoption.json in temp repo cwd</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_grouped_pr_any_major_makes_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># len(updates) == table rows</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_docker_suffix_classified_by_numeric_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># "major"</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_zero_major_minor_bump_is_major</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_body_without_table_is_skip_not_crash</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># exit 0, verdict "skip", reason "no updates table"</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_gh_failure_exits_3_with_stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_missing_pr_argument_exits_2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Run</strong> <code>python3 -m unittest tests.test_renovate_adoption -v</code> → all FAIL (script missing).</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Implement the jq module.</strong> <code>parse_updates</code>: take table rows between the header line starting <code>| Package |</code> and the first blank line; package = link text of column 1, <code>sourceUrl</code> = its href with host <code>redirect.github.com</code> → <code>github.com</code>; <code>from</code>/<code>to</code> = the two backticked values in column 2 split on <code>→</code>. <code>releaseNotesUrls</code> = unique <code>https://(redirect.)?github.com/&lt;o&gt;/&lt;r&gt;/(releases/tag|compare)/...</code> links anywhere in the body, normalized. Title containing <code>lock file maintenance</code> (case-insensitive) → single update of type <code>lockFileMaintenance</code>. <code>classify</code> algorithm:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>strip leading "v"; if both match ^[0-9a-f]{7,40}$ → digest
+take leading numeric components (split on [.-], stop at first non-numeric)
+if from has fewer components and to starts with from's components → pin
+no numeric prefix on either side → unknown
+first differing index: 0 → major; 1 → (from[0]==0 ? major : minor); else patch
+</code></pre></div>
+<p><code>triage</code>: package in allow → candidate ("allowlisted"); open mode: major → candidate, else skip ("<type> not reviewed in open mode"); retro mode: major|minor → candidate, else skip. A PR is candidate if any update is; reason joins candidate reasons. Empty updates → skip "no updates table".</p>
+<ul class="task-list">
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Implement CLI <code>inspect</code>.</strong> Check <code>command -v gh jq</code> (exit 3 "requires gh and jq"); call <code>gh pr view "$pr" --json number,title,body,headRefName,headRefOid</code>; read allowlist from <code>$(git rev-parse --show-toplevel)/.github/renovate-adoption.json</code> if present; run <code>jq -L "$script_dir" 'include "renovate_adoption"; ...'</code>. Any <code>gh</code> non-zero → stderr <code>gh failed: &lt;cmd&gt;</code> and exit 3.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 6: Run tests</strong> → all PASS. Also <code>sh -n</code> the script and, if available, <code>shellcheck -s sh</code>.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 7: Commit</strong> <code>feat(renovate-adoption-review): add inspect helper with update classification</code>.</p>
+</li>
+</ul>
+<h3 id="task-2-sweep-and-retro">Task 2: <code>sweep</code> and <code>retro</code><a class="headerlink" href="#task-2-sweep-and-retro" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong>
+- Modify: <code>skills/repository/renovate-adoption-review/scripts/renovate_adoption.sh</code>
+- Modify: <code>skills/repository/renovate-adoption-review/scripts/renovate_adoption.jq</code>
+- Modify: <code>tests/test_renovate_adoption.py</code>
+- Create: <code>tests/fixtures/renovate_adoption/pr_list_open.json</code>, <code>pr_list_merged.json</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>parse_updates</code>, <code>classify</code>, <code>triage</code> from Task 1.
+- Produces: <code>renovate_adoption.sh sweep</code> → <code>[inspect item]</code>; <code>renovate_adoption.sh retro (--since &lt;date|tag|sha&gt; | --last &lt;N&gt;)</code> → <code>[retro item]</code>; jq def <code>aggregate</code> (<code>[{pr, mergedAt, updates}]</code> → <code>[retro item]</code> without verdict).</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Write failing tests</strong> in <code>RenovateAdoptionBatchTests</code>:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_sweep_lists_every_open_pr_with_verdict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># len == fixture count; gh argv has "--state open" and "--author app/renovate"</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_retro_aggregates_repeated_bumps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="c1"># fixture: setup-java v4.1.0→v4.2.0 (#12, earlier), v4.2.0→v4.5.0 (#19, later)</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">out</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s2">"package"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"actions/setup-java"</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">((</span><span class="n">item</span><span class="p">[</span><span class="s2">"from"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"to"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"prs"</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"v4.1.0"</span><span class="p">,</span> <span class="s2">"v4.5.0"</span><span class="p">,</span> <span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">19</span><span class="p">]))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"updateType"</span><span class="p">],</span> <span class="s2">"minor"</span><span class="p">);</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"verdict"</span><span class="p">],</span> <span class="s2">"candidate"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_retro_since_tag_resolves_to_commit_date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># temp git repo with tag; gh argv contains "merged:&gt;=&lt;that ISO date&gt;"</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_retro_last_n_passes_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># argv contains "--limit 5"</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_retro_requires_exactly_one_range_flag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># neither or both → exit 2</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run</strong> the new tests → FAIL.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement.</strong> <code>sweep</code>: <code>gh pr list --author app/renovate --state open --limit 100 --json number,title,body,headRefName,headRefOid</code>, map items through the Task 1 pipeline in open mode. <code>retro</code>: <code>--since</code> value matching <code>^[0-9]{4}-[0-9]{2}-[0-9]{2}</code> is a date, otherwise <code>git log -1 --format=%cI &lt;ref&gt;</code> (failure → exit 2 "unknown ref"); <code>gh pr list --author app/renovate --state merged --label dependencies --search "merged:&gt;=&lt;date&gt;" --limit &lt;N or 200&gt; --json number,title,body,mergedAt</code>. <code>aggregate</code>: group updates by <code>package</code>, order by <code>mergedAt</code>, <code>from</code> of first, <code>to</code> of last, union of URLs, <code>prs</code> ascending; recompute <code>updateType</code> with <code>classify</code>; then <code>triage("retro"; allow)</code>.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run all tests</strong> → PASS.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Commit</strong> <code>feat(renovate-adoption-review): add sweep and retro batch helpers</code>.</p>
+</li>
+</ul>
+<h3 id="task-3-owned-paths">Task 3: <code>owned-paths</code><a class="headerlink" href="#task-3-owned-paths" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong>
+- Modify: <code>skills/repository/renovate-adoption-review/scripts/renovate_adoption.sh</code>, <code>renovate_adoption.jq</code>
+- Modify: <code>tests/test_renovate_adoption.py</code>
+- Create: <code>tests/fixtures/renovate_adoption/api_tree.json</code></p>
+<p><strong>Interfaces:</strong>
+- Produces: <code>renovate_adoption.sh owned-paths</code> → JSON array of consumer-relative path strings (blobs under the template <code>_subdirectory</code>, prefix and templates suffix removed); consumer path P is owned iff it equals an entry (ruling R7). <code>SKILL.md</code> uses this rule.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Write failing tests:</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_owned_paths_from_copier_answers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="c1"># temp repo with .copier-answers.yml (_src_path https://github.com/quokkify/ci-kit.git, _commit v3.9.0)</span>
+    <span class="c1"># and .copier-answers.java.yml with the same source → gh api called ONCE with repos/quokkify/ci-kit/git/trees/v3.9.0?recursive=1</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertIn</span><span class="p">(</span><span class="s2">"templates/core/.github/workflows/validate.yml"</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>  <span class="c1"># ".jinja" stripped</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_owned_paths_without_answers_is_empty_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># "[]", exit 0, gh not called</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_owned_paths_non_github_source_is_skipped_with_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># stderr warning, exit 0</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run</strong> → FAIL.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement.</strong> Read <code>_src_path</code> and <code>_commit</code> with <code>sed</code> from each <code>.copier-answers*.yml</code> at repo root; dedupe <code>(owner/repo, commit)</code>; for <code>https://github.com/&lt;o&gt;/&lt;r&gt;(.git)?</code> call <code>gh api "repos/&lt;o&gt;/&lt;r&gt;/git/trees/&lt;commit&gt;?recursive=1"</code>; keep <code>type == "blob"</code> paths, strip trailing <code>.jinja</code>, unique sort.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run all tests</strong> → PASS.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Commit</strong> <code>feat(renovate-adoption-review): detect template-owned paths</code>.</p>
+</li>
+</ul>
+<h3 id="task-4-skillmd-references-catalog">Task 4: <code>SKILL.md</code>, references, catalog<a class="headerlink" href="#task-4-skillmd-references-catalog" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong>
+- Create: <code>skills/repository/renovate-adoption-review/SKILL.md</code>
+- Create: <code>references/ecosystems/github-actions.md</code>, <code>docker.md</code>, <code>gradle-maven.md</code>, <code>npm-typescript.md</code>, <code>python.md</code>
+- Create: <code>references/templates.md</code>, <code>references/stacked-pr.md</code>
+- Modify: <code>docs/skill-catalog.md</code> (Repository section, after <code>repository-quality-gates</code>)</p>
+<p><strong>Interfaces:</strong>
+- Consumes: CLI commands and JSON shapes from Tasks 1–3 (<code>inspect</code>, <code>sweep</code>, <code>retro</code>, <code>owned-paths</code>).</p>
+<ul class="task-list">
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Write <code>SKILL.md</code>.</strong> Description (single line): <code>Review a Renovate update (open PR or a batch of merged updates) and apply grounded, cited opportunities to adopt what the new version brings in the consumer repository, via a child PR or an issue.</code> Body sections, each pinned to the spec section of the same name: When to use; Modes (<code>review &lt;pr&gt;</code>, <code>sweep</code>, <code>retro</code>, <code>--apply</code>); Workflow (preflight clean tree and correct branch → helper → per-dependency sources in spec order → search consumer usages (no source available → report "no sources" and skip that dependency) → findings → apply within guardrails → consumer checks → output); Grounding rules; Guardrails (including the 10-file cap and <code>owned-paths</code> rule); Explicit-PR override (verdict <code>skip</code> on a PR the user named → report reason, ask before proceeding); Stop conditions (helper exit ≠ 0, dirty tree, failing checks); Outward actions (pushing branches, opening PRs/issues, commenting require the user's go-ahead unless they invoked the mode that implies it).</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Write <code>references/stacked-pr.md</code></strong> with the exact commands: create <code>adopt/&lt;branch without renovate/&gt;</code> from the parent head; open PR <code>gh pr create --base &lt;renovate-branch&gt;</code>; comment on parent; drift: read marker, <code>git rebase --onto &lt;new-head&gt; &lt;old-head&gt;</code>, checks, <code>git push --force-with-lease</code>, update marker via <code>gh pr edit --body</code>; parent merged/closed: <code>gh pr edit --base &lt;default&gt;</code> + rebase, or new PR linking the closed one; existing <code>adopt/</code> branch → reuse through the drift path, never a duplicate. Cite Renovate docs <code>pruneStaleBranches</code> and <code>gitIgnoredAuthors</code>.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Write <code>references/templates.md</code></strong> with the spec's Output formats as fill-in markdown (child PR, parent comment, retro issue titled <code>Adoption review: &lt;range&gt;</code>, retro PR with <code>Closes #&lt;issue&gt;</code>).</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Write the five ecosystem checklists</strong>, each: where to look in release notes/diff, which consumer files to grep, which local warning command to run (<code>gradle --warning-mode all</code>, <code>actionlint</code>, <code>hadolint</code>, <code>ruff check</code>, <code>tsc --noEmit</code>), typical adoptable patterns, typical false positives.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Add catalog line</strong> in the Repository list, same format as the <code>repository-quality-gates</code> entry, linking <code>../skills/repository/renovate-adoption-review/SKILL.md</code>, text: <code>adopt what a dependency update brings, with cited changes in a child PR or issue.</code></p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 6: Run</strong> <code>./scripts/validate.sh --full</code> → <code>Repository validation: ok</code>, all tests OK, documentation build ok.</p>
+</li>
+<li class="task-list-item">
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 7: Commit</strong> <code>feat(renovate-adoption-review): add skill instructions and references</code>.</p>
+</li>
+</ul>
+<h3 id="task-5-canary-end-to-end-verification-no-code">Task 5: Canary end-to-end (verification, no code)<a class="headerlink" href="#task-5-canary-end-to-end-verification-no-code" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1:</strong> Install the branch's skill locally (hub <code>scripts/sync-shared-skills.sh</code> or symlink per hub docs).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2:</strong> In a quokkify consumer, run <code>sweep</code>; pick one open major. Ask the user before running <code>review &lt;pr&gt;</code> (it pushes and opens a PR). Record: verdict, findings, citations, checks run, PR link or "nothing to adopt" report.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3:</strong> In a repository consuming GitHub Actions updates, run <code>retro --last 20</code> without <code>--apply</code>; ask the user before creating the issue. Record the issue link and finding count.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4:</strong> Fix any skill defects found as separate commits with a regression test where the helper is at fault; report results to the user.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      
+      <script id="__config" type="application/json">{"annotate":null,"base":"../../..","features":["search.suggest","search.highlight","navigation.footer","navigation.top","navigation.tabs","navigation.sections","navigation.instant","navigation.instant.progress","content.code.copy","content.code.annotate"],"search":"../../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.16f8adc2.min.js"></script>
+      
+    
+  </body>
+</html>
