@@ -142,10 +142,11 @@ def aggregate:
   | map(. as $p | .updates[] | . + {pr: $p.pr})
   | group_by([.package, .sourceUrl])
   | map(. as $g
+        | ([$g[] | select(.updateType != "digest" and .updateType != "pin")]) as $v
         | { package: $g[0].package,
             sourceUrl: ($g | map(.sourceUrl) | map(select(. != null)) | first // null),
-            from: $g[0].from,
-            to: $g[-1].to,
+            from: (if ($v | length) > 0 then $v[0].from else $g[0].from end),
+            to: (if ($v | length) > 0 then $v[-1].to else $g[-1].to end),
             prs: ($g | map(.pr) | unique),
             releaseNotesUrls: ($g | map(.releaseNotesUrls) | add | unique) }
         | .updateType = (($g | map(.renovateType) | unique) as $rt

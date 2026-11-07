@@ -301,6 +301,19 @@ class RenovateAdoptionBatchTests(unittest.TestCase):
         self.assertEqual((docker["from"], docker["to"], docker["prs"]), ("8.6.0", "8.8.0", [31, 33]))
         self.assertEqual((maven["from"], maven["to"], maven["prs"]), ("0.12.1", "0.12.2", [32]))
 
+    def test_regression_guard_digest_only_rows_do_not_replace_interval_versions(self):
+        """Regression guard: a trailing digest refresh must not become the interval `to`."""
+        result = self.run_batch(
+            ["retro", "--last", "5"],
+            {"pr_list_merged.json": "pr_list_merged_digest_tail.json"},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(len(out), 1)
+        item = out[0]
+        self.assertEqual((item["from"], item["to"]), ("8.8.0", "8.10.2"))
+        self.assertEqual((item["updateType"], item["prs"], item["verdict"]), ("minor", [1, 2, 3], "candidate"))
+
     def test_regression_guard_retro_skips_self_dependency(self):
         """Regression guard: retro skips updates of the consumer repo itself."""
         result = self.run_batch(
