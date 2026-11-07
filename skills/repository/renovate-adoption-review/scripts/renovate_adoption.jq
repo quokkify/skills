@@ -120,3 +120,7 @@ def aggregate:
 
 def retro_items($allow):
   pr_updates | aggregate | map(. + triage("retro"; $allow));
+
+# Slurped GitHub git-tree responses -> sorted unique blob paths, ".jinja" stripped.
+def owned_paths:
+  [.[].tree[]? | select(.type == "blob") | .path | sub("\\.jinja$"; "")] | unique;

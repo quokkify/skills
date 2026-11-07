@@ -278,5 +278,83 @@ class RenovateAdoptionBatchTests(unittest.TestCase):
             self.assertEqual(result.stdout, "")
 
 
+class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
+    def run_owned(self, answers, fail=False, truncated=False):
+        """answers maps answers-file name -> (src_path, commit) or None for no files."""
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        tmp = Path(temporary.name)
+        env = make_stub(tmp, {"api_tree.json": "api_tree.json"}, fail=fail)
+        if truncated:
+            stub = Path(env["GH_STUB_DIR"]) / "api_tree.json"
+            data = json.loads(stub.read_text(encoding="utf-8"))
+            data["truncated"] = True
+            stub.write_text(json.dumps(data), encoding="utf-8")
+        repo = tmp / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        for name, (src, commit) in answers.items():
+            (repo / name).write_text(
+                f"# Changes here will be overwritten by Copier\n_commit: {commit}\n"
+                f"_src_path: {src}\nproject_name: demo\n",
+                encoding="utf-8",
+            )
+        result = subprocess.run(
+            ["sh", str(SCRIPT), "owned-paths"],
+            env=env,
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        result.gh_log = Path(env["GH_STUB_LOG"]).read_text(encoding="utf-8")
+        return result
+
+    def test_owned_paths_from_copier_answers(self):
+        src = ("https://github.com/quokkify/ci-kit.git", "v3.9.0")
+        result = self.run_owned({".copier-answers.yml": src, ".copier-answers.java.yml": src})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertIn("template/.github/pull_request_template.md", out)  # ".jinja" stripped
+        self.assertNotIn(".github/workflows", out)  # tree entries dropped
+        self.assertFalse([p for p in out if p.endswith(".jinja")])
+        self.assertEqual(out, sorted(set(out)))
+        calls = result.gh_log.strip().splitlines()
+        self.assertEqual(calls, ["api repos/quokkify/ci-kit/git/trees/v3.9.0?recursive=1"])
+
+    def test_owned_paths_without_answers_is_empty_list(self):
+        result = self.run_owned({})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), [])
+        self.assertEqual(result.gh_log, "")
+
+    def test_owned_paths_non_github_source_is_skipped_with_warning(self):
+        result = self.run_owned(
+            {".copier-answers.yml": ("https://gitlab.example.com/group/tpl.git", "v1.0.0")}
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), [])
+        self.assertIn("skipping non-GitHub", result.stderr)
+        self.assertEqual(result.gh_log, "")
+
+    def test_owned_paths_truncated_tree_warns(self):
+        result = self.run_owned(
+            {".copier-answers.yml": ("https://github.com/quokkify/ci-kit.git", "v3.9.0")},
+            truncated=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("truncated", result.stderr)
+        self.assertTrue(json.loads(result.stdout))
+
+    def test_owned_paths_gh_failure_exits_3_with_empty_stdout(self):
+        result = self.run_owned(
+            {".copier-answers.yml": ("https://github.com/quokkify/ci-kit.git", "v3.9.0")},
+            fail=True,
+        )
+        self.assertEqual(result.returncode, 3)
+        self.assertIn("gh failed", result.stderr)
+        self.assertEqual(result.stdout, "")
+
+
 if __name__ == "__main__":
     unittest.main()

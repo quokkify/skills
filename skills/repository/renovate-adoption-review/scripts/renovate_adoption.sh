@@ -9,6 +9,7 @@ usage() {
 usage: renovate_adoption.sh inspect <pr> [--mode open|retro]
        renovate_adoption.sh sweep
        renovate_adoption.sh retro (--since <date|tag|sha> | --last <N>)
+       renovate_adoption.sh owned-paths
 USAGE
   exit 2
 }
@@ -144,6 +145,52 @@ cmd_retro() {
     || fail "jq failed while aggregating merged PRs"
 }
 
+cmd_owned_paths() {
+  [ $# -eq 0 ] || usage
+  require_tools
+  root=$(repo_root)
+  sources=""
+  for file in "$root"/.copier-answers*.yml; do
+    [ -f "$file" ] || continue
+    src=$(sed -n 's/^_src_path:[[:space:]]*//p' "$file" | head -n 1 | tr -d "\"'\r")
+    commit=$(sed -n 's/^_commit:[[:space:]]*//p' "$file" | head -n 1 | tr -d "\"'\r")
+    [ -n "$src" ] && [ -n "$commit" ] || continue
+    case "$src" in
+      https://github.com/*/*)
+        slug=${src#https://github.com/}
+        slug=${slug%.git}
+        slug=${slug%/}
+        sources="$sources$slug $commit
+"
+        ;;
+      *) echo "skipping non-GitHub template source: $src" >&2 ;;
+    esac
+  done
+
+  trees=""
+  for entry in $(printf '%s' "$sources" | sort -u | tr ' ' '#'); do
+    slug=${entry%%#*}
+    commit=${entry#*#}
+    if ! tree=$(gh api "repos/$slug/git/trees/$commit?recursive=1" 2>&1); then
+      echo "gh failed: gh api repos/$slug/git/trees/$commit" >&2
+      echo "$tree" >&2
+      exit 3
+    fi
+    if [ "$(printf '%s' "$tree" | jq -r '.truncated // false' 2>/dev/null)" = "true" ]; then
+      echo "warning: template tree for $slug@$commit is truncated; owned paths may be incomplete" >&2
+    fi
+    trees="$trees$tree
+"
+  done
+
+  if [ -z "$trees" ]; then
+    echo '[]'
+    return
+  fi
+  printf '%s' "$trees" | jq -s -L "$script_dir" 'include "renovate_adoption"; owned_paths' \
+    || fail "jq failed while computing owned paths"
+}
+
 [ $# -ge 1 ] || usage
 sub="$1"
 shift
@@ -151,5 +198,6 @@ case "$sub" in
   inspect) cmd_inspect "$@" ;;
   sweep) cmd_sweep "$@" ;;
   retro) cmd_retro "$@" ;;
+  owned-paths) cmd_owned_paths "$@" ;;
   *) usage ;;
 esac
