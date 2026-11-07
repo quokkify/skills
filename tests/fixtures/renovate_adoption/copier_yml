@@ -1,0 +1,10 @@
+_min_copier_version: "9.19.1"
+_subdirectory: "{% if module == 'legacy' %}template{% else %}modules/{{ module }}/template{% endif %}"
+_answers_file: .copier-answers.yml
+_templates_suffix: .jinja
+
+module:
+  type: str
+  help: Template module to apply. legacy keeps the single combined template.
+  choices: [legacy, core, java, python, node, docker]
+  default: legacy

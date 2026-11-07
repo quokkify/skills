@@ -1,0 +1,20 @@
+[
+  {
+    "number": 31,
+    "title": "deps",
+    "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [redis](https://hub.docker.com/_/redis) | docker | minor | `8.6.0` \u2192 `8.7.0` |\n",
+    "mergedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "number": 32,
+    "title": "deps",
+    "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [redis](https://github.com/example/redis-client) | maven | patch | `0.12.1` \u2192 `0.12.2` |\n",
+    "mergedAt": "2026-01-02T00:00:00Z"
+  },
+  {
+    "number": 33,
+    "title": "deps",
+    "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [redis](https://hub.docker.com/_/redis) | docker | minor | `8.7.0` \u2192 `8.8.0` |\n",
+    "mergedAt": "2026-01-03T00:00:00Z"
+  }
+]

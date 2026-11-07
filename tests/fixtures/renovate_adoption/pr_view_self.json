@@ -1,0 +1,7 @@
+{
+  "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [quokkify/q4j](https://redirect.github.com/quokkify/q4j) | maven | major | `1.0.0` \u2192 `2.0.0` |\n",
+  "headRefName": "renovate/x",
+  "headRefOid": "abc",
+  "number": 51,
+  "title": "deps: update"
+}
