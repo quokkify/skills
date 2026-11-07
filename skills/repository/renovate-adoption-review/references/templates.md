@@ -47,7 +47,7 @@ Without a child PR (nothing applied or checks failed):
 ```markdown
 Adoption review for `<package>` `<from>` → `<to>`: nothing applied.
 
-### Considered
+### Considered, not applied
 
 - <item>: <reason>. Source: <citation or "no sources">.
 
@@ -61,7 +61,7 @@ Adoption review for `<package>` `<from>` → `<to>`: nothing applied.
 Title: `Adoption review: <range>` where `<range>` is `since <date|tag|sha>` or `last <N> updates`.
 
 ```markdown
-Range: <range>. Merged Renovate PRs scanned: <count><, "results may be truncated at <N>" when the helper printed that warning>.
+Range: <range>. Merged Renovate PRs scanned: <count, unique PR numbers across all items' `prs`; the actual count when fewer than N for `--last N`><, "results may be truncated at <N>" when the helper printed that warning>.
 
 ## `<package>` `<from>` → `<to>` (<updateType>)
 
@@ -73,9 +73,13 @@ Source PRs: #<pr>, #<pr>. Release notes: <urls>.
 
 - **<opportunity>** in `<template-owned path>`: source <citation>.
 
+## Considered, not applied
+
+- <item>: <reason (no citation / no consumer usage / more than 10 files)>. Source: <citation>.
+
 ## Skipped
 
-- `<package>`: <reason (triage verdict / no sources / nothing to adopt)>.
+- `<package>`: <triage verdict (digest, patch, pin, lock file, unknown, not a candidate) or no sources>.
 ```
 
 ## Retro PR body (mode `retro --apply`)

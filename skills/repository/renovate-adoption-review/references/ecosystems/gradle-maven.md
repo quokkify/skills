@@ -2,7 +2,7 @@
 
 ## Where to look in the update
 
-- Gradle: the release notes and the upgrade guide for the target version (deprecations, removed APIs, configuration-cache and toolchain changes).
+- Gradle: the release notes and the upgrade guide for the target version (deprecations, removed APIs, configuration-cache and toolchain changes). For wrapper bumps read the release notes' deprecation and plugin-publishing sections, including published-plugin metadata changes (for example compatibility declarations), not only build warnings.
 - Gradle and Maven plugins: plugin release notes and CHANGELOG for renamed extension properties, task names, and DSL blocks.
 - Libraries: release notes, migration guide, and the tag-to-tag diff of the public API (`@Deprecated` additions with a named replacement, removed classes).
 

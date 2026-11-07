@@ -38,34 +38,35 @@ Retro notes:
 
 - `--last <N>` takes the N most recent Renovate PRs in the order `gh` returns them (creation order), not strictly the N most recently merged.
 - The helper caps its queries at 100 open and 200 merged PRs. When the helper prints `warning: results may be truncated at <N>` on stderr, narrow the range with `--since` and say in the output that the result may be truncated.
+- "Merged Renovate PRs scanned" is the number of unique PR numbers across all retro items' `prs` arrays. If it is below N for `--last N`, report the actual count; the repository may have fewer merged Renovate PRs.
 - When `retro` returns an empty array it warns on stderr (usually the `dependencies` label is missing). Report the empty result to the user; never turn it into an issue.
 
 ## Workflow
 
-Steps per mode: `sweep` runs steps 1–2 and reports the verdict table. `retro` without `--apply` runs steps 1–6 and 9: no edits and no checks, findings are proposals in the issue; run `git fetch` and search usages (step 5) on `origin/<default>`, not the current branch. `review` and `retro --apply` run every step.
+Steps per mode: `sweep` runs steps 1–2 and reports the verdict table. `retro` without `--apply` runs steps 1–6 and 9: no edits and no checks, findings are proposals in the issue. Local signals (source 4 in step 4: build and lint warnings) exist only in modes that run checks (`review`, `retro --apply`); in plain `retro` rely on sources 1–3. A stale local checkout is fine for plain `retro`, because usages are searched on `origin/<default>` (see step 1). `review` and `retro --apply` run every step.
 
-1. **Preflight.** `git status --porcelain` must be empty, otherwise stop before any edit. For `review`, also check for an existing child as soon as `inspect` returns the branch name: `git ls-remote --heads origin "adopt/<name>"` and `gh pr list --head "adopt/<name>" --state all`; if either exists, the run goes through the drift path in `references/stacked-pr.md`, never a new branch.
+1. **Preflight.** `git status --porcelain` must be empty, otherwise stop before any edit. For `review`, also check for an existing child as soon as `inspect` returns the branch name: `git ls-remote --heads origin "adopt/<name>"` and `gh pr list --head "adopt/<name>" --state all`; if either exists, the run goes through the drift path in `references/stacked-pr.md`, never a new branch. For `retro`, resolve the default branch with `git symbolic-ref --short refs/remotes/origin/HEAD` (strip the `origin/` prefix; fallback `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`) and run `git fetch origin`. Search usages without checking out: `git grep -n <pattern> origin/<default> -- <pathspec>` and `git show origin/<default>:<path>`.
 2. **Helper.** Run the mode's helper command. Any non-zero exit stops the run (see Stop conditions). For `review`, apply the explicit-PR override if the verdict is `skip`. Then, before any analysis edit, switch to the working branch: for `review`, `adopt/<name>` created from `headSha` (Create) or the existing one rebased onto it (Drift), per `references/stacked-pr.md`; for `retro --apply`, follow the retro recipe in the same file. Never edit or commit on the Renovate branch or the default branch.
 3. **Ownership.** Run `owned-paths` once per run and keep the list (see Guardrails).
 4. **Sources per candidate dependency** (for grouped PRs, only the rows that qualify under Triage), in this order of trust; fall back to the next when one is unavailable:
-   1. The Renovate PR body: release notes it already fetched and its compare link (`releaseNotesUrls`).
+   1. The Renovate PR body: release notes it already fetched and its compare link (`releaseNotesUrls`). When `releaseNotesUrls` is empty or `sourceUrl` is not a GitHub repository: (a) find the source repository from registry metadata (Maven POM `<scm><url>`, npm `repository`, PyPI `project_urls`); (b) discover the tag naming by listing tags, `gh api --paginate "repos/<o>/<r>/tags?per_page=100" --jq '.[].name' | grep -F '<version>'` (tags may be prefixed, for example `v1.2.3`, `name-1.2.3`, `module/1.2.3`); (c) fall back to the project's documentation release-notes page.
    2. GitHub Releases and the CHANGELOG between `from` and `to` (`gh api --paginate "repos/<owner>/<repo>/releases?per_page=100"`, `gh api "repos/<owner>/<repo>/contents/CHANGELOG.md?ref=<to-tag>" -H "Accept: application/vnd.github.raw"`).
    3. The tag-to-tag diff of the dependency (`gh api repos/<owner>/<repo>/compare/<from-tag>...<to-tag>`) narrowed to `action.yml`, the public API, `Dockerfile`, and migration documents (`UPGRADING`, `MIGRATION`).
-   4. Local signals after the bump: deprecation warnings from the consumer's build and linters.
+   4. Local signals after the bump: deprecation warnings from the consumer's build and linters (only in modes that run checks).
 
    If no source yields anything, report `no sources` for that dependency and skip it.
 5. **Consumer usages.** Search the consumer for every symbol, input, option or tag a source names. Use the ecosystem reference for where to look.
 6. **Findings.** Pair each source item with confirmed consumer locations. Apply the grounding rules.
 7. **Apply within guardrails.** On the working branch from step 2, one finding at a time, smallest edit that adopts the documented successor.
 8. **Consumer checks.** Run the repository's own documented build, lint and tests. Revert any finding whose checks fail and report it with the failing output.
-9. **Output.** Deliver per mode using `references/templates.md`; for `review`, follow `references/stacked-pr.md` for branch, PR, marker and drift handling; for `retro --apply`, its retro recipe. Write PR and comment bodies to a temporary directory outside the repository, never into the working tree.
+9. **Output.** Deliver per mode using `references/templates.md`; for `retro`, create the issue with `gh issue create --title "Adoption review: <range>" --body-file "$tmp/issue.md"`, where `$tmp` is a `mktemp -d` directory outside the repository; if the user asks for a draft or dry run, write the title and body to a temp file, show its path, and create nothing; for `review`, follow `references/stacked-pr.md` for branch, PR, marker and drift handling; for `retro --apply`, its retro recipe. Write PR and comment bodies to a temporary directory outside the repository, never into the working tree.
 
 Ecosystem checklists: [GitHub Actions](references/ecosystems/github-actions.md), [Docker](references/ecosystems/docker.md), [Gradle and Maven](references/ecosystems/gradle-maven.md), [npm and TypeScript](references/ecosystems/npm-typescript.md), [Python](references/ecosystems/python.md).
 
 ## Grounding rules
 
 - Every applied change cites a source: a release-note URL or quote, a diff hunk, or observed warning text.
-- A finding without a citation goes to "Considered, not applied".
+- A finding without a citation goes to "Considered, not applied" (in the retro issue this section is distinct from "Skipped", which holds triage skips only).
 - A finding without a confirmed usage in the consumer, located by search, is dropped.
 - Do not infer behavior from version numbers or memory. If the source does not say it, it is not a finding.
 
