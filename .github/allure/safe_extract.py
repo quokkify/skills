@@ -249,6 +249,9 @@ def main() -> None:
     layout = os.environ.get("MATERIALIZE_LAYOUT") or "merged"
     if layout not in {"merged", "per-artifact"}:
         fail(f"unsupported MATERIALIZE_LAYOUT: {layout}")
+    content = os.environ.get("MATERIALIZE_CONTENT") or "results"
+    if content not in {"results", "report"}:
+        fail(f"unsupported MATERIALIZE_CONTENT: {content}")
     if layout == "per-artifact" and (conflicts := names & RESERVED_ARTIFACT_NAMES):
         fail(f"artifact names conflict with the per-artifact layout: {', '.join(sorted(conflicts))}")
     fixture_archives = os.environ.get("ARTIFACT_ARCHIVE_DIR")
@@ -335,7 +338,7 @@ def main() -> None:
 
         if not entries:
             fail("required artifacts contained no regular files")
-        if materialize_root is not None and layout == "merged":
+        if materialize_root is not None and layout == "merged" and content == "results":
             results = [relative for _, _, _, relative in entries if relative.name.endswith("-result.json")]
             nested = sorted({relative.parent.as_posix() for relative in results if len(relative.parts) > 1})
             if nested:
