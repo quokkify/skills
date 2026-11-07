@@ -1,0 +1,1 @@
+{"id":"f5e26a5fa823ba8657206ffe323bf842.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_renovate_adoption.RenovateAdoptionBatchTests#test_regression_guard_digest_only_rows_do_not_replace_interval_versions","name":"test_regression_guard_digest_only_rows_do_not_replace_interval_versions","status":"passed","testResultsByEnv":{"default":"702625af92cc4bbcdeeacf57c3b38316"}}
