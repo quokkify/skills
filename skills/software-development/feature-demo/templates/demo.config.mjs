@@ -23,7 +23,7 @@ export default {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('navigation').waitFor();
   },
-  // Language the agent writes captions in; the scripts do not read it.
+  // Caption language (en or ru); also passed to publish.sh as --lang for the MR block labels.
   captionsLang: 'en',
   viewport: { width: 1440, height: 900 },
   // Synthetic upload files used through kit.fixture(name).

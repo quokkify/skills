@@ -6,6 +6,16 @@ import { parseArgs } from 'node:util';
 const START = '<!-- demo:start -->';
 const END = '<!-- demo:end -->';
 const BLOCK_RE = /<!-- demo:start -->[\s\S]*?<!-- demo:end -->/;
+const DEFAULT_LANG = 'en';
+const LABELS = {
+  en: { video: 'Video', commit: 'Commit', duration: 'Duration', shown: 'Shown', questions: 'Open questions', notShown: 'Not shown' },
+  ru: { video: 'Видео', commit: 'Коммит', duration: 'Длительность', shown: 'Показано', questions: 'Открытые вопросы', notShown: 'Не показано' },
+};
+
+function labelsFor(lang = DEFAULT_LANG) {
+  if (!Object.hasOwn(LABELS, lang)) throw new Error(`unknown lang: ${lang} (expected ${Object.keys(LABELS).join('|')})`);
+  return LABELS[lang];
+}
 
 function formatDuration(sec) {
   const total = Math.floor(sec);
@@ -16,15 +26,17 @@ function section(heading, lines) {
   return lines.length ? [`### ${heading}`, ...lines, ''] : [];
 }
 
-function buildContent({ covers = {}, notShown = [], questions = [], sha, durationSec, videoUrl }) {
+function buildContent({ covers = {}, notShown = [], questions = [], sha, durationSec, videoUrl, note, lang }) {
+  const l = labelsFor(lang);
   return [
-    `Видео: ${videoUrl}`,
-    `Коммит: \`${sha}\``,
-    `Длительность: ${formatDuration(durationSec)}`,
+    `${l.video}: ${videoUrl}`,
+    `${l.commit}: \`${sha}\``,
+    `${l.duration}: ${formatDuration(durationSec)}`,
+    ...(note ? [note] : []),
     '',
-    ...section('Показано', Object.entries(covers).map(([id, text]) => `- ${id}: ${text}`)),
-    ...section('Вопросы к клиентке', questions.map((q) => `- ${q}`)),
-    ...section('Не показано', notShown.map((n) => `- ${n}`)),
+    ...section(l.shown, Object.entries(covers).map(([id, text]) => `- ${id}: ${text}`)),
+    ...section(l.questions, questions.map((q) => `- ${q}`)),
+    ...section(l.notShown, notShown.map((n) => `- ${n}`)),
   ].join('\n').trimEnd();
 }
 
@@ -46,7 +58,7 @@ export function replaceDemoBlock(body, block) {
 }
 
 function usage(message) {
-  process.stderr.write(`${message}\nusage: summary.mjs md|block --scenario-json <f> --sha <sha> --duration <sec> --video-url <url>\n       summary.mjs replace --body-file <f> --block-file <f>\n`);
+  process.stderr.write(`${message}\nusage: summary.mjs md|block --scenario-json <f> --sha <sha> --duration <sec> --video-url <url> [--lang en|ru] [--note <text>]\n       summary.mjs replace --body-file <f> --block-file <f>\n`);
   process.exit(64);
 }
 
@@ -63,11 +75,15 @@ function main(argv) {
         'video-url': { type: 'string' },
         'body-file': { type: 'string' },
         'block-file': { type: 'string' },
+        lang: { type: 'string', default: DEFAULT_LANG },
+        note: { type: 'string' },
       },
     }));
   } catch (e) {
     usage(e.message);
   }
+
+  if (!Object.hasOwn(LABELS, values.lang)) usage(`unknown lang: ${values.lang}`);
 
   if (cmd === 'md' || cmd === 'block') {
     const duration = Number(values.duration);
@@ -75,7 +91,7 @@ function main(argv) {
       usage('missing or invalid option');
     }
     const scenario = JSON.parse(readFileSync(values['scenario-json'], 'utf8'));
-    const input = { ...scenario, sha: values.sha, durationSec: duration, videoUrl: values['video-url'] };
+    const input = { ...scenario, sha: values.sha, durationSec: duration, videoUrl: values['video-url'], note: values.note, lang: values.lang };
     process.stdout.write(cmd === 'md' ? buildSummary(input) : `${buildDemoBlock(input)}\n`);
   } else if (cmd === 'replace') {
     if (!values['body-file'] || !values['block-file']) usage('missing option');

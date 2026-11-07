@@ -136,7 +136,7 @@ test('publish updates GitHub PR body and comments on replace', (t) => {
   const calls = readFileSync(log, 'utf8');
   assert.match(calls, /^pr view 7 --json body -q \.body$/m);
   assert.match(calls, /^pr edit 7 --body-file /m);
-  assert.match(calls, new RegExp(`^pr comment 7 --body Демо обновлено: https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4$`, 'm'));
+  assert.match(calls, new RegExp(`^pr comment 7 --body Demo updated: https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4$`, 'm'));
   const body = readFileSync(`${log}.body`, 'utf8');
   assert.ok(body.startsWith('Intro\n\n'));
   assert.equal(body.split(START).length - 1, 1);
@@ -153,6 +153,34 @@ test('publish skips comment when identical re-publish pushes nothing', (t) => {
   const calls = readFileSync(log, 'utf8');
   assert.equal(calls.match(/^pr edit /gm).length, 2);
   assert.equal(calls.match(/^pr comment /gm).length, 1);
+});
+
+test('publish comments and summarizes in Russian with --lang ru', (t) => {
+  const ctx = setup(t);
+  const { log, env } = ghStub(ctx);
+  const r = publish(ctx, ['--lang', 'ru'], env);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(readFileSync(log, 'utf8'), /^pr comment 7 --body Демо обновлено: https:/m);
+  assert.match(readFileSync(`${log}.body`, 'utf8'), /^Видео: https:/m);
+  assert.match(git(ctx.bare, 'show', `demos:demos/7/${ctx.sha12}/summary.md`), /^Коммит: /m);
+});
+
+test('publish rejects unknown --lang', (t) => {
+  const ctx = setup(t);
+  const r = publish(ctx, ['--lang', 'de']);
+  assert.equal(r.status, 64);
+  assert.match(r.stderr, /--lang/);
+  assert.notEqual(spawnSync('git', ['rev-parse', '--verify', 'demos'], { cwd: ctx.bare }).status, 0);
+});
+
+test('publish dry-run shows --note in the block', (t) => {
+  const ctx = setup(t);
+  const body = path.join(ctx.root, 'body.md');
+  writeFileSync(body, 'Intro\n');
+  const note = 'Recorded at 0123456789ab; MR head is now ba9876543210';
+  const r = publish(ctx, ['--dry-run', '--body-file', body, '--note', note]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, new RegExp(`^Duration: 0:12\\n${note}$`, 'm'));
 });
 
 test('publish fails loudly when origin is unreachable', (t) => {

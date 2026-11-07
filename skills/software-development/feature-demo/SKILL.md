@@ -31,7 +31,7 @@ The project owns `demo.config.mjs`; its default export is:
 | `baseUrl({ ports })` | Returns the app URL for the chosen ports. |
 | `seed`, `reset` | Either `{ service, script, run }` (the script, relative to the worktree, is piped to `run` inside the compose service) or `{ command: [...] }` (a host command run in the worktree). `seed` loads baseline demo data; `reset` returns it to that state before every recording. |
 | `login(page, { baseUrl })` | Signs the demo user in. Use a synthetic account and read any password from the environment. |
-| `captionsLang` | Language for captions and scenario text. The scripts do not read it; you follow it. |
+| `captionsLang` | `en` or `ru`. Write captions and scenario text in this language, and pass it to `publish.sh` as `--lang` so the summary and MR block labels match. |
 | `viewport` | `{ width, height }` for the browser and the recording. |
 | `fixtures` | Absolute directory of upload files, reached through `kit.fixture(name)`. |
 
@@ -78,9 +78,9 @@ One `scenario.mjs` per demo, written by you and approved by the owner. Start fro
 8. **Publication.** No further confirmation is needed once the scenario is approved.
    ```bash
    cp <scenario.mjs> <out>/scenario.mjs
-   bash $SKILL/scripts/publish.sh --repo <worktree> --mr <MR> --sha <recorded head SHA> --dir <out> --duration <durationSec>
+   bash $SKILL/scripts/publish.sh --repo <worktree> --mr <MR> --sha <recorded head SHA> --dir <out> --duration <durationSec> --lang <captionsLang>
    ```
-   It commits `demos/<MR>/<sha12>/{demo.mp4, scenario.json, scenario.mjs, summary.md}` to the orphan `demos` branch through a temporary worktree, pushes it, and replaces or appends the block in the MR description. When an existing block was replaced by a new commit, it also comments on the MR so the reviewer is notified. An identical re-publish commits nothing and posts no comment. It prints the video URL.
+   It commits `demos/<MR>/<sha12>/{demo.mp4, scenario.json, scenario.mjs, summary.md}` to the orphan `demos` branch through a temporary worktree, pushes it, and replaces or appends the block in the MR description. When an existing block was replaced by a new commit, it also comments on the MR (`Demo updated: <url>`, in the `--lang` language) so the reviewer is notified. An identical re-publish commits nothing and posts no comment. It prints the video URL.
    To preview first, add `--dry-run --body-file <current MR body>`: it prints the file list, the URL, and the new body, and writes nothing.
 9. **Cleanup, also after any failure.** `stand.mjs down` (runs `docker compose down -v`), then `git worktree remove --force <worktree>`. Copy `demo.mp4` to the user's downloads directory and report the video URL, the SHA, and the questions in chat.
 
@@ -92,12 +92,22 @@ One `scenario.mjs` per demo, written by you and approved by the owner. Start fro
 <!-- demo:start -->
 ## Demo
 
-<video link> · <commit sha12> · <duration m:ss>
-<shown: covers> · <questions> · <not shown>
+Video: https://forge.example.com/acme/app/blob/demos/demos/42/0123456789ab/demo.mp4
+Commit: `0123456789ab`
+Duration: 1:47
+
+### Shown
+- AC-1: step 2: Export button on the orders list
+
+### Open questions
+- Should the export include cancelled orders?
+
+### Not shown
+- AC-3 (export of more than 10 000 rows): not reproducible with demo data
 <!-- demo:end -->
 ```
 
-The markers are exact; everything between them is replaced on the next publish, and text outside them is kept. Empty sections are omitted.
+With `--note <text>`, the note is one extra line directly under `Duration:`. With `--lang ru`, the labels are `Видео`, `Коммит`, `Длительность`, `Показано`, `Открытые вопросы`, `Не показано`. `summary.md` has the same content under a `# <title>` heading. The markers are exact; everything between them is replaced on the next publish, and text outside them is kept. Empty sections are omitted.
 
 ## Script exit codes
 
@@ -117,7 +127,7 @@ The markers are exact; everything between them is replaced on the next publish, 
 | `record.mjs` exits 4 | Delete the whole `<out>` directory (shots and `raw.webm` may contain the secret) and never publish it. Fix the data or the scenario, then record again. |
 | `render.sh` exits 3 | Duration over 180 s: the scenario must get shorter; ask the owner what to drop. Size over 15 MiB after CRF 22, CRF 28, and CRF 28 scaled to fit 1280×800: stop and ask the owner. Never cut the scenario silently. |
 | MR not found, `publish.sh` exits 1 or 5 | Stop and report. Re-run after the cause is fixed. The publisher never force-pushes and never creates an MR; neither do you. |
-| MR head moved during recording | Publish anyway with `--sha` of the recorded commit (the block shows it) and tell the user the demo predates the new head. |
+| MR head moved during recording | Publish anyway with `--sha` of the recorded commit and `--note "Recorded at <sha12>; MR head is now <sha12>"`, and tell the user the demo predates the new head. |
 
 ## Verification checklist
 

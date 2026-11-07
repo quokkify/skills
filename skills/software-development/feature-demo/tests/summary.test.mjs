@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { buildSummary, buildDemoBlock, replaceDemoBlock } from '../scripts/summary.mjs';
 
 const base = {
@@ -13,21 +15,22 @@ const base = {
 };
 const START = '<!-- demo:start -->';
 const END = '<!-- demo:end -->';
+const SUMMARY = fileURLToPath(new URL('../scripts/summary.mjs', import.meta.url));
 
 test('formats duration', () => {
   const md = buildSummary(base);
-  assert.match(md, /Длительность: 2:49/);
-  assert.match(md, /Видео: https:\/\/example\.com\/demo\.mp4/);
-  assert.match(md, /`abc123def456`/);
+  assert.match(md, /Duration: 2:49/);
+  assert.match(md, /Video: https:\/\/example\.com\/demo\.mp4/);
+  assert.match(md, /Commit: `abc123def456`/);
   assert.match(md, /- AC-1: Фильтр по статусу/);
   assert.match(md, /^# Фильтр заказов/);
 });
 
 test('omits empty sections', () => {
   const md = buildSummary({ ...base, notShown: [], questions: [] });
-  assert.doesNotMatch(md, /Не показано/);
-  assert.doesNotMatch(md, /Вопросы к клиентке/);
-  assert.match(md, /Показано/);
+  assert.doesNotMatch(md, /Not shown/);
+  assert.doesNotMatch(md, /Open questions/);
+  assert.match(md, /### Shown/);
 });
 
 test('block wraps summary without title', () => {
@@ -35,7 +38,7 @@ test('block wraps summary without title', () => {
   assert.ok(block.startsWith(`${START}\n## Demo\n`));
   assert.ok(block.endsWith(END));
   assert.doesNotMatch(block, /^# /m);
-  assert.match(block, /Длительность: 2:49/);
+  assert.match(block, /Duration: 2:49/);
 });
 
 test('appends block to body without markers', () => {
@@ -69,4 +72,34 @@ test('handles CRLF body', () => {
 test('handles empty body', () => {
   const block = buildDemoBlock(base);
   assert.deepEqual(replaceDemoBlock('', block), { body: block, replaced: false });
+});
+
+test('uses English labels by default', () => {
+  const block = buildDemoBlock(base);
+  for (const label of ['Video: ', 'Commit: ', 'Duration: ', '### Shown', '### Open questions', '### Not shown']) {
+    assert.ok(block.includes(label), label);
+  }
+  assert.doesNotMatch(block, /[А-Яа-я]{2,}:/);
+});
+
+test('uses Russian labels with lang ru', () => {
+  const md = buildSummary({ ...base, lang: 'ru' });
+  for (const label of ['Видео: ', 'Коммит: ', 'Длительность: 2:49', '### Показано', '### Открытые вопросы', '### Не показано']) {
+    assert.ok(md.includes(label), label);
+  }
+  assert.doesNotMatch(md, /клиентк/);
+});
+
+test('rejects unknown lang', () => {
+  assert.throws(() => buildSummary({ ...base, lang: 'de' }), /unknown lang/);
+  const r = spawnSync(process.execPath, [SUMMARY, 'block', '--scenario-json', SUMMARY, '--sha', 'abc', '--duration', '1', '--video-url', 'u', '--lang', 'de'], { encoding: 'utf8' });
+  assert.equal(r.status, 64);
+  assert.match(r.stderr, /unknown lang: de/);
+});
+
+test('renders note directly under the header lines', () => {
+  const note = 'Recorded at abc123def456; MR head is now 0123456789ab';
+  const block = buildDemoBlock({ ...base, note });
+  assert.ok(block.includes(`Duration: 2:49\n${note}\n\n### Shown`));
+  assert.doesNotMatch(buildDemoBlock(base), /Recorded at/);
 });

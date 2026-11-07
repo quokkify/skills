@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Publish a rendered demo to the orphan `demos` branch and link it from the merge request.
-# Usage: publish.sh --repo <path> --mr <N> --sha <sha> --dir <dir> [--duration <sec>] [--dry-run --body-file <f>]
+# Usage: publish.sh --repo <path> --mr <N> --sha <sha> --dir <dir> [--duration <sec>] [--lang en|ru] [--note <text>] [--dry-run --body-file <f>]
 # <dir> must contain demo.mp4, scenario.mjs and scenario.json.
 # --dry-run: no git writes, no push, no MR edit; prints the commit file list, video URL and new MR body.
 # DEMO_SKIP_FORGE=1 (tests only): commit and push `demos`, but skip every gh/glab call.
@@ -13,14 +13,14 @@ BRANCH=demos
 
 usage() {
   echo "$1" >&2
-  echo "usage: publish.sh --repo <path> --mr <N> --sha <sha> --dir <dir> [--duration <sec>] [--dry-run --body-file <f>]" >&2
+  echo "usage: publish.sh --repo <path> --mr <N> --sha <sha> --dir <dir> [--duration <sec>] [--lang en|ru] [--note <text>] [--dry-run --body-file <f>]" >&2
   exit 64
 }
 
-repo='' mr='' sha='' dir='' duration='' body_file='' dry_run=0
+repo='' mr='' sha='' dir='' duration='' body_file='' dry_run=0 lang=en note=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --repo|--mr|--sha|--dir|--duration|--body-file)
+    --repo|--mr|--sha|--dir|--duration|--body-file|--lang|--note)
       [ "$#" -ge 2 ] || usage "missing value for $1"
       case "$1" in
         --repo) repo="$2" ;;
@@ -29,6 +29,8 @@ while [ "$#" -gt 0 ]; do
         --dir) dir="$2" ;;
         --duration) duration="$2" ;;
         --body-file) body_file="$2" ;;
+        --lang) lang="$2" ;;
+        --note) note="$2" ;;
       esac
       shift 2 ;;
     --dry-run) dry_run=1; shift ;;
@@ -40,6 +42,11 @@ done
 case "$mr" in ''|*[!0-9]*) usage "--mr must be a number: $mr" ;; esac
 case "$sha" in *[!0-9a-f]*) usage "--sha must be a hex commit id: $sha" ;; esac
 [ "${#sha}" -ge 12 ] || usage "--sha must have at least 12 hex characters: $sha"
+case "$lang" in
+  en) updated_label="Demo updated" ;;
+  ru) updated_label="Демо обновлено" ;;
+  *) usage "--lang must be en or ru: $lang" ;;
+esac
 git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || usage "not a git repository: $repo"
 for f in demo.mp4 scenario.mjs scenario.json; do
   [ -f "$dir/$f" ] || usage "missing $f in $dir"
@@ -97,8 +104,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-node "$SUMMARY" md --scenario-json "$dir/scenario.json" --sha "$sha12" --duration "$duration" --video-url "$video_url" > "$tmp/summary.md"
-node "$SUMMARY" block --scenario-json "$dir/scenario.json" --sha "$sha12" --duration "$duration" --video-url "$video_url" > "$tmp/block.md"
+summary_args=(--scenario-json "$dir/scenario.json" --sha "$sha12" --duration "$duration" --video-url "$video_url" --lang "$lang")
+[ -z "$note" ] || summary_args+=(--note "$note")
+node "$SUMMARY" md "${summary_args[@]}" > "$tmp/summary.md"
+node "$SUMMARY" block "${summary_args[@]}" > "$tmp/block.md"
 
 if [ "$dry_run" -eq 1 ]; then
   echo "files:"
@@ -158,11 +167,11 @@ if [ "${DEMO_SKIP_FORGE:-}" != 1 ]; then
     (cd "$repo" && glab mr update "$mr" --description "$(cat "$tmp/new-body.md")") >/dev/null
   fi
   if [ "$pushed" -eq 1 ] && grep -q '^replaced=true$' "$tmp/replace.log"; then
-    note="Демо обновлено: $video_url"
+    comment="$updated_label: $video_url"
     if [ "$forge" = github ]; then
-      (cd "$repo" && gh pr comment "$mr" --body "$note") >/dev/null
+      (cd "$repo" && gh pr comment "$mr" --body "$comment") >/dev/null
     else
-      (cd "$repo" && glab mr note "$mr" -m "$note") >/dev/null
+      (cd "$repo" && glab mr note "$mr" -m "$comment") >/dev/null
     fi
   fi
 fi
