@@ -191,7 +191,7 @@ cmd_owned_paths() {
       'include "renovate_adoption"; owned_for($copier; $answers)' "$work/$key.tree") \
       || fail "jq failed while computing owned paths for $file"
     warn=$(printf '%s' "$res" | jq -r '.warn // empty')
-    [ -z "$warn" ] || echo "warning: $warn in $file; skipping" >&2
+    [ -z "$warn" ] || echo "warning: $warn in $file; falling back to the whole template tree" >&2
     printf '%s' "$res" | jq -c '.paths' >> "$work/results"
   done
 

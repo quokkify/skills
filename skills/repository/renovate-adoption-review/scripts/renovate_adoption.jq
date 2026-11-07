@@ -152,7 +152,7 @@ def owned_for($copier; $answers):
       {paths: [$blobs[] | select(. != "copier.yml") | strip_suffix($suffix)], warn: null}
     else
       ($raw | render_subdir($vars)) as $dir
-      | if $dir == null then {paths: [], warn: "unresolvable _subdirectory: \($raw)"}
+      | if $dir == null then {paths: [$blobs[] | select(. != "copier.yml") | strip_suffix($suffix)], warn: "unresolvable _subdirectory: \($raw)"}
         else {paths: [$blobs[] | select(startswith($dir + "/")) | .[($dir | length) + 1:] | strip_suffix($suffix)], warn: null}
         end
     end;

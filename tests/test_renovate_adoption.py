@@ -356,7 +356,7 @@ class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
         self.assertEqual(len(copier_calls), 1)
         self.assertIn("?ref=v3.9.0", copier_calls[0])
 
-    def test_owned_paths_unresolvable_variable_warns_and_skips(self):
+    def test_owned_paths_unresolvable_variable_warns_and_falls_back_to_whole_tree(self):
         result = self.run_owned(
             {
                 ".copier-answers.yml": (self.SRC, "v3.9.0", "project_name: demo\n"),
@@ -367,7 +367,10 @@ class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
         self.assertIn("unresolvable", result.stderr)
         out = json.loads(result.stdout)
         self.assertIn(".ci/modules/java.yml", out)
-        self.assertNotIn(".github/workflows/gitleaks.yml", out)
+        self.assertIn("README.md", out)  # whole-tree fallback over-flags (safe direction)
+        self.assertIn("template/.github/workflows/gitleaks.yml", out)
+        self.assertNotIn("copier.yml", out)
+        self.assertFalse([p for p in out if p.endswith(".jinja")])
 
     def test_owned_paths_plain_variable_subdirectory(self):
         result = self.run_owned(
