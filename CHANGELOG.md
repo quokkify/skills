@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.15.0](https://github.com/quokkify/skills/compare/v0.14.0...v0.15.0) (2026-11-07)
+
+<!-- project-toolkit:release-notes v2 -->
+**At a glance:** 1 new · 1 fixed · 24 internal
+
+### ✨ New
+
+- **skills:** write PR titles and bodies as release notes — Agents can now load `pull-request-authoring` before opening a PR to write a user-facing title and a short `## Release note` paragraph, so release notes read as what changed for users instead of which files moved. ([#153](https://github.com/quokkify/skills/pull/153))
+
+### 🐛 Fixed
+
+- **release:** show dependency updates in release notes ([#128](https://github.com/quokkify/skills/pull/128))
+
+<details><summary>Internal changes (24 PRs)</summary>
+
+**Maintenance**
+
+- **adapters:** let superpowers own the process on Claude Code ([#131](https://github.com/quokkify/skills/pull/131))
+- **ci-kit:** hand off base, security, release, allure, renovate to modules ([#143](https://github.com/quokkify/skills/pull/143))
+- **ci-kit:** hand off validate to core module ([#135](https://github.com/quokkify/skills/pull/135))
+- **repository-quality-gates:** add merge-on-green, bot PR and CI-only environment rules ([#138](https://github.com/quokkify/skills/pull/138))
+- **repository-quality-gates:** add reusable-workflow input and CI migration equivalence gates ([#136](https://github.com/quokkify/skills/pull/136))
+- **repository-quality-gates:** classify forge read failures and triage red bot PRs ([#152](https://github.com/quokkify/skills/pull/152))
+- **storage:** preserve disk cleanup and recovery lessons ([#149](https://github.com/quokkify/skills/pull/149))
+- **template:** update shared project template (17 PRs, [#127](https://github.com/quokkify/skills/pull/127)–[#154](https://github.com/quokkify/skills/pull/154))
+
+</details>
+
 ## [0.14.0](https://github.com/quokkify/skills/compare/v0.13.0...v0.14.0) (2026-10-20)
 
 
