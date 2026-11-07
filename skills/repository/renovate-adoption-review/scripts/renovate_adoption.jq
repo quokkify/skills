@@ -87,11 +87,10 @@ def inspect_item($mode; $allow):
     ) as $updates
   | ($updates | map(. + triage($mode; $allow))) as $t
   | ($t | map(select(.verdict == "candidate"))) as $cand
-  | { number: $pr.number, title: $pr.title,
-      headRefName: $pr.headRefName, headRefOid: $pr.headRefOid,
+  | ($body | release_notes_urls) as $urls
+  | { pr: $pr.number, branch: $pr.headRefName, headSha: $pr.headRefOid,
+      updates: ($updates | map(. + {releaseNotesUrls: $urls})),
       verdict: (if ($cand | length) > 0 then "candidate" else "skip" end),
       reason: (if ($t | length) == 0 then "no updates table"
                elif ($cand | length) > 0 then ($cand | map(.reason) | unique | join("; "))
-               else ($t | map(.reason) | unique | join("; ")) end),
-      updates: $t,
-      releaseNotesUrls: ($body | release_notes_urls) };
+               else ($t | map(.reason) | unique | join("; ")) end) };

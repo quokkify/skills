@@ -90,8 +90,23 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
         self.assertEqual(out["updates"][0]["updateType"], "major")
         self.assertTrue(out["updates"][0]["sourceUrl"].startswith("https://github.com/"))
         self.assertTrue(
-            all(u.startswith("https://github.com/") for u in out["releaseNotesUrls"])
+            all(
+                u.startswith("https://github.com/")
+                for u in out["updates"][0]["releaseNotesUrls"]
+            )
         )
+        self.assertTrue(out["updates"][0]["releaseNotesUrls"])
+
+    def test_output_shape_matches_contract(self):
+        out = self.inspect("pr_view_grouped.json")
+        self.assertEqual(
+            set(out), {"pr", "branch", "headSha", "updates", "verdict", "reason"}
+        )
+        for update in out["updates"]:
+            self.assertEqual(
+                set(update),
+                {"package", "sourceUrl", "from", "to", "updateType", "releaseNotesUrls"},
+            )
 
     def test_digest_is_skipped(self):
         out = self.inspect("pr_view_digest.json")
@@ -114,11 +129,11 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
         self.assertIn("allowlisted", out["reason"])
 
     def test_grouped_pr_any_major_makes_candidate(self):
-        out = self.inspect("pr_view_grouped.json", mode="retro")
+        out = self.inspect("pr_view_grouped.json", mode="open")
         self.assertEqual(len(out["updates"]), 3)
         self.assertEqual(out["verdict"], "candidate")
         types = [u["updateType"] for u in out["updates"]]
-        self.assertEqual(types, ["minor", "minor", "digest"])
+        self.assertEqual(types, ["minor", "major", "digest"])
 
     def test_docker_suffix_classified_by_numeric_prefix(self):
         out = self.inspect("pr_view_docker.json")
