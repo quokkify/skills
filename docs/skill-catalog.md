@@ -24,6 +24,7 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 - [`repository-quality-gates`](../skills/repository/repository-quality-gates/SKILL.md) — design exact-artifact validators, Git hooks, and CI gates.
 - [`secure-git-checkout-operations`](../skills/repository/secure-git-checkout-operations/SKILL.md) — safely update long-lived Git checkouts consumed by automation.
 - [`codebase-onboarding`](../skills/repository/codebase-onboarding/SKILL.md) — map an unfamiliar repository's architecture, entry points, conventions, data flow, and safe verification commands.
+- [`pull-request-authoring`](../skills/repository/pull-request-authoring/SKILL.md) — write PR titles and bodies that double as user-facing release notes.
 
 ## software-development
 
