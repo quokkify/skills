@@ -138,6 +138,15 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
         self.assertEqual(out["verdict"], "candidate")
         types = [u["updateType"] for u in out["updates"]]
         self.assertEqual(types, ["minor", "major", "digest"])
+        for update in out["updates"]:
+            prefix = update["sourceUrl"].lower() + "/"
+            self.assertTrue(update["releaseNotesUrls"], update["package"])
+            for url in update["releaseNotesUrls"]:
+                self.assertTrue(url.lower().startswith(prefix), (update["package"], url))
+
+    def test_all_digit_versions_are_not_a_digest(self):
+        out = self.inspect("pr_view_numeric_version.json")
+        self.assertNotEqual(out["updates"][0]["updateType"], "digest")
 
     def test_docker_suffix_classified_by_numeric_prefix(self):
         out = self.inspect("pr_view_docker.json")
@@ -174,10 +183,12 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
 
 
 class RenovateAdoptionBatchTests(unittest.TestCase):
-    def run_batch(self, args, fixtures, fail=False, setup=None):
+    def run_batch(self, args, fixtures, fail=False, setup=None, stub_files=None):
         with tempfile.TemporaryDirectory() as temporary:
             tmp = Path(temporary)
             env = make_stub(tmp, fixtures, fail=fail)
+            for name, text in (stub_files or {}).items():
+                (Path(env["GH_STUB_DIR"]) / name).write_text(text, encoding="utf-8")
             repo = tmp / "repo"
             repo.mkdir()
             if setup:
@@ -273,6 +284,47 @@ class RenovateAdoptionBatchTests(unittest.TestCase):
             result = self.run_batch(["retro", *args], fx)
             self.assertEqual(result.returncode, 2, args)
             self.assertIn("usage", result.stderr.lower())
+
+    def test_retro_empty_result_warns_about_dependencies_label(self):
+        result = self.run_batch(
+            ["retro", "--last", "5"], {}, stub_files={"pr_list_merged.json": "[]"}
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), [])
+        self.assertIn("dependencies", result.stderr)
+
+    def test_retro_nonempty_result_does_not_warn(self):
+        _, result = self.retro()
+        self.assertEqual(result.stderr, "")
+
+    def test_retro_warns_when_result_count_hits_the_limit(self):
+        prs = [{"number": n, "title": "t", "body": "", "mergedAt": "2026-01-01T00:00:00Z"}
+               for n in range(200)]
+        result = self.run_batch(
+            ["retro", "--since", "2026-01-01"], {},
+            stub_files={"pr_list_merged.json": json.dumps(prs)},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("results may be truncated at 200", result.stderr)
+
+    def test_retro_last_mode_never_warns_about_truncation(self):
+        prs = [{"number": n, "title": "t", "body": "", "mergedAt": "2026-01-01T00:00:00Z"}
+               for n in range(5)]
+        result = self.run_batch(
+            ["retro", "--last", "5"], {},
+            stub_files={"pr_list_merged.json": json.dumps(prs)},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("truncated", result.stderr)
+
+    def test_sweep_warns_when_result_count_hits_the_limit(self):
+        prs = [{"number": n, "title": "t", "body": "", "headRefName": "b", "headRefOid": "x"}
+               for n in range(100)]
+        result = self.run_batch(
+            ["sweep"], {}, stub_files={"pr_list_open.json": json.dumps(prs)}
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("results may be truncated at 100", result.stderr)
 
     def test_batch_gh_failure_exits_3_with_empty_stdout(self):
         for args in (["sweep"], ["retro", "--last", "3"]):
@@ -391,6 +443,60 @@ class RenovateAdoptionOwnedPathsTests(unittest.TestCase):
         self.assertIn("README.md", out)
         self.assertIn("template/.github/pull_request_template.md", out)
         self.assertNotIn("copier.yml", out)
+
+    def subdir(self, raw_copier_line):
+        return self.run_owned(
+            {".copier-answers.yml": self.ci_kit("java")},
+            copier=f"{raw_copier_line}\n_templates_suffix: .jinja\n",
+        )
+
+    def test_owned_paths_subdirectory_trailing_slash_and_dot_prefix_are_normalized(self):
+        for line in ("_subdirectory: template/", "_subdirectory: ./template",
+                     '_subdirectory: "./template//"'):
+            result = self.subdir(line)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stderr, "", line)
+            out = json.loads(result.stdout)
+            self.assertIn(".github/pull_request_template.md", out, line)
+            self.assertNotIn("README.md", out, line)
+
+    def test_owned_paths_empty_or_dot_subdirectory_is_template_root(self):
+        for line in ('_subdirectory: ""', "_subdirectory: .", "_subdirectory: ./"):
+            result = self.subdir(line)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            out = json.loads(result.stdout)
+            self.assertIn("README.md", out, line)
+            self.assertIn("template/.github/pull_request_template.md", out, line)
+            self.assertNotIn("copier.yml", out, line)
+
+    def test_owned_paths_block_scalar_subdirectory_warns_and_falls_back(self):
+        for indicator in (">-", "|", ">"):
+            result = self.run_owned(
+                {".copier-answers.yml": self.ci_kit("java")},
+                copier=f"_subdirectory: {indicator}\n  template\n_templates_suffix: .jinja\n",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("falling back to the whole template tree", result.stderr, indicator)
+            self.assertIn("README.md", json.loads(result.stdout), indicator)
+
+    def test_owned_paths_subdirectory_matching_nothing_warns_and_falls_back(self):
+        result = self.subdir("_subdirectory: no/such/dir")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("falling back to the whole template tree", result.stderr)
+        self.assertIn("README.md", json.loads(result.stdout))
+
+    def test_owned_paths_accepts_gh_and_ssh_source_forms(self):
+        for src in ("gh:quokkify/ci-kit", "gh:quokkify/ci-kit.git",
+                    "git@github.com:quokkify/ci-kit.git", "git@github.com:quokkify/ci-kit",
+                    "https://github.com/quokkify/ci-kit"):
+            result = self.run_owned(
+                {".copier-answers.yml": (src, "v3.9.0", "module: java\n")}
+            )
+            self.assertEqual(result.returncode, 0, (src, result.stderr))
+            self.assertEqual(result.stderr, "", src)
+            self.assertIn(".ci/modules/java.yml", json.loads(result.stdout), src)
+            self.assertIn("api repos/quokkify/ci-kit/git/trees/v3.9.0?recursive=1",
+                          result.gh_log, src)
 
     def test_owned_paths_without_answers_is_empty_list(self):
         result = self.run_owned({})

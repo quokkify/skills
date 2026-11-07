@@ -1,0 +1,7 @@
+{
+  "body": "This PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [example/calver-tool](https://redirect.github.com/example/calver-tool) | action | minor | `20240101` → `20240201` |\n",
+  "headRefName": "renovate/calver-tool-20240201",
+  "headRefOid": "0123456789abcdef0123456789abcdef01234567",
+  "number": 77,
+  "title": "deps: update calver-tool to 20240201"
+}

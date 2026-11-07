@@ -16,7 +16,7 @@ def numprefix:
 def classify($from; $to):
   ($from // "" | sub("^v"; "")) as $f
   | ($to // "" | sub("^v"; "")) as $t
-  | if ($f | test("^[0-9a-f]{7,40}$")) and ($t | test("^[0-9a-f]{7,40}$")) then "digest"
+  | if ($f | test("^(?=.*[a-f])[0-9a-f]{7,40}$")) and ($t | test("^(?=.*[a-f])[0-9a-f]{7,40}$")) then "digest"
     else
       ($f | numprefix) as $a
       | ($t | numprefix) as $b
@@ -59,6 +59,16 @@ def parse_updates:
             | .updateType = classify(.from; .to))
     end;
 
+# Keep the release-note URLs under this update's own repository; all of them
+# when the update has no sourceUrl or none matches.
+def urls_for($urls):
+  if .sourceUrl == null then $urls
+  else
+    (.sourceUrl | rtrimstr("/") | ascii_downcase) as $base
+    | [$urls[] | select(ascii_downcase | startswith($base + "/"))] as $own
+    | if ($own | length) > 0 then $own else $urls end
+  end;
+
 def release_notes_urls:
   [ match("https://(?:redirect\\.)?github\\.com/[^/\\s)>\\]]+/[^/\\s)>\\]]+/(?:releases/tag|compare)/[^\\s)>\\]]+"; "g").string
     | normalize_url ]
@@ -89,7 +99,7 @@ def inspect_item($mode; $allow):
   | ($t | map(select(.verdict == "candidate"))) as $cand
   | ($body | release_notes_urls) as $urls
   | { pr: $pr.number, branch: $pr.headRefName, headSha: $pr.headRefOid,
-      updates: ($updates | map(. + {releaseNotesUrls: $urls})),
+      updates: ($updates | map(. + {releaseNotesUrls: urls_for($urls)})),
       verdict: (if ($cand | length) > 0 then "candidate" else "skip" end),
       reason: (if ($t | length) == 0 then "no updates table"
                elif ($cand | length) > 0 then ($cand | map(.reason) | unique | join("; "))
@@ -101,7 +111,7 @@ def pr_updates:
       | ($p.body // "") as $b
       | ($b | release_notes_urls) as $urls
       | { pr: $p.number, mergedAt: $p.mergedAt,
-          updates: ($b | parse_updates | map(. + {releaseNotesUrls: $urls})) });
+          updates: ($b | parse_updates | map(. + {releaseNotesUrls: urls_for($urls)})) });
 
 # [{pr, mergedAt, updates}] -> [retro item] without verdict
 def aggregate:
@@ -148,11 +158,18 @@ def owned_for($copier; $answers):
   | ([$answers | split("\n")[] | capture("^(?<k>[A-Za-z_][A-Za-z0-9_]*):[ \\t]+(?<v>.*)$")?
       | {(.k): (.v | sub("\\s+#.*$"; "") | sub("^[\"']"; "") | sub("[\"']\\s*$"; ""))}] | add // {}) as $vars
   | [.tree[]? | select(.type == "blob") | .path] as $blobs
-  | if $raw == null then
-      {paths: [$blobs[] | select(. != "copier.yml") | strip_suffix($suffix)], warn: null}
+  | [$blobs[] | select(. != "copier.yml") | strip_suffix($suffix)] as $whole
+  | if $raw == null then {paths: $whole, warn: null}
     else
-      ($raw | render_subdir($vars)) as $dir
-      | if $dir == null then {paths: [$blobs[] | select(. != "copier.yml") | strip_suffix($suffix)], warn: "unresolvable _subdirectory: \($raw)"}
-        else {paths: [$blobs[] | select(startswith($dir + "/")) | .[($dir | length) + 1:] | strip_suffix($suffix)], warn: null}
+      (if $raw | test("^[>|][-+0-9]*$") then null else $raw | render_subdir($vars) end
+       | if . == null then null
+         else sub("^(\\./)+"; "") | sub("/+$"; "") | if . == "." then "" else . end end) as $dir
+      | if $dir == null then {paths: $whole, warn: "unresolvable _subdirectory: \($raw)"}
+        elif $dir == "" then {paths: $whole, warn: null}
+        else
+          [$blobs[] | select(startswith($dir + "/")) | .[($dir | length) + 1:] | strip_suffix($suffix)] as $own
+          | if ($own | length) == 0 then {paths: $whole, warn: "_subdirectory \($raw) matches no files"}
+            else {paths: $own, warn: null}
+            end
         end
     end;

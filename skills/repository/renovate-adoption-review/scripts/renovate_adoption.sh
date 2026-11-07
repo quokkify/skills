@@ -25,6 +25,12 @@ require_tools() {
   fi
 }
 
+warn_if_truncated() {
+  if [ "$(printf '%s' "$1" | jq 'length' 2>/dev/null)" = "$2" ]; then
+    echo "warning: results may be truncated at $2" >&2
+  fi
+}
+
 repo_root() {
   git rev-parse --show-toplevel 2>/dev/null || pwd
 }
@@ -83,9 +89,11 @@ cmd_sweep() {
     echo "$list" >&2
     exit 3
   fi
-  printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
-    'include "renovate_adoption"; map(inspect_item("open"; $allow))' \
+  out=$(printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
+    'include "renovate_adoption"; map(inspect_item("open"; $allow))') \
     || fail "jq failed while sweeping open PRs"
+  warn_if_truncated "$list" 100
+  printf '%s\n' "$out"
 }
 
 cmd_retro() {
@@ -140,9 +148,14 @@ cmd_retro() {
     echo "$list" >&2
     exit 3
   }
-  printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
-    'include "renovate_adoption"; retro_items($allow)' \
+  out=$(printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
+    'include "renovate_adoption"; retro_items($allow)') \
     || fail "jq failed while aggregating merged PRs"
+  [ -n "$last" ] || warn_if_truncated "$list" "$limit"
+  if [ "$(printf '%s' "$out" | jq 'length')" = "0" ]; then
+    echo "warning: no updates found; Renovate must label its PRs 'dependencies' for retro to see them" >&2
+  fi
+  printf '%s\n' "$out"
 }
 
 cmd_owned_paths() {
@@ -150,7 +163,7 @@ cmd_owned_paths() {
   require_tools
   root=$(repo_root)
   work=$(mktemp -d) || fail "mktemp failed"
-  trap 'find "$work" -delete' EXIT
+  trap 'rm -rf "$work"' EXIT
   : > "$work/results"
   for file in "$root"/.copier-answers*.yml; do
     [ -f "$file" ] || continue
@@ -158,10 +171,12 @@ cmd_owned_paths() {
     commit=$(sed -n 's/^_commit:[[:space:]]*//p' "$file" | head -n 1 | tr -d "\"'\r")
     [ -n "$src" ] && [ -n "$commit" ] || continue
     case "$src" in
-      https://github.com/*/*)
+      https://github.com/*/* | gh:*/* | git@github.com:*/*)
         slug=${src#https://github.com/}
-        slug=${slug%.git}
+        slug=${slug#gh:}
+        slug=${slug#git@github.com:}
         slug=${slug%/}
+        slug=${slug%.git}
         ;;
       *)
         echo "skipping non-GitHub template source: $src" >&2
