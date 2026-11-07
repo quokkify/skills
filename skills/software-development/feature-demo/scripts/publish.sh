@@ -4,7 +4,7 @@
 # <dir> must contain demo.mp4, scenario.mjs and scenario.json.
 # --dry-run: no git writes, no push, no MR edit; prints the commit file list, video URL and new MR body.
 # DEMO_SKIP_FORGE=1 (tests only): commit and push `demos`, but skip every gh/glab call.
-# Exit codes: 0 ok, 5 push rejected, 64 usage error, other non-zero on tool failure.
+# Exit codes: 0 ok, 1 origin unreachable or other tool failure, 5 push rejected, 64 usage error.
 set -eu -o pipefail
 
 SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
@@ -59,23 +59,27 @@ sha12=$(printf '%s' "$sha" | cut -c1-12)
 dest="demos/$mr/$sha12"
 
 # remote.origin.url as configured (git remote get-url would expand insteadOf).
+# The URL may embed credentials, so it is never printed.
 origin=$(git -C "$repo" config --get remote.origin.url) || usage "remote origin is not configured in $repo"
+bad_origin="unsupported origin URL in $repo (expected https://host/owner/repo or git@host:owner/repo)"
 case "$origin" in
   *://*)
     rest="${origin#*://}"
+    case "$rest" in */*) ;; *) usage "$bad_origin" ;; esac
     hostport="${rest%%/*}"
     project="${rest#*/}"
-    host="${hostport#*@}"
+    host="${hostport##*@}"
     host="${host%%:*}" ;;
   *@*:*)
     rest="${origin#*@}"
     host="${rest%%:*}"
     project="${rest#*:}" ;;
-  *) usage "unsupported origin URL: $origin" ;;
+  *) usage "$bad_origin" ;;
 esac
 project="${project%/}"
 project="${project%.git}"
-[ -n "$host" ] && [ -n "$project" ] || usage "cannot parse origin URL: $origin"
+case "$host$project" in *@*|*:*) usage "$bad_origin" ;; esac
+[ -n "$host" ] && [ -n "$project" ] || usage "$bad_origin"
 
 if [ "$host" = github.com ]; then
   forge=github
@@ -105,7 +109,14 @@ if [ "$dry_run" -eq 1 ]; then
   exit 0
 fi
 
-if git -C "$repo" ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+ls_rc=0
+git -C "$repo" ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>"$tmp/ls-remote.err" || ls_rc=$?
+if [ "$ls_rc" -ne 0 ] && [ "$ls_rc" -ne 2 ]; then
+  cat "$tmp/ls-remote.err" >&2
+  echo "cannot read origin of $repo (git ls-remote exit $ls_rc); nothing was published" >&2
+  exit 1
+fi
+if [ "$ls_rc" -eq 0 ]; then
   git -C "$repo" fetch -q origin "$BRANCH"
   if git -C "$repo" merge-base HEAD FETCH_HEAD >/dev/null 2>&1; then
     echo "origin/$BRANCH shares history with HEAD; it must be an orphan branch" >&2
@@ -121,6 +132,7 @@ rm -rf "${wt:?}/$dest"
 mkdir -p "$wt/$dest"
 cp "$dir/demo.mp4" "$dir/scenario.json" "$dir/scenario.mjs" "$tmp/summary.md" "$wt/$dest/"
 git -C "$wt" add -A -- "$dest"
+pushed=0
 if git -C "$wt" diff --cached --quiet; then
   echo "$dest is already up to date on $BRANCH; nothing to commit" >&2
 else
@@ -129,6 +141,7 @@ else
     echo "push of $BRANCH was rejected (another publish may have landed); re-run publish.sh, never force-push" >&2
     exit 5
   fi
+  pushed=1
 fi
 
 if [ "${DEMO_SKIP_FORGE:-}" != 1 ]; then
@@ -144,7 +157,7 @@ if [ "${DEMO_SKIP_FORGE:-}" != 1 ]; then
   else
     (cd "$repo" && glab mr update "$mr" --description "$(cat "$tmp/new-body.md")") >/dev/null
   fi
-  if grep -q '^replaced=true$' "$tmp/replace.log"; then
+  if [ "$pushed" -eq 1 ] && grep -q '^replaced=true$' "$tmp/replace.log"; then
     note="Демо обновлено: $video_url"
     if [ "$forge" = github ]; then
       (cd "$repo" && gh pr comment "$mr" --body "$note") >/dev/null
