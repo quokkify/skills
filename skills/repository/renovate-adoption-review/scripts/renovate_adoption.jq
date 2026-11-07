@@ -94,3 +94,29 @@ def inspect_item($mode; $allow):
       reason: (if ($t | length) == 0 then "no updates table"
                elif ($cand | length) > 0 then ($cand | map(.reason) | unique | join("; "))
                else ($t | map(.reason) | unique | join("; ")) end) };
+
+# gh pr list JSON (merged) -> [{pr, mergedAt, updates}]
+def pr_updates:
+  map(. as $p
+      | ($p.body // "") as $b
+      | ($b | release_notes_urls) as $urls
+      | { pr: $p.number, mergedAt: $p.mergedAt,
+          updates: ($b | parse_updates | map(. + {releaseNotesUrls: $urls})) });
+
+# [{pr, mergedAt, updates}] -> [retro item] without verdict
+def aggregate:
+  sort_by(.mergedAt)
+  | map(. as $p | .updates[] | . + {pr: $p.pr})
+  | group_by(.package)
+  | map(. as $g
+        | { package: $g[0].package,
+            sourceUrl: ($g | map(.sourceUrl) | map(select(. != null)) | first // null),
+            from: $g[0].from,
+            to: $g[-1].to,
+            prs: ($g | map(.pr) | unique),
+            releaseNotesUrls: ($g | map(.releaseNotesUrls) | add | unique) }
+        | .updateType = classify(.from; .to))
+  | map({package, sourceUrl, from, to, updateType, prs, releaseNotesUrls});
+
+def retro_items($allow):
+  pr_updates | aggregate | map(. + triage("retro"; $allow));

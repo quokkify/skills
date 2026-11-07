@@ -7,6 +7,8 @@ script_dir=$(cd "$(dirname "$0")" && pwd)
 usage() {
   cat >&2 <<USAGE
 usage: renovate_adoption.sh inspect <pr> [--mode open|retro]
+       renovate_adoption.sh sweep
+       renovate_adoption.sh retro (--since <date|tag|sha> | --last <N>)
 USAGE
   exit 2
 }
@@ -70,10 +72,84 @@ cmd_inspect() {
     || fail "jq failed while inspecting PR $pr"
 }
 
+cmd_sweep() {
+  [ $# -eq 0 ] || usage
+  require_tools
+  allow=$(read_allowlist) || exit $?
+  if ! list=$(gh pr list --author app/renovate --state open --limit 100 \
+    --json number,title,body,headRefName,headRefOid 2>&1); then
+    echo "gh failed: gh pr list --state open" >&2
+    echo "$list" >&2
+    exit 3
+  fi
+  printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
+    'include "renovate_adoption"; map(inspect_item("open"; $allow))' \
+    || fail "jq failed while sweeping open PRs"
+}
+
+cmd_retro() {
+  since=""
+  last=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --since)
+        [ $# -ge 2 ] && [ -z "$since" ] || usage
+        since="$2"
+        shift 2
+        ;;
+      --last)
+        [ $# -ge 2 ] && [ -z "$last" ] || usage
+        last="$2"
+        shift 2
+        ;;
+      *) usage ;;
+    esac
+  done
+  if [ -n "$since" ] && [ -n "$last" ]; then usage; fi
+  if [ -z "$since" ] && [ -z "$last" ]; then usage; fi
+
+  limit=200
+  if [ -n "$last" ]; then
+    case "$last" in '' | *[!0-9]* | 0) usage ;; esac
+    limit="$last"
+  fi
+
+  require_tools
+  search=""
+  if [ -n "$since" ]; then
+    case "$since" in
+      [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*) date="$since" ;;
+      *)
+        date=$(git log -1 --format=%cI "$since" -- 2>/dev/null) && [ -n "$date" ] \
+          || { echo "unknown ref: $since" >&2; exit 2; }
+        ;;
+    esac
+    search="merged:>=$date"
+  fi
+
+  allow=$(read_allowlist) || exit $?
+  if [ -n "$search" ]; then
+    list=$(gh pr list --author app/renovate --state merged --label dependencies \
+      --search "$search" --limit "$limit" --json number,title,body,mergedAt 2>&1)
+  else
+    list=$(gh pr list --author app/renovate --state merged --label dependencies \
+      --limit "$limit" --json number,title,body,mergedAt 2>&1)
+  fi || {
+    echo "gh failed: gh pr list --state merged" >&2
+    echo "$list" >&2
+    exit 3
+  }
+  printf '%s' "$list" | jq -L "$script_dir" --argjson allow "$allow" \
+    'include "renovate_adoption"; retro_items($allow)' \
+    || fail "jq failed while aggregating merged PRs"
+}
+
 [ $# -ge 1 ] || usage
 sub="$1"
 shift
 case "$sub" in
   inspect) cmd_inspect "$@" ;;
+  sweep) cmd_sweep "$@" ;;
+  retro) cmd_retro "$@" ;;
   *) usage ;;
 esac

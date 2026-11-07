@@ -169,5 +169,114 @@ class RenovateAdoptionInspectTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
 
 
+class RenovateAdoptionBatchTests(unittest.TestCase):
+    def run_batch(self, args, fixtures, fail=False, setup=None):
+        with tempfile.TemporaryDirectory() as temporary:
+            tmp = Path(temporary)
+            env = make_stub(tmp, fixtures, fail=fail)
+            repo = tmp / "repo"
+            repo.mkdir()
+            if setup:
+                setup(repo)
+            result = subprocess.run(
+                ["sh", str(SCRIPT), *args],
+                env=env,
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            result.gh_log = Path(env["GH_STUB_LOG"]).read_text(encoding="utf-8")
+            return result
+
+    def retro(self, args=("--last", "5")):
+        result = self.run_batch(["retro", *args], {"pr_list_merged.json": "pr_list_merged.json"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout), result
+
+    def test_sweep_lists_every_open_pr_with_verdict(self):
+        result = self.run_batch(["sweep"], {"pr_list_open.json": "pr_list_open.json"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        expected = json.loads((FIXTURES / "pr_list_open.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(out), len(expected))
+        self.assertEqual([i["pr"] for i in out], [p["number"] for p in expected])
+        self.assertTrue(all(i["verdict"] in ("candidate", "skip") for i in out))
+        self.assertEqual(out[0]["verdict"], "candidate")
+        self.assertIn("--state open", result.gh_log)
+        self.assertIn("--author app/renovate", result.gh_log)
+
+    def test_retro_aggregates_repeated_bumps(self):
+        out, _ = self.retro()
+        item = next(i for i in out if i["package"] == "actions/setup-java")
+        self.assertEqual((item["from"], item["to"], item["prs"]), ("v4.1.0", "v4.5.0", [12, 19]))
+        self.assertEqual(item["updateType"], "minor")
+        self.assertEqual(item["verdict"], "candidate")
+        self.assertEqual(
+            set(item),
+            {"package", "sourceUrl", "from", "to", "updateType", "prs",
+             "releaseNotesUrls", "verdict", "reason"},
+        )
+        self.assertEqual(len(item["releaseNotesUrls"]), 2)
+        patch = next(i for i in out if i["package"] == "actions/cache")
+        self.assertEqual(patch["verdict"], "skip")
+
+    def test_retro_since_tag_resolves_to_commit_date(self):
+        def setup(repo):
+            env = {**os.environ, "GIT_COMMITTER_DATE": "2026-01-15T10:00:00+0000",
+                   "GIT_AUTHOR_DATE": "2026-01-15T10:00:00+0000"}
+            for cmd in (
+                ["git", "init", "-q"],
+                ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                 "commit", "-q", "--allow-empty", "-m", "init"],
+                ["git", "tag", "v1.0.0"],
+            ):
+                subprocess.run(cmd, cwd=repo, env=env, check=True)
+
+        result = self.run_batch(
+            ["retro", "--since", "v1.0.0"],
+            {"pr_list_merged.json": "pr_list_merged.json"},
+            setup=setup,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertRegex(result.gh_log, r"merged:>=2026-01-15T10:00:00(Z|\+00:00)")
+        self.assertIn("--state merged", result.gh_log)
+
+    def test_retro_since_date_used_verbatim(self):
+        result = self.run_batch(
+            ["retro", "--since", "2026-02-01"],
+            {"pr_list_merged.json": "pr_list_merged.json"},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("merged:>=2026-02-01", result.gh_log)
+
+    def test_retro_unknown_ref_exits_2(self):
+        result = self.run_batch(
+            ["retro", "--since", "no-such-ref"],
+            {"pr_list_merged.json": "pr_list_merged.json"},
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("unknown ref", result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_retro_last_n_passes_limit(self):
+        _, result = self.retro(("--last", "5"))
+        self.assertIn("--limit 5", result.gh_log)
+
+    def test_retro_requires_exactly_one_range_flag(self):
+        fx = {"pr_list_merged.json": "pr_list_merged.json"}
+        for args in ([], ["--since", "2026-01-01", "--last", "3"], ["--last", "x"]):
+            result = self.run_batch(["retro", *args], fx)
+            self.assertEqual(result.returncode, 2, args)
+            self.assertIn("usage", result.stderr.lower())
+
+    def test_batch_gh_failure_exits_3_with_empty_stdout(self):
+        for args in (["sweep"], ["retro", "--last", "3"]):
+            result = self.run_batch(args, {}, fail=True)
+            self.assertEqual(result.returncode, 3, args)
+            self.assertIn("gh failed", result.stderr)
+            self.assertEqual(result.stdout, "")
+
+
 if __name__ == "__main__":
     unittest.main()
