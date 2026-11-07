@@ -61,7 +61,7 @@ Adoption review for `<package>` `<from>` → `<to>`: nothing applied.
 Title: `Adoption review: <range>` where `<range>` is `since <date|tag|sha>` or `last <N> updates`.
 
 ```markdown
-Range: <range>. Merged Renovate PRs scanned: <count><, possibly truncated at the helper limit>.
+Range: <range>. Merged Renovate PRs scanned: <count><, "results may be truncated at <N>" when the helper printed that warning>.
 
 ## `<package>` `<from>` → `<to>` (<updateType>)
 
