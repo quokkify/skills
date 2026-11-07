@@ -18,19 +18,26 @@ function listen(port, host = '127.0.0.1') {
 }
 const close = (s) => new Promise((r) => s.close(r));
 
+// Probe one bind at a time: Linux rejects binding 127.0.0.1:p while 0.0.0.0:p is held, so holding
+// both at once makes every candidate look busy there (macOS allows it).
+async function bindsAlone(port, host) {
+  try {
+    await close(await listen(port, host));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function freeBase() {
   for (let p = 41000; p < 60000; p += 100) {
-    const held = [];
-    try {
-      for (const off of [0, 1, 10, 11]) {
-        held.push(await listen(p + off, '0.0.0.0'));
-        held.push(await listen(p + off, '127.0.0.1'));
+    let free = true;
+    for (const off of [0, 1, 10, 11]) {
+      for (const host of ['0.0.0.0', '127.0.0.1']) {
+        if (!(await bindsAlone(p + off, host))) free = false;
       }
-      await Promise.all(held.map(close));
-      return { A: p, B: p + 1 };
-    } catch {
-      await Promise.all(held.map(close));
     }
+    if (free) return { A: p, B: p + 1 };
   }
   throw new Error('no free test ports');
 }
