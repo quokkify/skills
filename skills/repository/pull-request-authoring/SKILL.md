@@ -19,13 +19,20 @@ Read the repository's PR template, contribution guide, and agent instructions fi
 
 ## Rules
 
-1. **The type says who the change is for.** `feat`, `fix`, `perf`, and `revert` are visible to users and appear in release notes. `deps`, `chore`, `ci`, `test`, `build`, `docs`, `style`, and `refactor` are for maintainers and are collapsed or hidden. A `fix` that only maintainers notice keeps its type (it still bumps the version); add the repository's escape-hatch label (commonly `release-notes: internal`) instead of changing the type.
-2. **The title is the headline.** Format `type(scope): summary`, at most 72 characters, lower case, present or imperative tense, no trailing full stop. Keep a scope if the repository requires one. Say what the user notices: the new capability, or the symptom that is gone. Name things the user knows (an action, input, command, task), never files, functions, or helpers, and never the mechanism. Test: would a user who never saw the diff understand it?
-3. **`## Release note`** is required for `feat`, `fix`, and `perf`, and optional otherwise. One paragraph of at most 300 characters: what the user can do now, or what was broken and how it showed up, plus the input, flag, or step to use. No headings, no lists, and do not repeat the title.
-4. **`## Migration`** is required when the title has `!`. Numbered steps the user must take. "Opt-in, no action needed" is not a migration; say that in the release note.
-5. **`## Usage example`** is optional for `feat`: one short fenced snippet that can be copied.
-6. **Order matters.** Put the publishable sections first (`## Release note`, `## Usage example`, `## Migration`), then reviewer sections (Summary, Design, Verification, audit tables). Fill the publishable ones before writing the long review text.
-7. **Fix the source, not the output.** If the release PR is regenerated from merged PRs, correct a wrong note by editing the merged PR's title, body, or labels. Never hand-edit the generated release PR.
+1. **The type says where the change lands.** Nothing is hidden; the type only picks the section:
+   - any `!` title: Breaking changes, listed first and not repeated elsewhere;
+   - `feat`: New; `fix`: Fixed; `perf`: Faster; `revert`: Reverted;
+   - dependency bumps: Updated (Fixed when the bump is a security fix);
+   - `deps`, `chore`, `ci`, `test`, `build`, `docs`, `style`, `refactor`: a collapsed "Internal changes" list.
+2. **Labels.** `release-notes: internal` demotes a `feat` or `fix` that only maintainers notice to Internal changes; the type is kept, so the version bump is unchanged. `release-notes: title-only` says the title already tells the whole story and replaces the required release note. Neither label removes a breaking change from the Breaking section or the need for `## Migration`.
+3. **The title is the headline.** Format `type(scope): summary` with the scope required and `!` before the colon for a breaking change. At most 72 characters, lower case, present or imperative tense, no trailing full stop. Say what the user notices: the new capability, or the symptom that is gone. Name things the user knows (an action, input, command, task), never files, functions, helpers, or the mechanism. Test: would a user who never saw the diff understand it?
+4. **`## Release note`** is required for `feat`, `perf`, and any `!` title (a waiver label above replaces it). It is encouraged for `fix`: without it a fix is published with its title only. One paragraph of at most 300 characters: what the user can do now, or what was broken and how it showed up, plus the input, flag, or step to use. No headings, no lists, no `<details>` markup, and do not repeat the title. It is printed on one line next to the title.
+5. **`## Migration`** is required for any `!` title, whatever the type (`chore(x)!:` included). Numbered steps the user must take. If users need to do nothing, the change is not breaking: drop the `!`.
+6. **`## Usage example`** is optional: one short fenced snippet that can be copied. It is published under the entry whatever the type.
+7. **Headings** must be level 2 (`## `), outside code fences. Aliases the check accepts: `## Breaking change` or `## Breaking changes` for Migration, and the legacy `## Highlight` for Release note. A repeated heading is ignored after its first use; empty sections and HTML comments do not count.
+8. **Order matters.** Put the publishable sections first (`## Release note`, `## Usage example`, `## Migration`), then reviewer sections (Summary, Design, Verification, audit tables), which are never published. Fill the publishable ones before writing the long review text.
+9. **Limits are warnings, enforcement may be staged.** Title length, technical wording in the title, and release-note length or markup only produce warnings. Missing required sections fail the check, but in warn mode they are reported as warnings and the check stays green; treat them as failures anyway. Bot-authored PRs are exempt.
+10. **Fix the source, not the output.** If the release PR is regenerated from merged PRs, correct a wrong note by editing the merged PR's title, body, or labels. Never hand-edit the generated release PR.
 
 ## Before and after
 
@@ -51,7 +58,7 @@ at the artifact root.
 The collector globbed only the root; it now walks nested paths and errors on any match.
 ```
 
-Breaking change:
+Breaking change (published under Breaking changes, with the note as the headline and the steps as the migration, whatever the type):
 
 ```markdown
 fix(cli)!: require --config for every command
@@ -68,10 +75,11 @@ Commands no longer read `./settings.toml` implicitly. Pass `--config <path>` exp
 
 ## Verification checklist
 
-- Type matches the audience; maintainer-only changes use a maintainer type or the escape-hatch label.
+- Type matches the audience and the section it should land in.
 - Title is at most 72 characters, has no file or function names, and reads as a user-visible headline.
-- `feat`, `fix`, and `perf` have a non-empty `## Release note` of one paragraph and at most 300 characters (an HTML comment from the template does not count).
-- A `!` title has numbered `## Migration` steps.
+- `feat`, `perf`, and `!` titles have a non-empty `## Release note` (or a waiver label); a `fix` has one when users need to know how it showed up. It is one paragraph of at most 300 characters; an HTML comment from the template does not count.
+- A `!` title has numbered `## Migration` steps, even with a waiver label.
+- Maintainer-only changes use a maintainer type or `release-notes: internal`.
 - Publishable sections come before reviewer sections.
 - Template placeholders and comments for unused sections are deleted.
 - After editing a title or body, re-check that the PR-contract check re-ran against the current text.
