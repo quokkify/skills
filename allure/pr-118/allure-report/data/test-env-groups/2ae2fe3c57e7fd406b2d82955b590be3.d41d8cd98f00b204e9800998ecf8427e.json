@@ -1,0 +1,1 @@
+{"id":"2ae2fe3c57e7fd406b2d82955b590be3.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_renovate_adoption.RenovateAdoptionBatchTests#test_regression_guard_same_short_name_different_sources_not_merged","name":"test_regression_guard_same_short_name_different_sources_not_merged","status":"passed","testResultsByEnv":{"default":"0cadf051803044e55d7cfd6196297ebc"}}
