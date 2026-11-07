@@ -5,7 +5,7 @@ export default {
     ports: { FRONTEND_PORT: 4183, BACKEND_PORT: 4184, DB_PORT: 4185 },
   },
   baseUrl: ({ ports }) => `http://localhost:${ports.FRONTEND_PORT}`,
-  seed: { service: 'backend', script: '.claude/demo/seed.py', run: 'python manage.py shell' },
+  seed: { service: 'backend', script: 'seed.py', run: 'python manage.py shell' },
   reset: { command: ['npm', 'run', 'reset'] },
   viewport: { width: 1280, height: 720 },
   fixtures: new URL('.', import.meta.url).pathname,

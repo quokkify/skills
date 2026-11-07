@@ -40,7 +40,8 @@ for (const flag of ['config', 'worktree', 'project']) {
 const worktree = path.resolve(values.worktree);
 const project = values.project;
 const dryRun = values['dry-run'];
-const config = (await import(pathToFileURL(path.resolve(values.config)).href)).default;
+const configPath = path.resolve(values.config);
+const config = (await import(pathToFileURL(configPath).href)).default;
 const composeFiles = config.compose.files.flatMap((f) => ['-f', path.resolve(worktree, f)]);
 const composeBase = ['compose', ...composeFiles, '--project-directory', worktree, '-p', project];
 
@@ -67,8 +68,10 @@ function runStep(step, name) {
     return;
   }
   const args = ['exec', '-T', step.service, 'sh', '-c', step.run];
-  if (dryRun) return console.log(JSON.stringify({ project, compose: args, stdin: step.script }));
-  const fd = openSync(path.resolve(worktree, step.script), 'r');
+  // The script belongs to the adapter, which the MR head may not contain.
+  const script = path.resolve(path.dirname(configPath), step.script);
+  if (dryRun) return console.log(JSON.stringify({ project, compose: args, stdin: script }));
+  const fd = openSync(script, 'r');
   try {
     compose(args, { stdin: fd });
   } finally {

@@ -15,6 +15,7 @@ Run this skill only on an explicit request. It never runs on its own after a pus
 - A Chromium build: `CHROME_BIN`, else the newest Chrome for Testing under `~/.cache/selenium/chrome/`, else Playwright's own browser (`npx playwright install chromium` in `scripts/`).
 - Docker with Compose v2 (`up --wait`), `ffmpeg` and `ffprobe`, `git`, and `bash`.
 - `gh` (GitHub) or `glab` (GitLab) authenticated for the repository; `git push` to `origin` must work with the identity configured for that repository.
+- `gh` and `glab` must act as the identity that should author the MR edits and comments. When that differs from the CLI's own login, export `GH_TOKEN` or `GITLAB_TOKEN` for this repository before publishing (in the shell, never in global configuration). On GitHub, `publish.sh` uses only the REST API (`gh api`).
 - A project adapter `demo.config.mjs` (see [Adapter contract](#adapter-contract)), its seed and reset steps, and synthetic fixture files. Start from `templates/demo.config.mjs`.
 
 Below, `$SKILL` is this skill's directory.
@@ -27,10 +28,10 @@ The project owns `demo.config.mjs`; its default export is:
 | --- | --- |
 | `compose.files` | Compose files, relative to the worktree root. |
 | `compose.env` | Variables written to `<worktree>/.env` with the chosen ports. Synthetic values only. |
-| `compose.ports` | Base ports by variable name. The whole set shifts by 10, at most twice, until every port is free on `127.0.0.1`. |
+| `compose.ports` | Base ports by variable name. The whole set shifts by 10, at most twice, until every port is free on `0.0.0.0`, `127.0.0.1`, and `::` (when IPv6 is available). |
 | `baseUrl({ ports })` | Returns the app URL for the chosen ports. |
-| `seed`, `reset` | Either `{ service, script, run }` (the script, relative to the worktree, is piped to `run` inside the compose service) or `{ command: [...] }` (a host command run in the worktree). `seed` loads baseline demo data; `reset` returns it to that state before every recording. |
-| `login(page, { baseUrl })` | Signs the demo user in. Use a synthetic account and read any password from the environment. |
+| `seed`, `reset` | Either `{ service, script, run }` (the script, relative to the directory of `demo.config.mjs`, is piped to `run` inside the compose service) or `{ command: [...] }` (a host command run in the worktree). `seed` loads baseline demo data; `reset` returns it to that state before every recording. |
+| `login(page, { baseUrl })` | Signs the demo user in before the recording starts; it is not filmed. Use a synthetic account and read any password from the environment. |
 | `captionsLang` | `en` or `ru`. Write captions and scenario text in this language, and pass it to `publish.sh` as `--lang` so the summary and MR block labels match. |
 | `viewport` | `{ width, height }` for the browser and the recording. |
 | `fixtures` | Absolute directory of upload files, reached through `kit.fixture(name)`. |
@@ -47,7 +48,9 @@ One `scenario.mjs` per demo, written by you and approved by the owner. Start fro
 | `questions` | Array: open product questions for the reviewer. |
 | `steps({ page, kit })` | The recorded journey. Locate elements with `getByRole` and `getByLabel`. |
 
-`kit` provides `caption(text, holdMs = 3500)` (one persistent caption, inserted as text; `caption('')` clears it), `chapter(title, description)`, `shot(name)` (screenshot to `<out>/shots/<name>.png`, then a secret check), `fixture(name)`, and `hold(ms)`. The recorder signs in, then runs `steps`; clicks and typing are highlighted automatically.
+`kit` provides `caption(text, holdMs = 3500)` (one persistent caption, inserted as text; `caption('')` clears it), `chapter(title, description)`, `shot(name)` (screenshot to `<out>/shots/<name>.png`, then a secret check), `fixture(name)`, and `hold(ms)`. The recorder signs in, then starts the recording and runs `steps`; clicks and typing are highlighted automatically.
+
+Never type a secret inside `steps`: while actions are shown, `fill()` draws its value as the action title into the video, and the secret check reads only page text, so it cannot catch that.
 
 `title`, `covers`, `notShown`, and `questions` become `scenario.json`, from which `summary.md` and the MR block are built.
 
@@ -56,6 +59,7 @@ One `scenario.mjs` per demo, written by you and approved by the owner. Start fro
 1. **Context.** Resolve the MR (by number or from the current branch) and its head SHA. Read the MR description, the linked issue, the spec, and the diff; write down the acceptance criteria.
    If the MR description already has a `<!-- demo:start -->` block, compare the 12-character commit recorded in it with the MR head. When they differ, warn the user that the existing demo is out of date before going further; record again only if they ask.
 2. **Stand.** Create a dedicated worktree of the head SHA outside the main checkout, named `demo-<MR>` under the workspace's worktree directory. Never reuse or touch another stand.
+   Take `--config` from a checkout that contains the adapter: the default branch, or the adapter's own branch until it is merged; never from the MR worktree, whose head may not have it. Seed and reset scripts are resolved next to that config, but they run against the MR head's schema; if the MR changes the models they touch, adjust them first.
    ```bash
    node $SKILL/scripts/stand.mjs up --config <abs path to demo.config.mjs> --worktree <worktree> --project <repo>-demo-<MR>
    ```
@@ -67,9 +71,9 @@ One `scenario.mjs` per demo, written by you and approved by the owner. Start fro
 6. **Recording.**
    ```bash
    node $SKILL/scripts/stand.mjs reset --config <...> --worktree <worktree> --project <repo>-demo-<MR>
-   node $SKILL/scripts/record.mjs --config <demo.config.mjs> --scenario <scenario.mjs> --base-url <baseUrl> --out <out> --shots --secrets-file <worktree>/.env
+   node $SKILL/scripts/record.mjs --config <demo.config.mjs> --scenario <scenario.mjs> --base-url <baseUrl> --out <out> --secrets-file <worktree>/.env
    ```
-   Keep `<out>` outside the worktree. It receives `raw.webm`, `scenario.json`, and `shots/`. Look at the key shots, and confirm through the API or the database that the actions in the video really took effect.
+   Keep `<out>` outside the worktree. It receives `raw.webm`, `scenario.json`, and `shots/`. The secret check covers the values in `--secrets-file` and every environment variable whose name contains `PASSWORD`, `TOKEN`, `SECRET`, or `API_KEY`, when the value has at least 6 characters. Look at the key shots, and confirm through the API or the database that the actions in the video really took effect.
 7. **Render and check.**
    ```bash
    bash $SKILL/scripts/render.sh <out>/raw.webm <out>/demo.mp4
@@ -80,7 +84,7 @@ One `scenario.mjs` per demo, written by you and approved by the owner. Start fro
    cp <scenario.mjs> <out>/scenario.mjs
    bash $SKILL/scripts/publish.sh --repo <worktree> --mr <MR> --sha <recorded head SHA> --dir <out> --duration <durationSec> --lang <captionsLang>
    ```
-   It commits `demos/<MR>/<sha12>/{demo.mp4, scenario.json, scenario.mjs, summary.md}` to the orphan `demos` branch through a temporary worktree, pushes it, and replaces or appends the block in the MR description. When an existing block was replaced by a new commit, it also comments on the MR (`Demo updated: <url>`, in the `--lang` language) so the reviewer is notified. An identical re-publish commits nothing and posts no comment. It prints the video URL.
+   It first reads the MR description (an unknown MR stops it before any git write), then commits `demos/<MR>/<sha12>/{demo.mp4, scenario.json, scenario.mjs, summary.md}` on top of `origin/demos` (or as its first, orphan commit) in a detached temporary worktree, pushes it to `demos` without force and without creating a local `demos` branch, and replaces or appends the block in the MR description. When an existing block was replaced by a new commit, it also comments on the MR (`Demo updated: <url>`, in the `--lang` language) so the reviewer is notified. An identical re-publish commits nothing and posts no comment. It prints the video URL.
    To preview first, add `--dry-run --body-file <current MR body>`: it prints the file list, the URL, and the new body, and writes nothing.
 9. **Cleanup, also after any failure.** `stand.mjs down` (runs `docker compose down -v`), then `git worktree remove --force <worktree>`. Copy `demo.mp4` to the user's downloads directory and report the video URL, the SHA, and the questions in chat.
 
@@ -116,7 +120,7 @@ With `--note <text>`, the note is one extra line directly under `Duration:`. Wit
 | `stand.mjs` | `0` ok; `2` compose failed (the last 50 log lines go to stderr); `64` usage or missing seed/reset step. A failing `{ command }` step exits with that command's status; another non-zero code is a config or free-port error. |
 | `record.mjs` | `0` ok; `1` scenario or browser failure (stderr has the stack and up to 500 characters of page text; `<out>/error.png` is saved); `4` a secret value is visible on the page; `64` usage. |
 | `render.sh` | `0` ok; `1` `ffmpeg` or `ffprobe` missing or failed; `3` over the duration limit, or over the size limit after all fallbacks; `64` usage. |
-| `publish.sh` | `0` ok; `1` origin unreachable or another tool failure; `5` push of `demos` rejected; `64` usage. |
+| `publish.sh` | `0` ok; `1` MR not found, origin unreachable, or another tool failure; `5` push of `demos` failed (git's output is on stderr); `64` usage. |
 
 ## Failure handling
 
@@ -126,7 +130,7 @@ With `--note <text>`, the note is one extra line directly under `Duration:`. Wit
 | `record.mjs` exits 1 (locator not found or step failed) | Read the error, `error.png`, and page text; redo reconnaissance and fix the scenario. After the second failure, stop and report. |
 | `record.mjs` exits 4 | Delete the whole `<out>` directory (shots and `raw.webm` may contain the secret) and never publish it. Fix the data or the scenario, then record again. |
 | `render.sh` exits 3 | Duration over 180 s: the scenario must get shorter; ask the owner what to drop. Size over 15 MiB after CRF 22, CRF 28, and CRF 28 scaled to fit 1280×800: stop and ask the owner. Never cut the scenario silently. |
-| MR not found, `publish.sh` exits 1 or 5 | Stop and report. Re-run after the cause is fixed. The publisher never force-pushes and never creates an MR; neither do you. |
+| MR not found, `publish.sh` exits 1 or 5 | Stop and report. Re-run after the cause is fixed; a failed run leaves no local branch behind. The publisher never force-pushes and never creates an MR; neither do you. |
 | MR head moved during recording | Publish anyway with `--sha` of the recorded commit and `--note "Recorded at <sha12>; MR head is now <sha12>"`, and tell the user the demo predates the new head. |
 
 ## Verification checklist

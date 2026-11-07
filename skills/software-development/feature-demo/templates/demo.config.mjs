@@ -12,14 +12,17 @@ export default {
     ports: { FRONTEND_PORT: 4183, BACKEND_PORT: 4184, DB_PORT: 4185 },
   },
   baseUrl: ({ ports }) => `http://localhost:${ports.FRONTEND_PORT}`,
-  // `script` is piped to `run` inside the compose `service`; paths are relative to the worktree root.
-  seed: { service: 'backend', script: 'tools/demo/seed.py', run: 'python manage.py shell' },
+  // `script` is piped to `run` inside the compose `service`; it is relative to this file, not the worktree.
+  seed: { service: 'backend', script: 'seed.py', run: 'python manage.py shell' },
   // Projects without such a shell run a host command in the worktree instead.
   reset: { command: ['npm', 'run', 'demo:reset'] },
+  // Runs before the recording starts. Never type secrets inside a scenario.
   async login(page, { baseUrl }) {
+    const password = process.env.DEMO_PASSWORD;
+    if (!password) throw new Error('DEMO_PASSWORD is not set; export the demo account password before recording');
     await page.goto(`${baseUrl}/login`);
     await page.getByLabel('Email').fill('demo@example.com');
-    await page.getByLabel('Password').fill(process.env.DEMO_PASSWORD ?? '');
+    await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('navigation').waitFor();
   },

@@ -11,10 +11,11 @@ const EXIT_FAILURE = 1;
 const EXIT_USAGE = 64;
 const EXIT_SECRET = 4;
 const MIN_SECRET_LENGTH = 6;
+const SECRET_ENV_KEY = /PASSWORD|TOKEN|SECRET|API_KEY/i;
 const ERROR_TEXT_CHARS = 500;
 
 function usage(message) {
-  console.error(`${message}\nusage: record.mjs --config <file> --scenario <file> --base-url <url> --out <dir> [--shots] [--secrets-file <.env>]`);
+  console.error(`${message}\nusage: record.mjs --config <file> --scenario <file> --base-url <url> --out <dir> [--secrets-file <.env>]`);
   process.exit(EXIT_USAGE);
 }
 
@@ -26,7 +27,6 @@ try {
       scenario: { type: 'string' },
       'base-url': { type: 'string' },
       out: { type: 'string' },
-      shots: { type: 'boolean', default: false },
       'secrets-file': { type: 'string' },
     },
   }));
@@ -44,11 +44,13 @@ const config = (await importModule(values.config)).default;
 const scenario = await importModule(values.scenario);
 
 function loadSecrets(file) {
-  if (!file) return [];
-  return readFileSync(file, 'utf8')
-    .split('\n')
-    .map((line) => line.match(/^\s*[\w.-]+\s*=\s*(.*?)\s*$/)?.[1]?.replace(/^(['"])(.*)\1$/, '$2') ?? '')
-    .filter((v) => v.length >= MIN_SECRET_LENGTH);
+  const fromFile = file
+    ? readFileSync(file, 'utf8')
+      .split('\n')
+      .map((line) => line.match(/^\s*[\w.-]+\s*=\s*(.*?)\s*$/)?.[1]?.replace(/^(['"])(.*)\1$/, '$2') ?? '')
+    : [];
+  const fromEnv = Object.entries(process.env).filter(([key]) => SECRET_ENV_KEY.test(key)).map(([, value]) => value ?? '');
+  return [...fromFile, ...fromEnv].filter((v) => v.length >= MIN_SECRET_LENGTH);
 }
 const secrets = loadSecrets(values['secrets-file']);
 
@@ -71,12 +73,15 @@ const kit = createKit(page, {
 });
 const webm = path.join(out, 'raw.webm');
 let exitCode = 0;
+let recording = false;
 
 try {
+  // Login is not filmed: showActions would draw the typed password as an action title.
+  await config.login(page, { baseUrl });
   await page.screencast.start({ path: webm, size: config.viewport });
+  recording = true;
   await page.screencast.showActions();
   await kit.chapter(scenario.title);
-  await config.login(page, { baseUrl });
   await scenario.steps({ page, kit });
   await assertNoSecrets(page);
   writeFileSync(
@@ -95,7 +100,7 @@ try {
     console.error(`page text:\n${text.slice(0, ERROR_TEXT_CHARS)}`);
   }
 } finally {
-  await page.screencast.stop().catch((e) => console.error(`screencast.stop failed: ${e.message}`));
+  if (recording) await page.screencast.stop().catch((e) => console.error(`screencast.stop failed: ${e.message}`));
   await browser.close();
 }
 process.exit(exitCode);

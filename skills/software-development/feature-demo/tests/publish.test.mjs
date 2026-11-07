@@ -41,22 +41,27 @@ function setup(t) {
   return { bare, repo, dir, sha, sha12: sha.slice(0, 12), root };
 }
 
-function publish({ repo, dir, sha }, extra = [], env = {}) {
-  return spawnSync('bash', [PUBLISH, '--repo', repo, '--mr', '7', '--sha', sha, '--dir', dir, '--duration', '12.5', ...extra], {
+function publish({ repo, dir, sha }, extra = [], env = {}, mr = '7') {
+  return spawnSync('bash', [PUBLISH, '--repo', repo, '--mr', mr, '--sha', sha, '--dir', dir, '--duration', '12.5', ...extra], {
     encoding: 'utf8',
     env: { ...process.env, DEMO_SKIP_FORGE: '1', ...env },
   });
 }
 
-function ghStub({ root }) {
+const hasLocalBranch = (repo, name) => spawnSync('git', ['rev-parse', '--verify', '-q', `refs/heads/${name}`], { cwd: repo }).status === 0;
+
+// REST-only gh stub: PR 7 exists; any other call fails with gh's own exit code 4.
+function ghStub({ root }, { failEdit = false } = {}) {
   const bin = path.join(root, 'bin');
   const log = path.join(root, 'gh.log');
   mkdirSync(bin);
   writeFileSync(path.join(bin, 'gh'), `#!/bin/sh
 echo "$*" >> "${log}"
-case "$1 $2" in
-  "pr view") printf 'Intro\\n\\n${START}\\nold\\n${END}\\n' ;;
-  "pr edit") cat "$5" > "${log}.body" ;;
+case "$1 $2 $3 $4" in
+  "api repos/acme/app/pulls/7 --jq "*) printf 'Intro\\n\\n${START}\\nold\\n${END}\\n' ;;
+  "api -X PATCH repos/acme/app/pulls/7") ${failEdit ? 'exit 4' : `cat "\${6#body=@}" > "${log}.body"`} ;;
+  "api -X POST repos/acme/app/issues/7/comments") cat "\${6#body=@}" >> "${log}.comments" ;;
+  *) echo "HTTP 404: Not Found" >&2; exit 4 ;;
 esac
 `);
   chmodSync(path.join(bin, 'gh'), 0o755);
@@ -79,6 +84,7 @@ test('publish creates orphan demos branch', (t) => {
   assert.match(summary, new RegExp(`https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4`));
   assert.match(r.stdout, /blob\/demos\/demos\/7\//);
   assert.equal(git(ctx.repo, 'worktree', 'list', '--porcelain').split('\n').filter((l) => l.startsWith('worktree ')).length, 1);
+  assert.ok(!hasLocalBranch(ctx.repo, 'demos'), 'publish must not leave a local demos branch');
 });
 
 test('publish twice same sha overwrites', (t) => {
@@ -124,8 +130,43 @@ test('publish stops with exit 5 when push is rejected', (t) => {
   git(ctx.bare, 'config', 'core.hooksPath', path.dirname(hook));
   const r = publish(ctx);
   assert.equal(r.status, 5);
-  assert.match(r.stderr, /rejected/);
+  assert.match(r.stderr, /push of demos to origin failed/);
+  assert.doesNotMatch(r.stderr, /another publish may have landed/);
   assert.equal(git(ctx.repo, 'worktree', 'list', '--porcelain').split('\n').filter((l) => l.startsWith('worktree ')).length, 1);
+});
+
+// Regression guard: a failed first push used to leave a local `demos` branch that blocked every re-run.
+test('publish succeeds on re-run after a failed first push', (t) => {
+  const ctx = setup(t);
+  const hooks = path.join(ctx.root, 'hooks');
+  mkdirSync(hooks);
+  writeFileSync(path.join(hooks, 'pre-receive'), '#!/bin/sh\nexit 1\n');
+  chmodSync(path.join(hooks, 'pre-receive'), 0o755);
+  git(ctx.bare, 'config', 'core.hooksPath', hooks);
+  assert.equal(publish(ctx).status, 5);
+  assert.ok(!hasLocalBranch(ctx.repo, 'demos'));
+  git(ctx.bare, 'config', '--unset', 'core.hooksPath');
+  const r = publish(ctx);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(git(ctx.bare, 'ls-tree', '-r', '--name-only', 'demos').includes(`demos/7/${ctx.sha12}/demo.mp4`));
+});
+
+// Regression guard: the MR is confirmed before anything is pushed.
+test('publish to a missing MR exits 1 and pushes nothing', (t) => {
+  const ctx = setup(t);
+  const { env } = ghStub(ctx);
+  const r = publish(ctx, [], env, '8');
+  assert.equal(r.status, 1, r.stderr);
+  assert.match(r.stderr, /!8/);
+  assert.notEqual(spawnSync('git', ['rev-parse', '--verify', '-q', 'demos'], { cwd: ctx.bare }).status, 0);
+  assert.ok(!hasLocalBranch(ctx.repo, 'demos'));
+});
+
+test('publish maps an unexpected tool failure to exit 1', (t) => {
+  const ctx = setup(t);
+  const { env } = ghStub(ctx, { failEdit: true });
+  const r = publish(ctx, [], env);
+  assert.equal(r.status, 1, r.stderr);
 });
 
 test('publish updates GitHub PR body and comments on replace', (t) => {
@@ -134,9 +175,11 @@ test('publish updates GitHub PR body and comments on replace', (t) => {
   const r = publish(ctx, [], env);
   assert.equal(r.status, 0, r.stderr);
   const calls = readFileSync(log, 'utf8');
-  assert.match(calls, /^pr view 7 --json body -q \.body$/m);
-  assert.match(calls, /^pr edit 7 --body-file /m);
-  assert.match(calls, new RegExp(`^pr comment 7 --body Demo updated: https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4$`, 'm'));
+  assert.match(calls, /^api repos\/acme\/app\/pulls\/7 --jq /m);
+  assert.match(calls, /^api -X PATCH repos\/acme\/app\/pulls\/7 -F body=@/m);
+  assert.match(calls, /^api -X POST repos\/acme\/app\/issues\/7\/comments -F body=@/m);
+  assert.doesNotMatch(calls, /^pr /m);
+  assert.equal(readFileSync(`${log}.comments`, 'utf8').trim(), `Demo updated: https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4`);
   const body = readFileSync(`${log}.body`, 'utf8');
   assert.ok(body.startsWith('Intro\n\n'));
   assert.equal(body.split(START).length - 1, 1);
@@ -151,8 +194,8 @@ test('publish skips comment when identical re-publish pushes nothing', (t) => {
   assert.equal(r.status, 0, r.stderr);
   assert.equal(git(ctx.bare, 'rev-list', '--count', 'demos'), '1');
   const calls = readFileSync(log, 'utf8');
-  assert.equal(calls.match(/^pr edit /gm).length, 2);
-  assert.equal(calls.match(/^pr comment /gm).length, 1);
+  assert.equal(calls.match(/^api -X PATCH /gm).length, 2);
+  assert.equal(calls.match(/^api -X POST /gm).length, 1);
 });
 
 test('publish comments and summarizes in Russian with --lang ru', (t) => {
@@ -160,7 +203,7 @@ test('publish comments and summarizes in Russian with --lang ru', (t) => {
   const { log, env } = ghStub(ctx);
   const r = publish(ctx, ['--lang', 'ru'], env);
   assert.equal(r.status, 0, r.stderr);
-  assert.match(readFileSync(log, 'utf8'), /^pr comment 7 --body Демо обновлено: https:/m);
+  assert.match(readFileSync(`${log}.comments`, 'utf8'), /^Демо обновлено: https:/m);
   assert.match(readFileSync(`${log}.body`, 'utf8'), /^Видео: https:/m);
   assert.match(git(ctx.bare, 'show', `demos:demos/7/${ctx.sha12}/summary.md`), /^Коммит: /m);
 });
