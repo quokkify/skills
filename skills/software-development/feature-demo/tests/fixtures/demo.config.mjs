@@ -7,4 +7,9 @@ export default {
   baseUrl: ({ ports }) => `http://localhost:${ports.FRONTEND_PORT}`,
   seed: { service: 'backend', script: '.claude/demo/seed.py', run: 'python manage.py shell' },
   reset: { command: ['npm', 'run', 'reset'] },
+  viewport: { width: 1280, height: 720 },
+  fixtures: new URL('.', import.meta.url).pathname,
+  async login(page, { baseUrl }) {
+    await page.goto(`${baseUrl}/page.html`);
+  },
 };
