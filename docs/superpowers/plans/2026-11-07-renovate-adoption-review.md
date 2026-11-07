@@ -159,7 +159,7 @@ def test_retro_requires_exactly_one_range_flag(self):  # neither or both → exi
 - Create: `tests/fixtures/renovate_adoption/api_tree.json`
 
 **Interfaces:**
-- Produces: `renovate_adoption.sh owned-paths` → JSON array of path strings (template paths with `.jinja` removed and leading template root dirs kept); consumer path P is owned iff some entry ends with `/P` or equals P. `SKILL.md` uses this rule.
+- Produces: `renovate_adoption.sh owned-paths` → JSON array of consumer-relative path strings (blobs under the template `_subdirectory`, prefix and templates suffix removed); consumer path P is owned iff it equals an entry (ruling R7). `SKILL.md` uses this rule.
 
 - [ ] **Step 1: Write failing tests:**
 

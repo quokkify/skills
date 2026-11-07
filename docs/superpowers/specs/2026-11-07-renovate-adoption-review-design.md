@@ -144,9 +144,10 @@ simplifies existing configuration; update comments and docs naming the old versi
 Forbidden: new dependencies; public API changes of the consumer library; edits to
 Renovate configuration; edits to `ci-kit`-generated files (helper `owned-paths`
 reads `_src_path` and `_commit` from every `.copier-answers*.yml`, lists the
-template tree at that commit, strips `.jinja`, and treats a consumer path as owned
-when a template path ends with it; false positives only cause flagging, never an
-edit; reported under "Belongs in ci-kit"); unrelated refactors; weakening or
+template tree at that commit, keeps blobs under the template's `_subdirectory`
+(read from its `copier.yml`, with `{{ var }}` rendered from that answers file),
+strips that prefix and the templates suffix (default `.jinja`), and treats a
+consumer path as owned when it equals one of the results; reported under "Belongs in ci-kit"); unrelated refactors; weakening or
 deleting tests.
 
 Size: a finding touching more than 10 files is proposed, not applied.
