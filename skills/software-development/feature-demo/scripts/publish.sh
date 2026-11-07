@@ -93,10 +93,11 @@ case "$host$project" in *@*|*:*) usage "$bad_origin" ;; esac
 
 if [ "$host" = github.com ]; then
   forge=github
-  video_url="https://github.com/$project/blob/$BRANCH/$dest/demo.mp4"
+  # The raw URL downloads the file in one click; the blob page offers only "View raw".
+  video_url="https://github.com/$project/raw/$BRANCH/$dest/demo.mp4"
 else
   forge=gitlab
-  video_url="https://$host/$project/-/blob/$BRANCH/$dest/demo.mp4"
+  video_url="https://$host/$project/-/raw/$BRANCH/$dest/demo.mp4"
 fi
 
 tmp=$(mktemp -d)

@@ -84,7 +84,7 @@ Never type a secret inside `steps`: while actions are shown, `fill()` draws its 
    cp <scenario.mjs> <out>/scenario.mjs
    bash $SKILL/scripts/publish.sh --repo <worktree> --mr <MR> --sha <recorded head SHA> --dir <out> --duration <durationSec> --lang <captionsLang>
    ```
-   It first reads the MR description (an unknown MR stops it before any git write), then commits `demos/<MR>/<sha12>/{demo.mp4, scenario.json, scenario.mjs, summary.md}` on top of `origin/demos` (or as its first, orphan commit) in a detached temporary worktree, pushes it to `demos` without force and without creating a local `demos` branch, and replaces or appends the block in the MR description. When an existing block was replaced by a new commit, it also comments on the MR (`Demo updated: <url>`, in the `--lang` language) so the reviewer is notified. An identical re-publish commits nothing and posts no comment. It prints the video URL.
+   It first reads the MR description (an unknown MR stops it before any git write), then commits `demos/<MR>/<sha12>/{demo.mp4, scenario.json, scenario.mjs, summary.md}` on top of `origin/demos` (or as its first, orphan commit) in a detached temporary worktree, pushes it to `demos` without force and without creating a local `demos` branch, and replaces or appends the block in the MR description. When an existing block was replaced by a new commit, it also comments on the MR (`Demo updated: <url>`, in the `--lang` language) so the reviewer is notified. An identical re-publish commits nothing and posts no comment. It prints the video URL: a raw-file link, so one click downloads the mp4 for the reviewer. Forges serve repository files as downloads, so the video does not play in the browser.
    To preview first, add `--dry-run --body-file <current MR body>`: it prints the file list, the URL, and the new body, and writes nothing.
 9. **Cleanup, also after any failure.** `stand.mjs down` (runs `docker compose down -v`), then `git worktree remove --force <worktree>`. Copy `demo.mp4` to the user's downloads directory and report the video URL, the SHA, and the questions in chat.
 
@@ -96,7 +96,7 @@ Never type a secret inside `steps`: while actions are shown, `fill()` draws its 
 <!-- demo:start -->
 ## Demo
 
-Video: https://forge.example.com/acme/app/blob/demos/demos/42/0123456789ab/demo.mp4
+Video: https://forge.example.com/acme/app/raw/demos/demos/42/0123456789ab/demo.mp4
 Commit: `0123456789ab`
 Duration: 1:47
 

@@ -81,8 +81,8 @@ test('publish creates orphan demos branch', (t) => {
   assert.equal(mb.status, 1, 'demos must not share history with main');
   assert.equal(git(ctx.bare, 'log', '-1', '--format=%s', 'demos'), `docs(demo): MR !7 at ${ctx.sha12}`);
   const summary = git(ctx.bare, 'show', `demos:demos/7/${ctx.sha12}/summary.md`);
-  assert.match(summary, new RegExp(`https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4`));
-  assert.match(r.stdout, /blob\/demos\/demos\/7\//);
+  assert.match(summary, new RegExp(`https://github.com/acme/app/raw/demos/demos/7/${ctx.sha12}/demo.mp4`));
+  assert.match(r.stdout, /raw\/demos\/demos\/7\//);
   assert.equal(git(ctx.repo, 'worktree', 'list', '--porcelain').split('\n').filter((l) => l.startsWith('worktree ')).length, 1);
   assert.ok(!hasLocalBranch(ctx.repo, 'demos'), 'publish must not leave a local demos branch');
 });
@@ -108,7 +108,7 @@ test('publish dry-run prints replaced body', (t) => {
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.stdout.split(START).length - 1, 1);
   assert.equal(r.stdout.split(END).length - 1, 1);
-  assert.match(r.stdout, /blob\/demos\/demos\/7\//);
+  assert.match(r.stdout, /raw\/demos\/demos\/7\//);
   assert.match(r.stdout, new RegExp(`demos/7/${ctx.sha12}/summary\\.md`));
   assert.doesNotMatch(r.stdout, /старое/);
   assert.notEqual(spawnSync('git', ['rev-parse', '--verify', 'demos'], { cwd: ctx.bare }).status, 0);
@@ -179,7 +179,7 @@ test('publish updates GitHub PR body and comments on replace', (t) => {
   assert.match(calls, /^api -X PATCH repos\/acme\/app\/pulls\/7 -F body=@/m);
   assert.match(calls, /^api -X POST repos\/acme\/app\/issues\/7\/comments -F body=@/m);
   assert.doesNotMatch(calls, /^pr /m);
-  assert.equal(readFileSync(`${log}.comments`, 'utf8').trim(), `Demo updated: https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4`);
+  assert.equal(readFileSync(`${log}.comments`, 'utf8').trim(), `Demo updated: https://github.com/acme/app/raw/demos/demos/7/${ctx.sha12}/demo.mp4`);
   const body = readFileSync(`${log}.body`, 'utf8');
   assert.ok(body.startsWith('Intro\n\n'));
   assert.equal(body.split(START).length - 1, 1);
@@ -257,5 +257,5 @@ test('publish keeps origin credentials out of output', (t) => {
   for (const out of [r.stdout, r.stderr, summary]) {
     assert.doesNotMatch(out, /CRET|SE@/);
   }
-  assert.match(r.stdout, new RegExp(`^https://github.com/acme/app/blob/demos/demos/7/${ctx.sha12}/demo.mp4$`, 'm'));
+  assert.match(r.stdout, new RegExp(`^https://github.com/acme/app/raw/demos/demos/7/${ctx.sha12}/demo.mp4$`, 'm'));
 });
