@@ -71,8 +71,8 @@ picks candidates; it changes nothing.
 
 1. Range selection: `--since <date|tag|sha>` or `--last <N>`.
 2. Helper `retro` collects merged updates: merged PRs authored by `renovate[bot]`
-   with the `dependencies` label; fallback to `deps(<scope>)` commit subjects in
-   `git log` for the range.
+   with the `dependencies` label (Renovate on GitHub always merges through a PR,
+   so no `git log` fallback).
 3. Aggregation: multiple bumps of the same dependency collapse into one interval
    from the earliest old version to the latest new version.
 4. Triage is wider than mode 1: majors and minors are candidates; digest, patch,
@@ -93,6 +93,7 @@ picks candidates; it changes nothing.
 - `sweep` → JSON array of `inspect` results for open Renovate PRs.
 - `retro --since <ref> | --last <N>` → JSON array of aggregated intervals with
   the list of source PRs/commits and a verdict per interval.
+- `owned-paths` → JSON array of template-owned path suffixes (see Guardrails).
 - Allowlist: optional `.github/renovate-adoption.json` in the consumer
   (`{"allow": ["actions/setup-java", "gradle"]}`); absent file means empty list.
 - Exit codes: 0 success, 2 usage error, 3 `gh`/network failure (message on
@@ -141,9 +142,12 @@ remove a workaround the new version makes unnecessary; adopt a new option that
 simplifies existing configuration; update comments and docs naming the old version.
 
 Forbidden: new dependencies; public API changes of the consumer library; edits to
-Renovate configuration; edits to `ci-kit`-generated files (detected via
-`.copier-answers*.yml` and the template's file list; reported under "Belongs in
-ci-kit"); unrelated refactors; weakening or deleting tests.
+Renovate configuration; edits to `ci-kit`-generated files (helper `owned-paths`
+reads `_src_path` and `_commit` from every `.copier-answers*.yml`, lists the
+template tree at that commit, strips `.jinja`, and treats a consumer path as owned
+when a template path ends with it; false positives only cause flagging, never an
+edit; reported under "Belongs in ci-kit"); unrelated refactors; weakening or
+deleting tests.
 
 Size: a finding touching more than 10 files is proposed, not applied.
 
