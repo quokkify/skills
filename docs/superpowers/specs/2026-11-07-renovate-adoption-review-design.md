@@ -86,14 +86,16 @@ picks candidates; it changes nothing.
 
 ### `scripts/renovate_adoption.sh` (deterministic, POSIX sh, needs `gh` and `jq`)
 
-- `inspect <pr>` → JSON: `{pr, branch, headSha, updates:[{package, manager,
-  datasource, from, to, updateType, releaseNotesUrls}], verdict, reason}`.
-  Update type comes from Renovate's PR body table and labels; grouped PRs yield
-  several updates; any non-skipped update makes the PR a candidate.
+- `inspect <pr>` → JSON: `{pr, branch, headSha, updates:[{package, sourceUrl,
+  from, to, updateType, releaseNotesUrls}], verdict, reason}`. Update type is
+  computed from the `from`/`to` versions; the Renovate PR body table and labels
+  are used only for parsing. Grouped PRs yield several updates; any
+  non-skipped update makes the PR a candidate.
 - `sweep` → JSON array of `inspect` results for open Renovate PRs.
 - `retro --since <ref> | --last <N>` → JSON array of aggregated intervals with
   the list of source PRs/commits and a verdict per interval.
-- `owned-paths` → JSON array of template-owned path suffixes (see Guardrails).
+- `owned-paths` → JSON array of consumer-relative template-owned paths, matched
+  exactly (R7/R9; see Guardrails).
 - Allowlist: optional `.github/renovate-adoption.json` in the consumer
   (`{"allow": ["actions/setup-java", "gradle"]}`); absent file means empty list.
 - Exit codes: 0 success, 2 usage error, 3 `gh`/network failure (message on
@@ -147,8 +149,8 @@ reads `_src_path` and `_commit` from every `.copier-answers*.yml`, lists the
 template tree at that commit, keeps blobs under the template's `_subdirectory`
 (read from its `copier.yml`, with `{{ var }}` rendered from that answers file),
 strips that prefix and the templates suffix (default `.jinja`), and treats a
-consumer path as owned when it equals one of the results; reported under "Belongs in ci-kit"); unrelated refactors; weakening or
-deleting tests.
+consumer path as owned when it equals one of the results; reported under
+"Belongs in ci-kit"); unrelated refactors; weakening or deleting tests.
 
 Size: a finding touching more than 10 files is proposed, not applied.
 
