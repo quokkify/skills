@@ -30,8 +30,8 @@ Read the repository's PR template, contribution guide, and agent instructions fi
 5. **`## Migration`** is required for any `!` title, whatever the type (`chore(x)!:` included). Numbered steps the user must take. If users need to do nothing, the change is not breaking: drop the `!`.
 6. **`## Usage example`** is optional: one short fenced snippet that can be copied. It is published under the entry whatever the type. A `## Migration` on a non-breaking PR is published too.
 7. **Headings** must be level 2 (`## `), outside code fences. Aliases the check accepts: `## Breaking change` or `## Breaking changes` for Migration, and the legacy `## Highlight` for Release note. A repeated heading is ignored after its first use; empty sections and HTML comments do not count.
-8. **Order is a convention, not checked.** The template puts the publishable sections first first (`## Release note`, `## Usage example`, `## Migration`), then reviewer sections (Summary, Design, Verification, audit tables), which are never published. Fill the publishable ones before writing the long review text.
-9. **Limits are warnings, enforcement may be staged.** These only produce warnings: a title over 72 characters; a title containing a file name with an extension, `x()`, a snake_case or camelCase word; a release note over 300 characters, with more than one paragraph, or with a list; a heading in the note; `<details>`/`<summary>` markup in any published section. Missing required sections fail the check, but in warn mode they are reported as warnings and the check stays green; treat them as failures anyway. Bot-authored PRs are exempt.
+8. **Order is a convention, not checked.** The template puts the publishable sections first (`## Release note`, `## Usage example`, `## Migration`), then reviewer sections (`## Description` or the repository template's equivalent, Design, Verification, audit tables), which are never published. Fill the publishable ones before writing the long review text.
+9. **Limits are warnings, enforcement may be staged.** These only produce warnings: a title over 72 characters; a title containing a file name with an extension, `x()`, a snake_case or camelCase word; a release note over 300 characters, with more than one paragraph, or with a list; `<details>`/`<summary>` markup, a heading or `---`/`===` line, or a stray `<!--` without `-->` in a published section (the check's "Unsafe markup" warning). Missing required sections fail the check, but in warn mode they are reported as warnings and the check stays green; treat them as failures anyway. Bot-authored PRs are exempt.
 10. **Fix the source, not the output.** If the release PR is regenerated from merged PRs, correct a wrong note by editing the merged PR's title, body, or labels. Never hand-edit the generated release PR.
 
 ## Before and after
@@ -53,7 +53,7 @@ Results nested below the artifact root (for example `**/build/results`) used to 
 tests. The publish step now fails and names the nested directories. Upload one results directory per component
 at the artifact root.
 
-## Summary
+## Description
 
 The collector globbed only the root; it now walks nested paths and errors on any match.
 ```
