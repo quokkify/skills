@@ -13,7 +13,7 @@ A version bump changes only the version. This skill reads a dependency update an
 - Updates were merged over a period and nobody read their release notes with the consumer code in mind.
 - Not for: judging breaking-change risk, fixing a build the bump broke, editing the Renovate configuration, or adding dependencies.
 
-Requirements: `gh` (authenticated), `jq`, `git`, a POSIX shell, and a clone of the consumer repository. All helper calls below run from the consumer repository root; `<skill-dir>` is the directory holding this file.
+Requirements: `gh` (authenticated), `jq`, `git`, a POSIX shell, and a clone of the consumer repository. Renovate must label its PRs `dependencies` (renovate `labels` option); `retro` finds PRs by that label. All helper calls below run from the consumer repository root; `<skill-dir>` is the directory holding this file.
 
 ## Modes
 
@@ -37,16 +37,17 @@ Triage: in `review`/`sweep` only majors are candidates; in `retro`, majors and m
 Retro notes:
 
 - `--last <N>` takes the N most recent Renovate PRs in the order `gh` returns them (creation order), not strictly the N most recently merged.
-- The helper caps its queries at 100 open and 200 merged PRs. On a large repository, narrow the range with `--since` and say in the output when a result may be truncated.
+- The helper caps its queries at 100 open and 200 merged PRs. When the helper prints `warning: results may be truncated at <N>` on stderr, narrow the range with `--since` and say in the output that the result may be truncated.
+- When `retro` returns an empty array it warns on stderr (usually the `dependencies` label is missing). Report the empty result to the user; never turn it into an issue.
 
 ## Workflow
 
-Steps per mode: `sweep` runs steps 1–2 and reports the verdict table. `retro` without `--apply` runs steps 1–6 and 9: no edits and no checks, findings are proposals in the issue. `review` and `retro --apply` run every step.
+Steps per mode: `sweep` runs steps 1–2 and reports the verdict table. `retro` without `--apply` runs steps 1–6 and 9: no edits and no checks, findings are proposals in the issue; run `git fetch` and search usages (step 5) on `origin/<default>`, not the current branch. `review` and `retro --apply` run every step.
 
-1. **Preflight.** `git status --porcelain` must be empty, otherwise stop before any edit. For `review`, also check for an existing child: `git ls-remote --heads origin "adopt/<name>"` and `gh pr list --head "adopt/<name>" --state all`; if either exists, the run goes through the drift path in `references/stacked-pr.md`, never a new branch.
+1. **Preflight.** `git status --porcelain` must be empty, otherwise stop before any edit. For `review`, also check for an existing child as soon as `inspect` returns the branch name: `git ls-remote --heads origin "adopt/<name>"` and `gh pr list --head "adopt/<name>" --state all`; if either exists, the run goes through the drift path in `references/stacked-pr.md`, never a new branch.
 2. **Helper.** Run the mode's helper command. Any non-zero exit stops the run (see Stop conditions). For `review`, apply the explicit-PR override if the verdict is `skip`. Then, before any analysis edit, switch to the working branch: for `review`, `adopt/<name>` created from `headSha` (Create) or the existing one rebased onto it (Drift), per `references/stacked-pr.md`; for `retro --apply`, follow the retro recipe in the same file. Never edit or commit on the Renovate branch or the default branch.
 3. **Ownership.** Run `owned-paths` once per run and keep the list (see Guardrails).
-4. **Sources per candidate dependency**, in this order of trust; fall back to the next when one is unavailable:
+4. **Sources per candidate dependency** (for grouped PRs, only the rows that qualify under Triage), in this order of trust; fall back to the next when one is unavailable:
    1. The Renovate PR body: release notes it already fetched and its compare link (`releaseNotesUrls`).
    2. GitHub Releases and the CHANGELOG between `from` and `to` (`gh api --paginate "repos/<owner>/<repo>/releases?per_page=100"`, `gh api "repos/<owner>/<repo>/contents/CHANGELOG.md?ref=<to-tag>" -H "Accept: application/vnd.github.raw"`).
    3. The tag-to-tag diff of the dependency (`gh api repos/<owner>/<repo>/compare/<from-tag>...<to-tag>`) narrowed to `action.yml`, the public API, `Dockerfile`, and migration documents (`UPGRADING`, `MIGRATION`).
@@ -86,11 +87,11 @@ Forbidden:
 - Unrelated refactors.
 - Weakening or deleting tests.
 
-Ownership rule. A consumer path `P` is template-owned when it equals an entry printed by `owned-paths`. If `owned-paths` printed a `falling back to the whole template tree` warning, `P` is also owned when an entry ends with `/P`. Entries that still contain `{{` are templated file names the helper cannot render: treat every `.copier-answers*.yml` file, and any file whose name the template renders, as owned.
+Ownership rule. A consumer path `P` is template-owned when it equals an entry printed by `owned-paths`. If `owned-paths` printed a `falling back to the whole template tree` warning, `P` is also owned when an entry ends with `/P`. Any other `owned-paths` warning (a skipped non-GitHub source, a truncated template tree) means ownership is unknown for that template: stop and ask before editing any file that could be template-generated. Entries that still contain `{{` are templated file names the helper cannot render: treat every `.copier-answers*.yml` file, and any file whose name the template renders, as owned.
 
 Size: a finding that touches more than 10 files is proposed, not applied.
 
-Verification: a finding counts as applied only after a passing run of the consumer's checks. Never claim success without one.
+Verification: a finding counts as applied only after a passing run of the consumer's checks. Commit one finding per commit and run the checks after each; revert the failing finding's commit. Never claim success without a passing run.
 
 ## Explicit-PR override
 

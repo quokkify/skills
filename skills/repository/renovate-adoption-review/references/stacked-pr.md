@@ -31,6 +31,7 @@ gh pr comment "<pr>" --body-file "$tmp/parent-comment.md"
 rm -r "$tmp"
 ```
 
+- The title names the package and target version; for a grouped PR with several packages use `Adopt updates from <renovate-branch>`.
 - The child body (see `templates.md`) ends with the hidden marker `<!-- adoption-base: <head> -->`, the parent head SHA at creation.
 - Both PRs state the merge order: child into parent, then parent into `<default>`.
 - If nothing applies or checks fail: do not push, switch back (`git switch "<renovate-branch>"`), delete the local child (`git branch -D "adopt/<name>"`), and post only the report comment on the parent (body from `templates.md`, written to `"$tmp"`).
@@ -47,11 +48,14 @@ On re-running `review <pr>` when a child already exists, and while the parent is
 tmp=$(mktemp -d)
 old=$(gh pr view "adopt/<name>" --json body --jq '.body' \
   | sed -n 's/.*<!-- adoption-base: \([0-9a-f]*\) -->.*/\1/p')
+[ -n "$old" ] || { echo "marker missing"; exit 1; }
 new=$(gh pr view "<pr>" --json headRefOid --jq '.headRefOid')
 git fetch origin "<renovate-branch>" "adopt/<name>"
 git switch "adopt/<name>"
+# preflight guarantees a clean working tree, so the reset discards nothing
 git reset --hard "origin/adopt/<name>"
 git rebase --onto "$new" "$old"
+[ "$(git rev-list --count "$new"..HEAD)" -gt 0 ] || { echo "no commits left"; exit 1; }
 # re-run the review, apply new findings, run consumer checks; revert failing findings
 git push --force-with-lease origin "adopt/<name>"
 gh pr view "adopt/<name>" --json body --jq '.body' \
@@ -61,7 +65,7 @@ rm -r "$tmp"
 ```
 
 - If the marker is missing, stop and ask: the base cannot be determined safely.
-- Branch exists but no PR (an earlier run stopped after the push): there is no marker. Use `old=$(git merge-base "origin/adopt/<name>" "origin/<renovate-branch>")` as the cut point, run the rebase, checks and push above, then open the PR as in Create (body with marker `$new`) and post the parent comment. A local-only branch from a failed run is deleted and recreated through Create.
+- Branch exists but no PR (an earlier run stopped after the push): there is no marker. Compare `base=$(git merge-base "origin/adopt/<name>" "origin/<renovate-branch>")` with `$new`. If they are equal, Renovate has not moved: run the checks and push, then open the PR as in Create (body with marker `$new`) and post the parent comment. If they differ, Renovate may have force-pushed since the child was cut and the merge-base is not a trustworthy cut point: stop and ask the user. A local-only branch from a failed run is deleted and recreated through Create.
 - If `old` equals `new`, skip the rebase; re-run only the review and checks.
 - Conflicts during the rebase: abort (`git rebase --abort`), report, and leave the child as it was.
 
@@ -80,11 +84,14 @@ A parent `state` of `MERGED` or `CLOSED` takes this path. Do not fetch `<renovat
 tmp=$(mktemp -d)
 old=$(gh pr list --head "adopt/<name>" --state all --json body --jq '.[0].body' \
   | sed -n 's/.*<!-- adoption-base: \([0-9a-f]*\) -->.*/\1/p')
+[ -n "$old" ] || { echo "marker missing"; exit 1; }
 git fetch origin "<default>" "adopt/<name>"
 new=$(git rev-parse "origin/<default>")
 git switch "adopt/<name>"
+# preflight guarantees a clean working tree, so the reset discards nothing
 git reset --hard "origin/adopt/<name>"
 git rebase --onto "$new" "$old"
+[ "$(git rev-list --count "$new"..HEAD)" -gt 0 ] || { echo "no commits left"; exit 1; }
 # re-run consumer checks; revert failing findings
 git push --force-with-lease origin "adopt/<name>"
 gh pr list --head "adopt/<name>" --state all --json body --jq '.[0].body' \
@@ -105,7 +112,7 @@ The new marker value is the default-branch SHA used as the new base. If the mark
   gh pr create --base "<default>" --head "adopt/<name>" --body-file "$tmp/child-body.md"
   ```
 
-Finish with `rm -r "$tmp"`. If the rebase leaves no commits (everything already landed), open or retarget nothing: report it and delete the remote child branch only with the user's go-ahead.
+Finish with `rm -r "$tmp"`. The "no commits left" check above stops before any force-push when everything already landed: open or retarget nothing, report it, and delete the remote child branch only with the user's go-ahead.
 
 ## Retro apply (mode `retro --apply`)
 
@@ -113,14 +120,18 @@ Branch `adopt/retro-<YYYY-MM-DD>` (run date) from the default branch. Order:
 
 ```sh
 tmp=$(mktemp -d)
-# 1. issue first: "Retro issue" template from templates.md -> "$tmp/issue.md"
-issue_url=$(gh issue create --title "Adoption review: <range>" --body-file "$tmp/issue.md")
+# 1. issue first: "Retro issue" template from templates.md -> "$tmp/issue.md";
+#    reuse an existing open issue with the same title instead of creating a duplicate
+issue_url=$(gh issue list --state open --search 'in:title "Adoption review: <range>"' \
+  --json url,title --jq '[.[] | select(.title == "Adoption review: <range>")][0].url // empty')
+[ -n "$issue_url" ] || issue_url=$(gh issue create --title "Adoption review: <range>" --body-file "$tmp/issue.md")
 # 2. branch
 git fetch origin "<default>"
 git switch -c "adopt/retro-<YYYY-MM-DD>" "origin/<default>"
 # 3. apply findings, 4. run consumer checks, 5. revert failing findings; commit
 git push -u origin "adopt/retro-<YYYY-MM-DD>"
-# 6. PR: "Retro PR body" template, first line "Closes #<issue>" -> "$tmp/pr.md"
+# 6. PR: "Retro PR body" template, first line "Closes #<issue>" -> "$tmp/pr.md";
+#    skip creation when `gh pr list --head "adopt/retro-<YYYY-MM-DD>" --state open` already lists one
 gh pr create --base "<default>" --head "adopt/retro-<YYYY-MM-DD>" \
   --title "Adopt updates: <range>" --body-file "$tmp/pr.md"
 # 7. update the issue: applied items checked, reverted items unchecked with their reason
