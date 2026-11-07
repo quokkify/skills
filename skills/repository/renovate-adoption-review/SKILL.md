@@ -41,21 +41,23 @@ Retro notes:
 
 ## Workflow
 
-1. **Preflight.** `git status --porcelain` must be empty and you must be on the expected branch (the Renovate branch for `review`, the default branch for `retro --apply`). Otherwise stop before any edit.
-2. **Helper.** Run the mode's helper command. Any non-zero exit stops the run (see Stop conditions). For `review`, apply the explicit-PR override if the verdict is `skip`.
+Steps per mode: `sweep` runs steps 1–2 and reports the verdict table. `retro` without `--apply` runs steps 1–6 and 9: no edits and no checks, findings are proposals in the issue. `review` and `retro --apply` run every step.
+
+1. **Preflight.** `git status --porcelain` must be empty, otherwise stop before any edit. For `review`, also check for an existing child: `git ls-remote --heads origin "adopt/<name>"` and `gh pr list --head "adopt/<name>" --state all`; if either exists, the run goes through the drift path in `references/stacked-pr.md`, never a new branch.
+2. **Helper.** Run the mode's helper command. Any non-zero exit stops the run (see Stop conditions). For `review`, apply the explicit-PR override if the verdict is `skip`. Then, before any analysis edit, switch to the working branch: for `review`, `adopt/<name>` created from `headSha` (Create) or the existing one rebased onto it (Drift), per `references/stacked-pr.md`; for `retro --apply`, follow the retro recipe in the same file. Never edit or commit on the Renovate branch or the default branch.
 3. **Ownership.** Run `owned-paths` once per run and keep the list (see Guardrails).
 4. **Sources per candidate dependency**, in this order of trust; fall back to the next when one is unavailable:
    1. The Renovate PR body: release notes it already fetched and its compare link (`releaseNotesUrls`).
-   2. GitHub Releases and the CHANGELOG between `from` and `to` (`gh api repos/<owner>/<repo>/releases`, `gh api repos/<owner>/<repo>/contents/CHANGELOG.md?ref=<to-tag>`).
+   2. GitHub Releases and the CHANGELOG between `from` and `to` (`gh api --paginate "repos/<owner>/<repo>/releases?per_page=100"`, `gh api "repos/<owner>/<repo>/contents/CHANGELOG.md?ref=<to-tag>" -H "Accept: application/vnd.github.raw"`).
    3. The tag-to-tag diff of the dependency (`gh api repos/<owner>/<repo>/compare/<from-tag>...<to-tag>`) narrowed to `action.yml`, the public API, `Dockerfile`, and migration documents (`UPGRADING`, `MIGRATION`).
    4. Local signals after the bump: deprecation warnings from the consumer's build and linters.
 
    If no source yields anything, report `no sources` for that dependency and skip it.
 5. **Consumer usages.** Search the consumer for every symbol, input, option or tag a source names. Use the ecosystem reference for where to look.
 6. **Findings.** Pair each source item with confirmed consumer locations. Apply the grounding rules.
-7. **Apply within guardrails.** One finding at a time, smallest edit that adopts the documented successor.
+7. **Apply within guardrails.** On the working branch from step 2, one finding at a time, smallest edit that adopts the documented successor.
 8. **Consumer checks.** Run the repository's own documented build, lint and tests. Revert any finding whose checks fail and report it with the failing output.
-9. **Output.** Deliver per mode using `references/templates.md`; for `review`, follow `references/stacked-pr.md` for branch, PR, marker and drift handling.
+9. **Output.** Deliver per mode using `references/templates.md`; for `review`, follow `references/stacked-pr.md` for branch, PR, marker and drift handling; for `retro --apply`, its retro recipe. Write PR and comment bodies to a temporary directory outside the repository, never into the working tree.
 
 Ecosystem checklists: [GitHub Actions](references/ecosystems/github-actions.md), [Docker](references/ecosystems/docker.md), [Gradle and Maven](references/ecosystems/gradle-maven.md), [npm and TypeScript](references/ecosystems/npm-typescript.md), [Python](references/ecosystems/python.md).
 
@@ -114,6 +116,6 @@ Anything else, such as a ci-kit issue for "Belongs in ci-kit" findings, needs ex
 
 ## References
 
-- [`references/stacked-pr.md`](references/stacked-pr.md): child branch, PR, marker, drift, merge order, recovery.
+- [`references/stacked-pr.md`](references/stacked-pr.md): child branch, PR, marker, drift, merge order, recovery, and the `retro --apply` recipe.
 - [`references/templates.md`](references/templates.md): child PR, parent comment, retro issue, retro PR.
 - `references/ecosystems/`: per-ecosystem checklists linked in the Workflow.
