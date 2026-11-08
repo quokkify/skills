@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.16.0](https://github.com/quokkify/skills/compare/v0.15.0...v0.16.0) (2026-11-08)
+
+
+### ✨ Features
+
+* **skills:** add feature-demo skill for recorded MR demos ([#155](https://github.com/quokkify/skills/issues/155)) ([e6dc4cd](https://github.com/quokkify/skills/commit/e6dc4cd57ccd2dfd7e5fee2d16cd991880a14ab3))
+* **skills:** adopt what dependency updates bring with renovate-adoption-review ([#156](https://github.com/quokkify/skills/issues/156)) ([63d367d](https://github.com/quokkify/skills/commit/63d367d5fc10546cbef22bc845da3727aa1b93f6))
+
+
+### 📦 Dependencies
+
+* **npm:** update playwright to v1.64.1 ([#159](https://github.com/quokkify/skills/issues/159)) ([ef0e575](https://github.com/quokkify/skills/commit/ef0e57534b1542bff5de9994887682d3e67a263b))
+* **npm:** update playwright to v1.65.0 ([#160](https://github.com/quokkify/skills/issues/160)) ([fb8a47f](https://github.com/quokkify/skills/commit/fb8a47fe615f5518fe6670d8be83762245782eb7))
+
+
+### 🧹 Chores
+
+* **template:** update shared project template ([#157](https://github.com/quokkify/skills/issues/157)) ([ec42aa7](https://github.com/quokkify/skills/commit/ec42aa737ab8b6ad5451362e9526f0ebc0888caf))
+* **template:** update shared project template ([#161](https://github.com/quokkify/skills/issues/161)) ([d523563](https://github.com/quokkify/skills/commit/d523563151549df49b5a584190f1c3bd64561233))
+* **template:** update shared project template ([#162](https://github.com/quokkify/skills/issues/162)) ([7e80236](https://github.com/quokkify/skills/commit/7e8023687f504749f1459ce6d2c976e88f6ec532))
+* **template:** update shared project template ([#163](https://github.com/quokkify/skills/issues/163)) ([e209b9c](https://github.com/quokkify/skills/commit/e209b9caafb592dd4b5c0abb7537a163577877e7))
+
 ## [0.15.0](https://github.com/quokkify/skills/compare/v0.14.0...v0.15.0) (2026-11-07)
 
 <!-- project-toolkit:release-notes v2 -->
