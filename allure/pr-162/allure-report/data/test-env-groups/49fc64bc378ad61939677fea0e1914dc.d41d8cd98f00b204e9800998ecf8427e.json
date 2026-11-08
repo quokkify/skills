@@ -1,0 +1,1 @@
+{"id":"49fc64bc378ad61939677fea0e1914dc.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_renovate_adoption.RenovateAdoptionOwnedPathsTests#test_owned_paths_non_github_source_is_skipped_with_warning","name":"test_owned_paths_non_github_source_is_skipped_with_warning","status":"passed","testResultsByEnv":{"default":"c3bf4d0dc2d7174a6558fc6f00388559"}}
