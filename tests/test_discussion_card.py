@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import unittest
@@ -15,6 +16,7 @@ LAUNCHER = SKILL_DIR / "scripts" / "discuss.sh"
 VENV_SETUP_FAILED = 3
 SETUP_TIMEOUT_SECONDS = 600
 SUITE_TIMEOUT_SECONDS = 900
+PLAYWRIGHT_PIN = "1.65.0"
 EXCLUDED_DIRS = {"__pycache__", "node_modules"}
 MACHINE_PATHS = ("/Users/", "/home/")
 # Credentials in URLs (`https://user:token@host`) and SSH remotes (`git@host:owner/repo`)
@@ -73,6 +75,11 @@ class DiscussionCardSkillTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_node_suite_present(self) -> None:
+        self.assertTrue((SKILL_DIR / "tests" / "e2e" / "card.test.mjs").is_file())
+        package = json.loads((SKILL_DIR / "scripts" / "package.json").read_text(encoding="utf-8"))
+        self.assertEqual(package["dependencies"]["playwright"], PLAYWRIGHT_PIN)
 
     def test_skill_md_frontmatter(self) -> None:
         skill_md = SKILL_DIR / "SKILL.md"
