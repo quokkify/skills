@@ -3,6 +3,7 @@ import re
 import sys
 import tempfile
 import unittest
+from html.parser import HTMLParser
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
@@ -21,6 +22,24 @@ EN_PROSE = "This is a short note about how the release process works and what to
 
 def fixture(name: str) -> str:
     return (FIXTURES / name).read_text(encoding="utf-8")
+
+
+class ResourceTags(HTMLParser):
+    """Collect attributes of <link> and <script> tags; html.parser lowercases tag names."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.attrs: list[tuple[str, str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in ("link", "script"):
+            self.attrs.extend((name, value or "") for name, value in attrs)
+
+
+def resource_attrs(markup: str) -> list[tuple[str, str]]:
+    parser = ResourceTags()
+    parser.feed(markup)
+    return parser.attrs
 
 
 def h2s(n: int, prose: str = EN_PROSE) -> str:
@@ -211,8 +230,8 @@ class RenderBaseTests(unittest.TestCase):
     def test_offline_shell(self):
         r = self.render(fixture("code.md"))
         self.assertIn(f'<meta http-equiv="Content-Security-Policy" content="{check.CSP}">', r.html)
-        for tag in re.findall(r"<(?:link|script)\b[^>]*>", r.html):
-            self.assertNotRegex(tag, r"https?://")
+        for name, value in resource_attrs(r.html):
+            self.assertNotRegex(value, r"(?i)^\s*(?:https?:)?//", f"remote {name} on link/script")
         self.assertIn("prefers-color-scheme: dark", r.html)
         self.assertIn("@media print", r.html)
         self.assertNotRegex(r.html, r"\son\w+=")
