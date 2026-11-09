@@ -42,7 +42,8 @@ Success criteria:
 | Rendering mode | deterministic renderer only (tournament winner "C": genre-aware heuristics) |
 | UI chrome language | auto by document script (Cyrillic majority → `ru`, else `en`), `--ui` overrides |
 | Output location | next to the source as `<name>.html`; `-o` overrides; never overwrites the `.md` |
-| Front matter | always hidden from the page; only `type:` and `title:` are read |
+| Front matter | always hidden from the page (input is read as `utf-8-sig`, so a BOM does not expose it); only `type:` and `title:` are read |
+| HTML comments | dropped from raw HTML (inline, block, multi-line); code keeps them verbatim; one `warning: HTML comment not shown (line N)` per comment |
 | Genre override | optional front-matter `type:` (`bug`, `incident`, `thread`, `explainer`, `spec`, `howto`, `note`) |
 | Mermaid | collapsed source plus a derived text view of nodes and edges |
 | Wikilinks, relative links | rendered as plain text (target not resolvable on the recipient's machine), listed in the run report |
@@ -87,7 +88,9 @@ skills/software-development/md-to-html-page/
 ### Units
 
 **`mdpage.sh`** — only orchestration. Validates the input path exists and ends in `.md`, refuses an
-output path equal to the input, builds the venv on first run from `requirements.txt`, runs render
+output path equal to the input, builds the venv on first run from `requirements.txt` (writing a
+`.md-to-html-page` marker into it; an existing directory without the marker, such as a project venv
+named by `MDPAGE_VENV`, is never replaced: exit 3), runs render
 then check, and moves the temp file into place only on PASS.
 
 **`render.py`** — markdown-it-py (CommonMark + GFM tables, strikethrough, task lists, footnotes,
@@ -97,8 +100,8 @@ on the token stream, then on block groups:
 | Transform | Trigger | Output |
 |---|---|---|
 | Passport | first block after H1 is a 2-column table (empty header row allowed) | fact cards |
-| Lede | H2 `Кратко` / `TL;DR` / `Summary` | highlighted lead paragraph |
-| Stepper | ordered list under H2 starting `Шаги` / `Steps` | numbered stepper |
+| Lede | H2 `Кратко` / `TL;DR` / `Summary` or a close synonym from the keyword table | highlighted lead paragraph |
+| Stepper | ordered list under H2 starting `Шаги` / `Steps` or a close synonym from the keyword table | numbered stepper |
 | Compare | adjacent H2 `Ожидаемый…` + `Фактический…` / `Expected…` + `Actual…` | side-by-side cards |
 | Timeline | table whose first column is all times/timestamps | vertical timeline |
 | Hypotheses | ordered list under H2 containing `гипотез` / `hypothes` | numbered cards |
@@ -119,18 +122,20 @@ only for the `thread` genre. Local images under the source's directory are embed
 remote images are never fetched and render as a labelled placeholder with the URL as text.
 Output contains no timestamps or random values.
 
-**`check.py`** — independent of `render.py` (uses markdown-it-py in plain `commonmark` mode with only `table` and
-`strikethrough` enabled plus the `mdit_py_plugins.footnote` parser plugin so footnotes are expected
+**`check.py`** — independent of `render.py` (uses markdown-it-py in plain `commonmark` mode with only `table`,
+`strikethrough` and schema-only `linkify` enabled plus the `mdit_py_plugins.footnote` parser plugin so footnotes are expected
 where the renderer puts them, no renderer rules, and shares no code with `render.py`; relative link
 hrefs are not required because they render as plain text; HTML side via
 stdlib `html.parser`, own Markdown-side normalisation). Raw HTML in the source is expected as the attribute-free inline
 allowlist (`b i u s em strong kbd sup sub mark small del ins br`) kept as tags; any other raw HTML is
-expected escaped, i.e. shown as text. All gates must pass:
+expected escaped, i.e. shown as text; HTML comments in raw HTML are expected absent. All gates must pass:
 
 1. Word multiset: source words vs visible HTML text (excluding `data-chrome`, `data-derived`),
    with `<wbr>` splits rejoined and block boundaries separated; digit tokens reported separately.
 2. Exact blocks: every fenced code block byte-for-byte inside a `<pre>`; every inline code span
-   present as a `<code>`; every link href present.
+   present as a `<code>`; the in-order list of source link hrefs (relative links excluded,
+   linkified bare URLs included) equals the page's in-order `<a href>` list after dropping footnote
+   anchors (`#fn…`/`#fnref…`) and chrome anchors (`data-chrome`, e.g. the TOC).
 3. Order: the in-order non-whitespace character sequence of source content equals that of the HTML
    content (catches punctuation changes and swapped values the multiset misses).
 4. Derived content: every word inside `data-derived` occurs in the source.
@@ -144,11 +149,12 @@ Output: one line `PASS words=N code=N hrefs=N order=ok offline=ok` or `FAIL <gat
 **`assets/style.css`, `page.js`** — system font stacks with Cyrillic coverage; colour tokens on
 `:root` with `prefers-color-scheme` dark plus a manual toggle (`localStorage` wrapped in try/catch);
 layouts use `minmax(0,1fr)` grids; tables and code scroll inside their card; headings are never
-flex rows (avoids splitting inline code at 390 px); print forces the light palette, hides TOC and
+flex rows (avoids splitting inline code at 390 px) and wrap long tokens (`overflow-wrap: anywhere`); print forces the light palette, hides TOC and
 buttons, expands `<details>`. The page is complete with JavaScript disabled.
 
 **`shoot.sh`** — optional visual check: auto-detects Chrome/Chromium, writes desktop, dark, and
-390 px (iframe wrapper) screenshots into a directory given as an argument.
+390 px (iframe wrapper inside a 500 px shot) screenshots into a directory given as an argument;
+each target PNG is removed before its shot and the wrapper is removed on any exit.
 
 ### What Claude does when the skill runs
 
