@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import html
 import re
 import sys
@@ -50,6 +51,36 @@ IMAGE_MIME = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
     ".webp": "image/webp", ".svg": "image/svg+xml",
 }
+
+# Genre keyword table: matched against plain H2 text (anchored ones match its start).
+KEYWORDS: dict[str, re.Pattern] = {
+    "lede": re.compile(r"^(?:кратко|коротко|вкратце|в двух словах|суть|tl;?dr|summary|итог[ио]?|резюме|главное)\b", re.I),
+    "steps": re.compile(r"^(?:шаги|шаг[ио]? воспроизвед|воспроизвед|steps|процедур|порядок действий|how to|инструкц)", re.I),
+    "expected": re.compile(r"^(?:ожидаем|expected)", re.I),
+    "actual": re.compile(r"^(?:фактическ|actual|observed|наблюдаем)", re.I),
+    "hypotheses": re.compile(r"(?:гипотез|hypothes)", re.I),
+    "time_head": re.compile(r"^(?:время|time|timestamp|дата|date|когда|when|момент)\b", re.I),
+}
+GENRE_HEADINGS: dict[str, re.Pattern] = {
+    "incident": re.compile(r"причин|root cause|инцидент|incident", re.I),
+    "spec": re.compile(r"требован|requirements|scope|non-goals", re.I),
+}
+GENRES = ("bug", "incident", "thread", "explainer", "spec", "howto", "note")
+EXPLAINER_MIN_H2 = 5
+HOWTO_MIN_SHELL = 3
+PASSPORT_MAX_ROWS = 16
+PASSPORT_WIDE_CHARS = 70
+SHELL_LANGS = {"bash", "sh", "shell", "zsh", "fish", "console", "shell-session", "powershell", "ps1"}
+SHELL_SIGNAL = "shell_blocks"
+TIME_CELL = re.compile(
+    r"^(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?|\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)"
+    r"[ \t]*(?:utc|z)?$",
+    re.I,
+)
+CHAT_STAMP = re.compile(r"^([ \t]*)(\(\d{1,2}:\d{2}(?::\d{2})?\)[ \t]*:)")
+CHAT_MIN_MESSAGES = 2
+CHAT_MAX_NAME = 40
+WRAP = "component_wrap"
 
 # Stable transform vocabulary; RenderResult.transforms is reported in this order.
 TRANSFORMS = (
@@ -264,9 +295,273 @@ def pass_links(ctx: Context, tokens: list[Token]) -> None:
                 open_link = None
 
 
+# ---------- genre components (block transforms) ----------
+
+def author_hue(name: str) -> int:
+    return int(hashlib.sha256(name.encode()).hexdigest()[:8], 16) % 360
+
+
+def wrap(markup: str) -> Block:
+    """A text-free structural block (component container open/close markup)."""
+    return Block([Token(WRAP, "", 0)], html=markup)
+
+
+def heading_tag(b: Block) -> str | None:
+    return b.tokens[0].tag if b.kind == "heading_open" else None
+
+
+def h2_sections(blocks: list[Block]) -> list[tuple[str, int, int]]:
+    """(plain H2 text, heading index, end index) for each top-level H2 section."""
+    bounds = [i for i, b in enumerate(blocks) if heading_tag(b) in ("h1", "h2")] + [len(blocks)]
+    return [(plain_text(blocks[i].tokens[1]), i, bounds[k + 1])
+            for k, i in enumerate(bounds[:-1]) if heading_tag(blocks[i]) == "h2"]
+
+
+def apply_inserts(blocks: list[Block], inserts: dict[int, list[str]]) -> list[Block]:
+    out: list[Block] = []
+    for i in range(len(blocks) + 1):
+        out.extend(wrap(m) for m in inserts.get(i, ()))
+        if i < len(blocks):
+            out.append(blocks[i])
+    return out
+
+
+def render_inline(ctx: Context, tok: Token | None) -> str:
+    if tok is None:
+        return ""
+    return ctx.md.renderer.renderInline(tok.children or [], ctx.md.options, {"ctx": ctx})
+
+
+def cell_text(tok: Token | None) -> str:
+    return tok.content.strip() if tok is not None else ""
+
+
+def table_rows(b: Block) -> tuple[list[Token | None], list[list[Token | None]]]:
+    head: list[list[Token | None]] = []
+    body: list[list[Token | None]] = []
+    row: list[Token | None] = []
+    in_head = False
+    for i, t in enumerate(b.tokens):
+        if t.type in ("thead_open", "thead_close"):
+            in_head = t.type == "thead_open"
+        elif t.type == "tr_open":
+            row = []
+        elif t.type in ("th_open", "td_open"):
+            nxt = b.tokens[i + 1]
+            row.append(nxt if nxt.type == "inline" else None)
+        elif t.type == "tr_close":
+            (head if in_head else body).append(row)
+    return (head[0] if head else []), body
+
+
+def transform_passport(ctx: Context, blocks: list[Block]) -> list[Block]:
+    first_h1 = next((i for i, b in enumerate(blocks) if heading_tag(b) == "h1"), None)
+    if first_h1 is None or first_h1 + 1 >= len(blocks) or blocks[first_h1 + 1].kind != "table_open":
+        return blocks
+    table = blocks[first_h1 + 1]
+    head, body = table_rows(table)
+    if len(head) != 2 or not 0 < len(body) <= PASSPORT_MAX_ROWS:
+        return blocks
+    if not all(len(r) == 2 and cell_text(r[0]) for r in body):
+        return blocks
+    cap = " ".join(f"<span>{render_inline(ctx, h)}</span>" for h in head if cell_text(h))
+    cap = f'<div class="kv-head">{cap}</div>\n' if cap else ""
+    items = "".join(
+        f'<div class="kv-item{" wide" if len(cell_text(v)) > PASSPORT_WIDE_CHARS else ""}">'
+        f"<dt>{render_inline(ctx, k)}</dt>\n<dd>{render_inline(ctx, v)}</dd></div>\n"
+        for k, v in body)
+    table.html = f'<div class="passport">\n{cap}<dl>\n{items}</dl></div>\n'
+    ctx.mark("passport")
+    return blocks
+
+
+def transform_timeline(ctx: Context, blocks: list[Block]) -> list[Block]:
+    for b in blocks:
+        if b.kind != "table_open" or b.html is not None:
+            continue
+        head, body = table_rows(b)
+        if len(head) < 2 or not body or not all(r and TIME_CELL.match(cell_text(r[0])) for r in body):
+            continue
+        if len(body) < 2 and not KEYWORDS["time_head"].match(cell_text(head[0])):
+            continue
+        hdr = " ".join(f"<span>{render_inline(ctx, h)}</span>" for h in head)
+        items = "".join(
+            f"<li><time>{render_inline(ctx, r[0])}</time>\n<div class=\"tl-body\">"
+            + "\n".join(f'<div class="tl-cell">{render_inline(ctx, c)}</div>' for c in r[1:] if cell_text(c))
+            + "</div></li>\n"
+            for r in body)
+        b.html = f'<div class="timeline">\n<div class="tl-head">{hdr}</div>\n<ol>\n{items}</ol></div>\n'
+        ctx.mark("timeline")
+    return blocks
+
+
+def mark_lists(ctx: Context, blocks: list[Block], cls: str, counter: str) -> bool:
+    found = False
+    for b in blocks:
+        if b.kind != "ordered_list_open":
+            continue
+        tok = b.tokens[0]
+        tok.attrSet("class", cls)
+        start = tok.attrGet("start")
+        if start is not None and str(start).isdigit():
+            tok.attrSet("style", f"counter-reset: {counter} {int(start) - 1}")
+        found = True
+    return found
+
+
+def transform_sections(ctx: Context, blocks: list[Block]) -> list[Block]:
+    secs = h2_sections(blocks)
+    inserts: dict[int, list[str]] = {}
+    paired: set[int] = set()
+    for k, (title, start, end) in enumerate(secs):
+        body = blocks[start + 1:end]
+        if KEYWORDS["hypotheses"].search(title):
+            if mark_lists(ctx, body, "hypotheses", "hyp"):
+                ctx.mark("hypotheses")
+        elif KEYWORDS["steps"].match(title) and mark_lists(ctx, body, "stepper", "step"):
+            ctx.mark("stepper")
+        if k in paired:
+            continue
+        nxt = secs[k + 1] if k + 1 < len(secs) else None
+        if nxt and nxt[1] == end and KEYWORDS["expected"].match(title) and KEYWORDS["actual"].match(nxt[0]):
+            inserts.setdefault(start, []).append('<div class="compare">\n<section class="cmp cmp-exp">\n')
+            inserts.setdefault(end, []).append('</section>\n<section class="cmp cmp-act">\n')
+            inserts.setdefault(nxt[2], []).append("</section></div>\n")
+            paired.add(k + 1)
+            ctx.mark("compare")
+        elif KEYWORDS["lede"].match(title):
+            inserts.setdefault(start, []).append('<section class="lede">\n')
+            inserts.setdefault(end, []).append("</section>\n")
+            ctx.mark("lede")
+    return apply_inserts(blocks, inserts)
+
+
+def lead_trim(children: list[Token]) -> list[Token]:
+    k = 0
+    while k < len(children) and children[k].type == "text" and not children[k].content:
+        k += 1
+    return children[k:]
+
+
+def chat_author(children: list[Token]) -> tuple[str, re.Match] | None:
+    children = lead_trim(children)
+    if len(children) < 4 or [c.type for c in children[:3]] != ["strong_open", "text", "strong_close"]:
+        return None
+    name = children[1].content.strip()
+    m = CHAT_STAMP.match(children[3].content) if children[3].type == "text" else None
+    if not m or not name or len(name) > CHAT_MAX_NAME:
+        return None
+    return name, m
+
+
+def split_messages(children: list[Token]) -> list[list[Token]]:
+    segments: list[list[Token]] = [[]]
+    for k, child in enumerate(children):
+        if child.type == "softbreak" and chat_author(children[k + 1:]):
+            segments.append([])
+            continue
+        segments[-1].append(child)
+    return segments
+
+
+def text_token(content: str, kind: str = "text") -> Token:
+    tok = Token(kind, "", 0)
+    tok.content = content
+    return tok
+
+
+def paragraph(src: Block, children: list[Token]) -> Block:
+    p_open, inline, p_close = src.tokens
+    new_open = Token("paragraph_open", "p", 1)
+    new_open.map, new_open.level, new_open.block = p_open.map, p_open.level, True
+    new_inline = Token("inline", "", 0)
+    new_inline.level, new_inline.children = inline.level, children
+    new_inline.content = "".join(c.content for c in children)
+    new_close = Token("paragraph_close", "p", -1)
+    new_close.level, new_close.block = p_close.level, True
+    return Block([new_open, new_inline, new_close])
+
+
+def message_block(src: Block, segment: list[Token]) -> tuple[Block, str | None]:
+    found = chat_author(segment)
+    if not found:
+        return paragraph(src, segment), None
+    name, m = found
+    segment = lead_trim(segment)
+    rest = segment[3].content[m.end():]
+    head = [*segment[:3], text_token(m.group(1)), text_token(m.group(2), "chat_stamp"), text_token(rest)]
+    return paragraph(src, head + segment[4:]), name
+
+
+def transform_chat(ctx: Context, blocks: list[Block]) -> list[Block]:
+    expanded: list[tuple[Block, str | None]] = []
+    for b in blocks:
+        if b.kind == "paragraph_open" and b.html is None and len(b.tokens) == 3:
+            segments = split_messages(b.tokens[1].children or [])
+            if any(chat_author(s) for s in segments):
+                expanded.extend(message_block(b, s) for s in segments)
+                continue
+        expanded.append((b, None))
+    if sum(1 for _, name in expanded if name) < CHAT_MIN_MESSAGES:
+        return blocks
+    ctx.mark("chat")
+    out: list[Block] = []
+    prev: str | None = None
+    for i, (b, name) in enumerate(expanded):
+        if name is None:
+            prev = None
+            out.append(b)
+            continue
+        if prev is None:
+            out.append(wrap('<div class="chat">\n'))
+        initials = "".join(w[0] for w in name.split()[:2]).upper()
+        cont = " cont" if name == prev else ""
+        out.append(wrap(
+            f'<div class="msg{cont}" data-author="{escapeHtml(name)}" style="--hue: {author_hue(name)}">\n'
+            f'<span class="ava" data-chrome aria-hidden="true">{escapeHtml(initials)}</span>\n'
+            '<div class="msg-body">\n'))
+        out.append(b)
+        out.append(wrap("</div></div>\n"))
+        prev = name
+        if i + 1 == len(expanded) or expanded[i + 1][1] is None:
+            out.append(wrap("</div>\n"))
+    return out
+
+
+def shell_blocks(tokens: list[Token]) -> int:
+    return sum(1 for t in tokens if t.type == "fence" and (t.info.split() or [""])[0].lower() in SHELL_LANGS)
+
+
+def detect_genre(fm_type: str | None, headings: list[str],
+                 blocks_signal: set[str]) -> tuple[str, str, str | None]:
+    warning = None
+    if fm_type:
+        declared = fm_type.strip()
+        if declared.lower() in GENRES:
+            return declared.lower(), "type", None
+        warning = f"unknown type '{declared}', using detection"
+    joined = " | ".join(headings)
+    if {"compare", "stepper"} <= blocks_signal:
+        genre = "bug"
+    elif "chat" in blocks_signal:
+        genre = "thread"
+    elif "timeline" in blocks_signal and GENRE_HEADINGS["incident"].search(joined):
+        genre = "incident"
+    elif "stepper" in blocks_signal and SHELL_SIGNAL in blocks_signal:
+        genre = "howto"
+    elif GENRE_HEADINGS["spec"].search(joined):
+        genre = "spec"
+    elif len(headings) >= EXPLAINER_MIN_H2:
+        genre = "explainer"
+    else:
+        genre = "note"
+    return genre, "detected", warning
+
+
 # pass_links runs first: pass_callouts moves title children out of the inline token.
 TOKEN_PASSES: list[TokenPass] = [pass_links, pass_callouts, pass_headings]
-BLOCK_TRANSFORMS: list[BlockTransform] = []
+# Passport and timeline claim tables first; sections then tag lists and wrap H2 sections.
+BLOCK_TRANSFORMS: list[BlockTransform] = [transform_passport, transform_timeline, transform_sections, transform_chat]
 
 
 # ---------- render rules ----------
@@ -417,6 +712,7 @@ def make_md() -> MarkdownIt:
         "code_inline": rule_code_inline, "fence": rule_fence, "code_block": rule_fence,
         "link_open": rule_link_open, "link_close": rule_link_close, "image": rule_image,
         "blockquote_open": rule_blockquote_open, "blockquote_close": rule_blockquote_close,
+        "chat_stamp": lambda self, t, i, o, e: f'<span class="stamp">{escapeHtml(t[i].content)}</span>',
         "table_open": lambda self, t, i, o, e: '<div class="tbl"><table>\n',
         "table_close": lambda self, t, i, o, e: "</table></div>\n",
     }
@@ -475,12 +771,19 @@ def toc_html(ctx: Context) -> str:
             f"<ol>{items}</ol></details></nav>\n")
 
 
-def page_shell(ctx: Context, title: str, chrome_title: str, body: str, toc: str) -> str:
+def badge_html(ctx: Context, genre: str, genre_source: str) -> str:
+    if genre == "note" and genre_source == "detected":
+        return ""
+    return f'<div class="genre-badge" data-chrome>{escapeHtml(ctx.ui["genre_" + genre])}</div>\n'
+
+
+def page_shell(ctx: Context, title: str, chrome_title: str, body: str, toc: str, genre: str = "note",
+               badge: str = "") -> str:
     css = (ASSETS / "style.css").read_text(encoding="utf-8")
     js = (ASSETS / "page.js").read_text(encoding="utf-8")
     pyg = pygments_css(ctx.pyg_classes)
     heading = f'<h1 class="doc-title" data-chrome>{escapeHtml(chrome_title)}</h1>\n' if chrome_title else ""
-    layout = "page has-toc" if toc else "page"
+    layout = f"page g-{genre} has-toc" if toc else f"page g-{genre}"
     theme = escapeHtml(ctx.ui["theme"])
     return f"""<!doctype html>
 <html lang="{ctx.lang}">
@@ -498,7 +801,7 @@ def page_shell(ctx: Context, title: str, chrome_title: str, body: str, toc: str)
 <div class="bar" data-chrome><button type="button" class="theme-toggle" data-chrome aria-label="{theme}" hidden>{theme}</button></div>
 <div class="{layout}">
 {toc}<main class="doc">
-{heading}{body}</main>
+{badge}{heading}{body}</main>
 </div>
 <script>
 {js}</script>
@@ -520,7 +823,12 @@ def build(src: str, *, source_dir: Path | None = None, stem: str = "document", u
     for transform in BLOCK_TRANSFORMS:
         blocks = transform(ctx, blocks)
 
-    genre, genre_source = "note", "detected"
+    headings = [plain_text(tokens[i + 1]) for i, t in enumerate(tokens)
+                if t.type == "heading_open" and t.tag == "h2" and t.level == 0]
+    signal = set(ctx.used) | ({SHELL_SIGNAL} if shell_blocks(tokens) >= HOWTO_MIN_SHELL else set())
+    genre, genre_source, warning = detect_genre(meta.get("type"), headings, signal)
+    if warning:
+        ctx.warnings.append(warning)
     md.options["breaks"] = breaks == "on" or (breaks == "auto" and genre == "thread")
     env = {"ctx": ctx}
     body = render_blocks(ctx, blocks, env)
@@ -529,7 +837,7 @@ def build(src: str, *, source_dir: Path | None = None, stem: str = "document", u
                if t.type == "heading_open" and t.tag == "h1" and t.level == 0), "")
     title = meta.get("title") or h1 or stem
     chrome_title = meta.get("title", "") if not h1 else ""
-    page = page_shell(ctx, title, chrome_title, body, toc_html(ctx))
+    page = page_shell(ctx, title, chrome_title, body, toc_html(ctx), genre, badge_html(ctx, genre, genre_source))
     return RenderResult(
         html=page,
         genre=genre,
