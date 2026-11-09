@@ -6,6 +6,7 @@ Exit codes: 0 pass; 1 check fail; 2 bad arguments or unreadable inputs; 3 enviro
 from __future__ import annotations
 
 import argparse
+import html as html_lib
 import json
 import re
 import sys
@@ -35,6 +36,8 @@ CSS_URL_RE = re.compile(r"url\(\s*[\"']?([^\"')]*)")
 CSS_IMPORT_RE = re.compile(r"@import\s+(?:url\(\s*)?[\"']?([^\"')\s;]+)", re.I)
 FETCH_RE = re.compile(r"fetch\(\s*[\"'`]([^\"'`]*)")
 NODE_G_RE = re.compile(r"<g\b[^>]*>")
+TAG_RE = re.compile(r"<[^>]*>")
+MERMAID_ENTITY_RE = re.compile(r"#(?:(\d+)|([A-Za-z][A-Za-z0-9]*));")
 SKIP_TEXT_TAGS = {"script", "style"}
 RELATIVE_ATTRS = ("href", "xlink:href")
 
@@ -85,6 +88,17 @@ def _inline_words(children) -> list[str]:
     return out
 
 
+def label_text(raw: str) -> str:
+    """Visible text of a Mermaid label: tags removed, `#name;`/`#NNN;` and `&..;` entities decoded."""
+
+    def ent(m: re.Match) -> str:
+        if m.group(1):
+            return f"&#{m.group(1)};"
+        return f"&{m.group(2)};"
+
+    return html_lib.unescape(html_lib.unescape(MERMAID_ENTITY_RE.sub(ent, TAG_RE.sub(" ", raw))))
+
+
 def _flowchart_words(index: int, src: str) -> list[str] | None:
     try:
         fc = parse_flowchart(index, src)
@@ -93,7 +107,7 @@ def _flowchart_words(index: int, src: str) -> list[str] | None:
     parts = list(fc.nodes.values())
     parts += [e.label for e in fc.edges if e.label]
     parts += [sg.title for sg in fc.subgraphs if sg.title]
-    return [w for p in parts for w in words_of(p)]
+    return [w for p in parts for w in words_of(label_text(p))]
 
 
 def source_words(md_text: str) -> Counter:
@@ -374,6 +388,7 @@ def check(
         ids_suffix = " ids=kept" if not dropped else f" ids=-{len(dropped)}"
 
     if fails:
+        fails.sort(key=lambda f: f[0] != "offline")  # offline is reported first; sort is stable
         gate, reason, samples = fails[0]
         return CheckResult(False, f"FAIL {gate}: {reason}", samples[:MAX_SAMPLES], warnings)
     spots_n = len(page_spots)
@@ -406,6 +421,9 @@ def main(argv: list[str] | None = None) -> int:
         )
     except CheckError as e:
         print(f"FAIL: {e}", file=sys.stderr)
+        return 2
+    except (KeyError, TypeError, AttributeError, ValueError) as e:
+        print(f"FAIL: malformed meta sidecar: {type(e).__name__}: {e}", file=sys.stderr)
         return 2
     for w in res.warnings:
         print(w, file=sys.stderr)

@@ -227,6 +227,59 @@ class CheckTest(unittest.TestCase):
             self.assertEqual(check.main([]), 2)
             self.assertEqual(check.main([str(e.md), str(e.html) + ".nope"]), 2)
 
+    def _flow(self, label_a):
+        return f'# T\n\n## Flow\n\n```mermaid\nflowchart LR\n  A["{label_a}"] --> B[Stop]\n```\n'
+
+    def test_label_html_tags_not_counted_as_words(self):
+        e = self.env(md=self._flow("<b>Start</b> bold"), renderer=static_renderer(),
+                     mutate=lambda h: h.replace("<text>Start</text>", "<text>Start bold</text>"))
+        r = e.run()
+        self.assertTrue(r.ok, r.samples)
+
+    def test_label_mermaid_entities_decoded(self):
+        e = self.env(md=self._flow("say #quot;Start#quot; &amp; #35;"), renderer=static_renderer(),
+                     mutate=lambda h: h.replace("<text>Start</text>", '<text>say "Start" &amp; #</text>'))
+        r = e.run()
+        self.assertTrue(r.ok, r.samples)
+
+    def test_external_img_in_label_fails_offline_first(self):
+        e = self.env(md=FLOW, renderer=static_renderer(),
+                     mutate=lambda h: h.replace("<text>Start</text>", '<text>Start</text><img src="http://x.example/a.png">').replace("Stop", ""))
+        r = e.run()
+        self.assertTrue(r.line.startswith("FAIL offline:"), r.line)
+        self.assertIn("src: http://x.example/a.png", r.samples)
+
+    def test_script_and_style_text_not_visible(self):
+        e = self.env(
+            mutate=lambda h: h.replace("Alpha beta gamma.", "Alpha.").replace(
+                "<main", '<script>var x="beta";</script><style>.gamma{}</style><main'))
+        r = e.run()
+        self.assertTrue(r.line.startswith("FAIL words:"), r.line)
+        self.assertIn("missing: beta", r.samples)
+        self.assertIn("missing: gamma", r.samples)
+
+    def test_overlap_node_and_label_fails(self):
+        r = self.env(md=FLOW, renderer=static_renderer(labels=[box(10, 5, 10, 10)])).run()
+        self.assertTrue(r.line.startswith("FAIL overlap:"), r.line)
+        self.assertTrue(any("label#0" in s for s in r.samples), r.samples)
+
+    def test_overlap_label_and_label_fails(self):
+        r = self.env(md=FLOW, renderer=static_renderer(labels=[box(200, 0, 10, 10), box(205, 5, 10, 10)])).run()
+        self.assertTrue(r.line.startswith("FAIL overlap:"), r.line)
+        self.assertIn("label#0 overlaps label#1", r.samples[0])
+
+    def test_malformed_meta_exits_2_without_traceback(self):
+        e = self.env(md=FLOW, renderer=static_renderer())
+        meta = json.loads(e.meta.read_text())
+        del meta["diagrams"][0]["nodes"][0]["spot_id"]
+        e.meta.write_text(json.dumps(meta))
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = check.main([str(e.md), str(e.html)])
+        self.assertEqual(rc, 2)
+        self.assertIn("meta", err.getvalue())
+        self.assertNotIn("Traceback", err.getvalue())
+
     def test_sample_fixture_passes(self):
         fix = Path(__file__).resolve().parent / "fixtures"
         with tempfile.TemporaryDirectory() as d:
