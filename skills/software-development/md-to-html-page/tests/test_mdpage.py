@@ -62,6 +62,30 @@ class MdpageTest(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         self.assertEqual(src.read_bytes(), before)
 
+    def test_refuses_output_directory(self):
+        src = self.put()
+        d = self.tmp / "outdir"
+        d.mkdir()
+        r = run([str(src), "-o", str(d)])
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(list(d.iterdir()), [])
+
+    def test_leading_dash_path_no_dirname_error(self):
+        src = self.put()
+        r = run(["-o", "-x/out.html", str(src)], cwd=self.tmp)
+        self.assertEqual(r.returncode, 2)
+        self.assertNotIn("dirname", r.stderr)
+        self.assertNotIn("illegal option", r.stderr)
+
+    def test_venv_dir_not_a_venv_is_not_deleted(self):
+        src = self.put()
+        d = self.tmp / "notvenv"
+        d.mkdir()
+        (d / "marker.txt").write_text("keep")
+        r = run([str(src)], env={"MDPAGE_VENV": str(d)})
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertEqual((d / "marker.txt").read_text(), "keep")
+
     def test_missing_input(self):
         r = run([str(self.tmp / "nope.md")])
         self.assertEqual(r.returncode, 2)

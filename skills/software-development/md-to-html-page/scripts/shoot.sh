@@ -24,8 +24,8 @@ fi
 
 mkdir -p "$OUTDIR" || exit 2
 OUTDIR=$(cd "$OUTDIR" && pwd) || exit 2
-PAGE_DIR=$(cd "$(dirname "$PAGE")" && pwd) || exit 2
-URL=file://$PAGE_DIR/$(basename "$PAGE")
+PAGE_DIR=$(cd "$(dirname -- "$PAGE")" && pwd) || exit 2
+URL=file://$PAGE_DIR/$(basename -- "$PAGE")
 HEIGHT=${SHOOT_HEIGHT:-2000}
 
 shot() { # name extra-flags... url size
@@ -35,12 +35,13 @@ shot() { # name extra-flags... url size
     [ -s "$OUTDIR/$name.png" ] || { echo "shoot: failed to write $name.png" >&2; exit 1; }
 }
 
-shot desktop "1280,$HEIGHT" "$URL"
-shot dark "1280,$HEIGHT" "$URL" --force-dark-mode --blink-settings=preferredColorScheme=1
+# Blink: preferredColorScheme 0 = dark, 1 = light; set explicitly so the host appearance does not leak in.
+shot desktop "1280,$HEIGHT" "$URL" --blink-settings=preferredColorScheme=1
+shot dark "1280,$HEIGHT" "$URL" --blink-settings=preferredColorScheme=0
 
 # Headless Chrome will not go below ~500 px wide, so the page sits in a 390 px iframe.
 WRAP=$OUTDIR/.phone-wrapper.html
 printf '<!doctype html><html><body style="margin:0;background:#888"><iframe src="%s" style="border:0;width:390px;height:%spx;display:block"></iframe></body></html>\n' \
     "$URL" "$HEIGHT" > "$WRAP"
-shot phone "500,$HEIGHT" "file://$WRAP"
+shot phone "500,$HEIGHT" "file://$WRAP" --blink-settings=preferredColorScheme=1
 rm -f "$WRAP"

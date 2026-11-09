@@ -8,13 +8,17 @@
 #      MDPAGE_FORCE_FAIL=1 is a test hook: it corrupts the temp page before the check
 #      so the FAIL path can be exercised. Not for normal use.
 
-HERE=$(cd "$(dirname "$0")" && pwd) || exit 2
+HERE=$(cd "$(dirname -- "$0")" && pwd) || exit 2
 REQ="$HERE/requirements.txt"
 
 usage() {
     echo "usage: mdpage.sh <in.md> [-o out.html] [--breaks auto|on|off] [--ui auto|ru|en]" >&2
     echo "       mdpage.sh --python" >&2
     exit 2
+}
+
+venv_ok() {
+    [ -x "$VENV/bin/python" ] && "$VENV/bin/python" -I -c 'import markdown_it, mdit_py_plugins, linkify_it, pygments' 2>/dev/null
 }
 
 ensure_venv() {
@@ -29,16 +33,32 @@ ensure_venv() {
         VENV=${XDG_CACHE_HOME:-$HOME/.cache}/md-to-html-page/$key
     fi
     case $VENV in /*) ;; *) VENV=$PWD/$VENV ;; esac
-    if [ -x "$VENV/bin/python" ] && "$VENV/bin/python" -I -c 'import markdown_it, mdit_py_plugins, linkify_it, pygments' 2>/dev/null; then
+    if venv_ok; then
         return 0
     fi
+    if [ -e "$VENV" ] && [ ! -f "$VENV/pyvenv.cfg" ]; then
+        echo "mdpage: $VENV exists and is not a venv; refusing to replace it" >&2
+        exit 3
+    fi
     BUILD="$VENV.tmp.$$"
-    mkdir -p "$(dirname "$VENV")" || exit 3
+    mkdir -p "$(dirname -- "$VENV")" || exit 3
     rm -rf "$BUILD"
     if python3 -I -m venv "$BUILD" \
         && "$BUILD/bin/python" -I -m pip install --disable-pip-version-check -q -r "$REQ"; then
-        rm -rf "$VENV"
-        mv "$BUILD" "$VENV" || { rm -rf "$BUILD"; exit 3; }
+        if venv_ok; then
+            # a concurrent run finished first: keep its venv, drop ours
+            rm -rf "$BUILD"; BUILD=
+            return 0
+        fi
+        if [ -e "$VENV" ]; then
+            [ -f "$VENV/pyvenv.cfg" ] || { echo "mdpage: $VENV is not a venv" >&2; exit 3; }
+            rm -rf "$VENV"
+        fi
+        # never mv into an existing directory
+        if [ -e "$VENV" ] || ! mv "$BUILD" "$VENV"; then
+            if venv_ok; then rm -rf "$BUILD"; BUILD=; return 0; fi
+            exit 3
+        fi
         BUILD=
     else
         echo "mdpage: venv setup failed" >&2
@@ -82,14 +102,18 @@ case $UI in auto|ru|en) ;; *) echo "mdpage: bad --ui: $UI" >&2; exit 2 ;; esac
 case $IN in *.md) ;; *) echo "mdpage: input must be a .md file: $IN" >&2; exit 2 ;; esac
 [ -f "$IN" ] || { echo "mdpage: input not found: $IN" >&2; exit 2; }
 if [ -z "$OUT" ]; then
-    base=$(basename "$IN" .md)
-    OUT=$(dirname "$IN")/$base.html
+    base=$(basename -- "$IN" .md)
+    OUT=$(dirname -- "$IN")/$base.html
+fi
+if [ -d "$OUT" ]; then
+    echo "mdpage: output is a directory: $OUT" >&2
+    exit 2
 fi
 if [ "$OUT" = "$IN" ] || { [ -e "$OUT" ] && [ "$OUT" -ef "$IN" ]; }; then
     echo "mdpage: output would overwrite the input" >&2
     exit 2
 fi
-[ -d "$(dirname "$OUT")" ] || { echo "mdpage: output directory does not exist: $(dirname "$OUT")" >&2; exit 2; }
+[ -d "$(dirname -- "$OUT")" ] || { echo "mdpage: output directory does not exist: $(dirname -- "$OUT")" >&2; exit 2; }
 
 ensure_venv
 PY=$VENV/bin/python
