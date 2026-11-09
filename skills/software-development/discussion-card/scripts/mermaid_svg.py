@@ -86,6 +86,8 @@ def annotate_svg(svg: str, render_id: str, chapter_slug: str) -> tuple[str, list
 def _run_chrome(chrome: str, page: Path) -> str:
     cmd = [chrome, *CHROME_FLAGS, page.as_uri()]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_S, check=False)
+    if 'id="result"' not in proc.stdout:
+        raise RuntimeError(f"chrome exit {proc.returncode}, no result; stderr: {proc.stderr[-500:]}")
     return proc.stdout
 
 
