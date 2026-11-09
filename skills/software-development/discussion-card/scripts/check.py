@@ -339,7 +339,7 @@ def check(
         if mode == "static":
             ok = re.search(rf'data-diagram="{re.escape(key)}">\s*<svg\b', html_raw)
         elif mode == "runtime":
-            ok = re.search(rf'data-diagram="{re.escape(key)}">\s*<pre class="mermaid">', html_raw)
+            ok = re.search(rf'data-diagram="{re.escape(key)}">\s*<pre class="mermaid-runtime"', html_raw)
         else:
             ok = f"diagram {key} shown as code" in warn_text
         if not ok:

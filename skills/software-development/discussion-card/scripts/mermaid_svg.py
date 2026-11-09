@@ -31,6 +31,8 @@ ChromeRunner = Callable[[str, Path], str]
 
 
 def find_chrome() -> str | None:
+    if os.environ.get("DISCUSS_NO_CHROME") == "1":  # test hook: force the runtime fallback
+        return None
     env = os.environ.get("CHROME_BIN")
     if env:
         return env

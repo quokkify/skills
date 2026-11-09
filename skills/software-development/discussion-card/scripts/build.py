@@ -16,6 +16,7 @@ from markdown_it import MarkdownIt
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ids  # noqa: E402
+import mermaid_svg  # noqa: E402
 import ui_text  # noqa: E402
 from mermaid_parse import parse_flowchart, split_subgraphs  # noqa: E402
 from model import DiagramJob, RenderedDiagram  # noqa: E402
@@ -404,6 +405,7 @@ def build_page(
     plan: Plan,
     ui: str,
     diagram_renderer: Callable[[list[DiagramJob]], list[RenderedDiagram]],
+    mermaid_js: Path | None = None,
 ) -> Page:
     text = Path(md_path).read_text(encoding="utf-8")
     if ui == "auto":
@@ -509,7 +511,7 @@ def build_page(
         if r.svg is not None and not r.error:
             return r.svg
         if r.mode == "runtime":
-            return f'<pre class="mermaid">{esc(job.source)}</pre>'
+            return f'<pre class="mermaid-runtime" data-diagram="{esc(key)}">{esc(job.source)}</pre>'
         return f'<pre class="mermaid-src">{esc(job.source)}</pre>'
 
     body_html = PLACEHOLDER_RE.sub(lambda m: diagram_html(m.group(1)), "".join(parts))
@@ -520,6 +522,9 @@ def build_page(
         else:
             spots.append(s)
 
+    runtime = any(r.mode == "runtime" for r in by_key.values())
+    if runtime:
+        warnings.append("warning: Chrome not available, diagrams render at view time (runtime Mermaid inlined)")
     config = {
         "storageKey": STORAGE_KEY.format(slug=doc_slug),
         "ui": ui,
@@ -528,10 +533,10 @@ def build_page(
         "slides": slides,
         "blocks": {k: bool(plan.blocks.get(k)) for k in ("verdict", "questions", "actions")},
         "questions": questions,
-        "runtimeDiagrams": False,
+        "runtimeDiagrams": runtime,
     }
     title = h1 or doc_slug
-    page_html = _assemble(title, ui, body_html, config)
+    page_html = _assemble(title, ui, body_html, config, mermaid_js if runtime else None)
     return Page(page_html, spots, words, config, warnings, [by_key[j.key] for j in ctx.jobs])
 
 
@@ -544,7 +549,11 @@ def _asset(name: str, closer: str) -> str:
     return text.replace(closer, "<\\/" + closer[2:])
 
 
-def _assemble(title: str, ui: str, body: str, config: dict) -> str:
+def _assemble(title: str, ui: str, body: str, config: dict, mermaid_js: Path | None = None) -> str:
+    lib = ""
+    if mermaid_js is not None:
+        text = Path(mermaid_js).read_text(encoding="utf-8").replace("</script", "<\\/script")
+        lib = f'<script id="mermaid-lib">{text}</script>'
     return (
         f'<!DOCTYPE html>\n<html lang="{esc(ui)}"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -552,7 +561,7 @@ def _assemble(title: str, ui: str, body: str, config: dict) -> str:
         f'<body><header class="card-header"><h1>{esc(title)}</h1></header>'
         f'<main id="card-main">{body}</main>'
         f'<script type="application/json" id="card-config">{_config_json(config)}</script>'
-        f"<script>{_asset('engine.js', '</script')}</script></body></html>\n"
+        f"{lib}<script>{_asset('engine.js', '</script')}</script></body></html>\n"
     )
 
 
@@ -585,6 +594,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--plan", required=True)
     ap.add_argument("-o", "--out")
     ap.add_argument("--ui", choices=ui_text.UI_CHOICES, default="auto")
+    ap.add_argument("--mermaid", help="cached Mermaid JS; renders diagrams with Chrome, else inlines it for view-time rendering")
     try:
         args = ap.parse_args(argv)
     except SystemExit as e:
@@ -604,7 +614,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"FAIL: {e}", file=sys.stderr)
         return 2
     try:
-        page = build_page(md_path, plan, args.ui, stub_renderer)
+        mermaid = Path(args.mermaid) if args.mermaid else None
+        renderer = stub_renderer
+        if mermaid is not None:
+            def renderer(jobs: list[DiagramJob]) -> list[RenderedDiagram]:
+                return mermaid_svg.render(jobs, mermaid, mermaid_svg.find_chrome())
+        page = build_page(md_path, plan, args.ui, renderer, mermaid)
     except Exception as e:  # noqa: BLE001 - any build failure is a reported FAIL, not a traceback
         print(f"FAIL: {type(e).__name__}: {e}", file=sys.stderr)
         return 1
