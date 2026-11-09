@@ -135,6 +135,22 @@ class RenderBaseTests(unittest.TestCase):
         self.assertNotIn('href="./other.md"', r.html)
         self.assertEqual(r.unresolved_links, ("[[Other note]]", "./other.md"))
 
+    def test_callout_title_links_resolved_and_reported(self):
+        # Regression guard: title children left the inline before link handling ran.
+        r = self.render("> [!TIP] See [doc](./other.md) and [[Wiki]]\n> body\n")
+        self.assertNotIn('href="./other.md"', r.html)
+        self.assertEqual(r.unresolved_links, ("./other.md", "[[Wiki]]"))
+
+    def test_two_remote_image_placeholders(self):
+        # Regression guard: adjacent data-derived spans were joined into one word.
+        r = self.render("![a](https://example.com/h.png) ![b](https://example.com/p.png)\n")
+        self.assertEqual(r.html.count("<span data-derived>"), 2)
+
+    def test_footnote_passes_gate(self):
+        r = self.render("Text with a note[^1].\n\n[^1]: Foot text.\n")
+        self.assertIn('class="footnote-ref"', r.html)
+        self.assertIn("Foot text.", r.html)
+
     def test_raw_html_allowlist(self):
         r = self.render(fixture("note.md"))
         self.assertIn("<kbd>Ctrl</kbd>", r.html)

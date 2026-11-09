@@ -95,6 +95,24 @@ class FidelityTests(unittest.TestCase):
         r = check.check("[c](#top)\n", page("<p><span>c</span></p>"))
         self.assertEqual(r.gate, "blocks")
 
+    def test_adjacent_derived_spans_are_separate_words(self):
+        md = "ab cd\n"
+        body = "<p>ab cd</p><span data-derived>ab</span><span data-derived>cd</span>"
+        r = check.check(md, page(body))
+        self.assertTrue(r.ok, r.line)
+
+    def test_footnote_reference_rendered(self):
+        md = "Text[^1].\n\n[^1]: Foot.\n"
+        body = (
+            '<p>Text<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>.</p>'
+            '<hr class="footnotes-sep"><section class="footnotes"><ol class="footnotes-list">'
+            '<li id="fn1" class="footnote-item"><p>Foot. <a href="#fnref1" class="footnote-backref">\u21a9\ufe0e</a></p>'
+            "</li></ol></section>"
+        )
+        self.assertTrue(check.check(md, page(body)).ok, check.check(md, page(body)).line)
+        changed = check.check(md, page(body.replace("Foot.", "Feet.")))
+        self.assertEqual(changed.gate, "words")
+
     def test_wbr_rejoined(self):
         r = check.check("`a/b_c`\n", page("<p><code>a/<wbr>b_<wbr>c</code></p>"))
         self.assertTrue(r.ok, r.line)

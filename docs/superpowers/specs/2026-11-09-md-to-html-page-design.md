@@ -120,7 +120,9 @@ remote images are never fetched and render as a labelled placeholder with the UR
 Output contains no timestamps or random values.
 
 **`check.py`** — independent of `render.py` (uses markdown-it-py in plain `commonmark` mode with only `table` and
-`strikethrough` enabled, no renderer plugins/rules, and shares no code with `render.py`; HTML side via
+`strikethrough` enabled plus the `mdit_py_plugins.footnote` parser plugin so footnotes are expected
+where the renderer puts them, no renderer rules, and shares no code with `render.py`; relative link
+hrefs are not required because they render as plain text; HTML side via
 stdlib `html.parser`, own Markdown-side normalisation). Raw HTML in the source is expected as the attribute-free inline
 allowlist (`b i u s em strong kbd sup sub mark small del ins br`) kept as tags; any other raw HTML is
 expected escaped, i.e. shown as text. All gates must pass:

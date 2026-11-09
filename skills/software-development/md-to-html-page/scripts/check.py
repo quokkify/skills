@@ -8,8 +8,8 @@ passes, 1 when a gate fails, 2 when an input cannot be read.
 
 Gates run in the order words -> blocks -> order -> derived -> offline; only the first
 failure is reported. The Markdown side is rendered with plain CommonMark markdown-it
-(table and strikethrough enabled, no plugins); this module shares no code with the
-renderer.
+(table and strikethrough enabled, plus the footnote parser plugin); this module shares
+no code with the renderer.
 """
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from pathlib import Path
 
 from markdown_it import MarkdownIt
 from markdown_it.common.utils import escapeHtml
+from mdit_py_plugins.footnote import footnote_plugin
 
 CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
 MAX_SAMPLES = 10
@@ -113,6 +114,7 @@ class PageText(HTMLParser):
         elif "data-derived" in a:
             kind = "derived"
             self.derived += 1
+            self.derived_parts.append(" ")
         self.stack.append((tag, kind))
         if tag in ("pre", "code") and not self.hidden and not self.derived:
             (self.pres if tag == "pre" else self.codes).append("")
@@ -146,6 +148,7 @@ class PageText(HTMLParser):
                 self.hidden -= 1
             elif kind == "derived":
                 self.derived -= 1
+                self.derived_parts.append(" ")
             if t == tag:
                 break
         if tag in BLOCK_TAGS and not self.hidden:
@@ -241,7 +244,7 @@ def _escape_raw(content: str) -> str:
 
 def build_reference(md_text: str) -> Reference:
     body = normalise(md_text)
-    md = MarkdownIt("commonmark", {"html": True}).enable(["table", "strikethrough"])
+    md = MarkdownIt("commonmark", {"html": True}).enable(["table", "strikethrough"]).use(footnote_plugin)
     tokens = md.parse(body)
     for tok in tokens:
         for node in [tok, *(tok.children or [])]:

@@ -264,7 +264,8 @@ def pass_links(ctx: Context, tokens: list[Token]) -> None:
                 open_link = None
 
 
-TOKEN_PASSES: list[TokenPass] = [pass_callouts, pass_headings, pass_links]
+# pass_links runs first: pass_callouts moves title children out of the inline token.
+TOKEN_PASSES: list[TokenPass] = [pass_links, pass_callouts, pass_headings]
 BLOCK_TRANSFORMS: list[BlockTransform] = []
 
 
