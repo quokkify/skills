@@ -51,6 +51,9 @@ WIKILINK = re.compile(r"\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]")
 FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 CODE_SPAN = re.compile(r"(`+)(?:(?!\1).)+?\1(?!`)", re.S)
 RAW_ALLOWED = re.compile(r"</?(?:b|i|u|s|em|strong|kbd|sup|sub|mark|small|del|ins|br)\s*/?>", re.I)
+# Relative links point at files the recipient does not have; the page renders them as
+# plain text, so their hrefs are not required (their text still is).
+RELATIVE_HREF = re.compile(r"^(?![a-z][a-z0-9+.-]*:|#|//)\S", re.I)
 WORD = re.compile(r"\w+")
 JS_NETWORK = re.compile(
     r"\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts)\b"
@@ -254,7 +257,9 @@ def build_reference(md_text: str) -> Reference:
             if child.type == "code_inline":
                 inline_codes.append(child.content)
             elif child.type == "link_open":
-                hrefs.append(child.attrGet("href") or "")
+                href = child.attrGet("href") or ""
+                if not RELATIVE_HREF.match(href):
+                    hrefs.append(href)
     page = parse_page(md.renderer.render(tokens, md.options, {}))
     return Reference(body, "".join(page.parts), tuple(fences), tuple(inline_codes), tuple(hrefs))
 

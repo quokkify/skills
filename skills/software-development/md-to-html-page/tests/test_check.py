@@ -84,6 +84,17 @@ class FidelityTests(unittest.TestCase):
         self.assertTrue(r.ok, r.line)
         self.assertIn("hrefs=1", r.line)
 
+    def test_relative_href_not_required(self):
+        md = "[a](./other.md) [b](../x/y.md) [c](#top) [d](mailto:a@example.com)\n"
+        body = '<p><span>a</span> <span>b</span> <a href="#top">c</a> <a href="mailto:a@example.com">d</a></p>'
+        r = check.check(md, page(body))
+        self.assertTrue(r.ok, r.line)
+        self.assertIn("hrefs=2", r.line)
+
+    def test_anchor_href_still_required(self):
+        r = check.check("[c](#top)\n", page("<p><span>c</span></p>"))
+        self.assertEqual(r.gate, "blocks")
+
     def test_wbr_rejoined(self):
         r = check.check("`a/b_c`\n", page("<p><code>a/<wbr>b_<wbr>c</code></p>"))
         self.assertTrue(r.ok, r.line)
