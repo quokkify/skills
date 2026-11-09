@@ -1,0 +1,1 @@
+{"id":"7f385b6fefc53911c5b4ee95258d0626.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_renovate_adoption.RenovateAdoptionBatchTests#test_sweep_skips_self_dependency","name":"test_sweep_skips_self_dependency","status":"passed","testResultsByEnv":{"default":"4bbcfc656e19204ab7384b10f2ff1dea"}}

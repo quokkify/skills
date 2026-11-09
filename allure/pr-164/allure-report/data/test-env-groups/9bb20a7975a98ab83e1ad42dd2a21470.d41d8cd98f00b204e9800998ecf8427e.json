@@ -1,0 +1,1 @@
+{"id":"9bb20a7975a98ab83e1ad42dd2a21470.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_renovate_adoption.RenovateAdoptionOwnedPathsTests#test_owned_paths_without_subdirectory_is_whole_tree_minus_copier_yml","name":"test_owned_paths_without_subdirectory_is_whole_tree_minus_copier_yml","status":"passed","testResultsByEnv":{"default":"e9cbf8983146bcc99daa979dca323abe"}}
