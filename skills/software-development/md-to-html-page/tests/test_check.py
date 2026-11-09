@@ -7,7 +7,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import check  # noqa: E402
 
 CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
-HEAD_EXTRA = ""
 
 
 def page(body: str, head: str = "", csp: bool = True) -> str:
@@ -130,6 +129,20 @@ class FidelityTests(unittest.TestCase):
         r = check.check("`[[a|b]]`\n", page("<p><code>[[a|b]]</code></p>"))
         self.assertTrue(r.ok, r.line)
 
+    def test_allowed_raw_inline_tag_passes(self):
+        r = check.check("Press <kbd>Ctrl</kbd> now.\n", page("<p>Press <kbd>Ctrl</kbd> now.</p>"))
+        self.assertTrue(r.ok, r.line)
+
+    def test_allowed_raw_br_passes(self):
+        r = check.check("a<br>b\n", page("<p>a<br>b</p>"))
+        self.assertTrue(r.ok, r.line)
+
+    def test_disallowed_raw_tag_must_be_escaped(self):
+        md = "x <span class=x>y</span>\n"
+        escaped = "<p>x &lt;span class=x&gt;y&lt;/span&gt;</p>"
+        self.assertTrue(check.check(md, page(escaped)).ok)
+        self.assertFalse(check.check(md, page("<p>x <span class=\"x\">y</span></p>")).ok)
+
     def test_first_gate_only(self):
         r = check.check(MD, page(BODY.replace("42", "43"), csp=False))
         self.assertEqual(r.gate, "words")
@@ -160,6 +173,14 @@ class OfflineTests(unittest.TestCase):
 
     def test_fetch_in_inline_js_fails(self):
         r = self.gate("<script>fetch('x')</script>")
+        self.assertEqual(r.gate, "offline")
+
+    def test_event_handler_attr_fails(self):
+        r = self.gate(body=BODY.replace("<p>", '<p onclick="fetch(1)">'))
+        self.assertEqual(r.gate, "offline")
+
+    def test_javascript_url_fails(self):
+        r = self.gate(body=BODY + '<a href="JavaScript:void(0)"></a>')
         self.assertEqual(r.gate, "offline")
 
     def test_missing_csp_fails(self):

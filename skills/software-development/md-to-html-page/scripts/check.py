@@ -22,6 +22,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from markdown_it import MarkdownIt
+from markdown_it.common.utils import escapeHtml
 
 CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
 MAX_SAMPLES = 10
@@ -49,6 +50,7 @@ TASK = re.compile(r"^([ \t]*(?:[-*+]|\d+[.)])[ \t]+)\[[ xX]\][ \t]?", re.M)
 WIKILINK = re.compile(r"\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]")
 FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 CODE_SPAN = re.compile(r"(`+)(?:(?!\1).)+?\1(?!`)", re.S)
+RAW_ALLOWED = re.compile(r"</?(?:b|i|u|s|em|strong|kbd|sup|sub|mark|small|del|ins|br)\s*/?>", re.I)
 WORD = re.compile(r"\w+")
 JS_NETWORK = re.compile(
     r"\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts)\b"
@@ -124,6 +126,11 @@ class PageText(HTMLParser):
                 value = a.get(name, "").strip()
                 if value and not value.lower().startswith("data:"):
                     self.offline_problems.append(f"<{tag} {name}={value[:60]!r}>")
+        for name, value in a.items():
+            if name.startswith("on"):
+                self.offline_problems.append(f"<{tag} {name}=...> event handler")
+            elif re.sub(r"[\s\x00-\x1f]", "", value).lower().startswith("javascript:"):
+                self.offline_problems.append(f"<{tag} {name}> javascript: URL")
         if "style" in a:
             self.style_attrs.append(a["style"])
 
@@ -218,10 +225,25 @@ def normalise(md_text: str) -> str:
     return _outside_code(body, clean)
 
 
+def _escape_raw(content: str) -> str:
+    """Keep attribute-free allowlisted inline tags; escape every other raw HTML."""
+    out, pos = [], 0
+    for m in RAW_ALLOWED.finditer(content):
+        out.append(escapeHtml(content[pos:m.start()]))
+        out.append(m.group(0))
+        pos = m.end()
+    out.append(escapeHtml(content[pos:]))
+    return "".join(out)
+
+
 def build_reference(md_text: str) -> Reference:
     body = normalise(md_text)
-    md = MarkdownIt("commonmark", {"html": False}).enable(["table", "strikethrough"])
+    md = MarkdownIt("commonmark", {"html": True}).enable(["table", "strikethrough"])
     tokens = md.parse(body)
+    for tok in tokens:
+        for node in [tok, *(tok.children or [])]:
+            if node.type in ("html_block", "html_inline"):
+                node.content = _escape_raw(node.content)
     fences: list[str] = []
     inline_codes: list[str] = []
     hrefs: list[str] = []
@@ -233,7 +255,7 @@ def build_reference(md_text: str) -> Reference:
                 inline_codes.append(child.content)
             elif child.type == "link_open":
                 hrefs.append(child.attrGet("href") or "")
-    page = parse_page(md.render(body))
+    page = parse_page(md.renderer.render(tokens, md.options, {}))
     return Reference(body, "".join(page.parts), tuple(fences), tuple(inline_codes), tuple(hrefs))
 
 
@@ -311,7 +333,7 @@ def _gate_derived(ref: Reference, page: PageText) -> CheckResult | None:
     return _fail("derived", f"{len(seen)} derived word(s) not in source", [f"not in source: {w!r}" for w in seen])
 
 
-def _gate_offline(raw: str, page: PageText) -> CheckResult | None:
+def _gate_offline(page: PageText) -> CheckResult | None:
     samples = list(page.offline_problems)
     if CSP not in page.csp:
         samples.append("CSP meta missing or not exact")
@@ -337,7 +359,7 @@ def check(md_text: str, html_text: str) -> CheckResult:
         lambda: _gate_blocks(ref, page),
         lambda: _gate_order(ref.text, page_text),
         lambda: _gate_derived(ref, page),
-        lambda: _gate_offline(html_text, page),
+        lambda: _gate_offline(page),
     ):
         failure = gate()
         if failure:

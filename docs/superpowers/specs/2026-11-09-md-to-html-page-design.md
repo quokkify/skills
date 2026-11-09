@@ -121,7 +121,9 @@ Output contains no timestamps or random values.
 
 **`check.py`** — independent of `render.py` (uses markdown-it-py in plain `commonmark` mode with only `table` and
 `strikethrough` enabled, no renderer plugins/rules, and shares no code with `render.py`; HTML side via
-stdlib `html.parser`, own Markdown-side normalisation). All gates must pass:
+stdlib `html.parser`, own Markdown-side normalisation). Raw HTML in the source is expected as the attribute-free inline
+allowlist (`b i u s em strong kbd sup sub mark small del ins br`) kept as tags; any other raw HTML is
+expected escaped, i.e. shown as text. All gates must pass:
 
 1. Word multiset: source words vs visible HTML text (excluding `data-chrome`, `data-derived`),
    with `<wbr>` splits rejoined and block boundaries separated; digit tokens reported separately.
@@ -131,7 +133,7 @@ stdlib `html.parser`, own Markdown-side normalisation). All gates must pass:
    content (catches punctuation changes and swapped values the multiset misses).
 4. Derived content: every word inside `data-derived` occurs in the source.
 5. Offline: no `<script src>`, no remote `<link>`/`<img>`/`<iframe>`/`<object>`, no `@import`, no
-   `url(http…)`, no `fetch`/`XMLHttpRequest`/`WebSocket`/`EventSource` in inline JS; the CSP meta
+   `url(http…)`, no `fetch`/`XMLHttpRequest`/`WebSocket`/`EventSource` in inline JS, no `on*` attributes, no `javascript:` URLs; the CSP meta
    `default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'` present.
 
 Output: one line `PASS words=N code=N hrefs=N order=ok offline=ok` or `FAIL <gate>: …` with up to
