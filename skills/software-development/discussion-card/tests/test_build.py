@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import build  # noqa: E402
 import ui_text  # noqa: E402
+from model import Box, NodeBox, RenderedDiagram  # noqa: E402
 from plan import ChapterHint, load_plan  # noqa: E402
 
 FIX = Path(__file__).resolve().parent / "fixtures"
@@ -75,7 +76,7 @@ class BuildTest(unittest.TestCase):
         self.assertEqual([j.title for j in parts], ["Build", "Review", "Release"])
         self.assertEqual(len({j.key for j in jobs}), 4)
         ids_ = [s["id"] for s in page.config["slides"] if s["chapter"] == "pipeline-path"]
-        self.assertEqual(ids_, ["pipeline-path", "pipeline-path-1", "pipeline-path-2", "pipeline-path-3"])
+        self.assertEqual(ids_, ["pipeline-path", "pipeline-path-d1-1", "pipeline-path-d1-2", "pipeline-path-d1-3"])
 
     def test_config_json(self):
         page = make()
@@ -158,6 +159,106 @@ class BuildTest(unittest.TestCase):
             p.write_text("version: 2\nkind: proposal\n", encoding="utf-8")
             rc = build.main([str(SAMPLE_MD), "--plan", str(p), "-o", str(Path(d) / "o.tmp")])
             self.assertEqual(rc, 2)
+
+
+SPLIT_PLAN = (
+    "version: 1\nkind: proposal\nintro:\n  cards:\n    - {title: a, text: b}\n"
+    "diagrams:\n  1: {split: subgraphs}\n  2: {split: subgraphs}\n"
+)
+TWO_FLOWS = (
+    "## Flow\n\n```mermaid\nflowchart TD\n subgraph S1\n A-->B\n end\n subgraph S2\n C-->D\n end\n```\n\n"
+    "```mermaid\nflowchart TD\n subgraph X1\n E-->F\n end\n subgraph X2\n G-->H\n end\n```\n\n"
+    "## Flow 1\n\ntext\n\n## Intro\n\nhello\n\n## Flow\n\nagain\n"
+)
+
+
+def all_ids(page):
+    return re.findall(r' id="([^"]+)"', page.html)
+
+
+class RegressionGuards(unittest.TestCase):
+    def test_regression_guard_unique_element_and_slide_ids(self):
+        page = make(md_text=TWO_FLOWS, plan_text=SPLIT_PLAN)
+        slides = [s["id"] for s in page.config["slides"]]
+        self.assertEqual(len(slides), len(set(slides)))
+        ei = all_ids(page)
+        self.assertEqual(len(ei), len(set(ei)))
+        self.assertIn("card-intro", ei)
+        self.assertIn("flow-d2-1", slides)
+
+    def test_regression_guard_repeated_node_ids_get_suffix(self):
+        def renderer(jobs):
+            out = []
+            for j in jobs:
+                nb = NodeBox(f"{j.chapter_slug}-A", "A", Box(0, 0, 1, 1), 16)
+                out.append(RenderedDiagram(
+                    j.key, f'<svg><g data-spot="{nb.spot_id}"></g></svg>', [nb], [], None, "static"))
+            return out
+
+        with tempfile.TemporaryDirectory() as d:
+            md = Path(d) / "s.md"
+            md.write_text("## F\n\n```mermaid\nflowchart TD\n A-->B\n```\n\n```mermaid\nflowchart TD\n A-->C\n```\n", encoding="utf-8")
+            pp = Path(d) / "c.yaml"
+            pp.write_text("version: 1\nkind: review\n", encoding="utf-8")
+            page = build.build_page(md, load_plan(pp, ["F"]), "en", renderer)
+        self.assertEqual(page.spots, ["f-A", "f-A-2"])
+        self.assertIn('data-spot="f-A-2"', page.html)
+        self.assertEqual(page.diagrams[1].nodes[0].spot_id, "f-A-2")
+        self.assertTrue(any("f-A" in w for w in page.warnings))
+
+    def test_regression_guard_no_source_text_dropped(self):
+        md = (
+            "# Title\n\n# Second Hone\n\n## A\n\n    indented word1\n\n![alt word4](x.png)\n\n"
+            "## Open questions\n\n1. Q one\n\n   details word6\n\n   - sub word7\n2. Q two\n"
+            "\n## Image ![titlealt word11](y.png) H\n\nz\n"
+        )
+        page = make(md_text=md)
+        for w in ["Second Hone", "word1", "word4", "word6", "word7", "word11"]:
+            self.assertIn(w, page.html, w)
+        self.assertEqual(kind_count(page, "code"), 1)  # indented code is a code spot
+        self.assertEqual(kind_count(page, "q"), 2)
+
+    def test_regression_guard_no_network_references(self):
+        md = (
+            "## A\n\n![pic](https://example.org/x.png) [l](https://example.org/p) "
+            "<https://example.org/auto> [m](mailto:a@example.com) [k](#a)\n"
+        )
+        page = make(md_text=md)
+        body = page.html.split('<script type="application/json"')[0]
+        self.assertEqual(re.findall(r'(?:src|href)="([^"]*)"', body), ["#a"])
+        self.assertIn("[image: pic] (https://example.org/x.png)", body)
+        self.assertIn("warning: remote image shown as text: https://example.org/x.png", page.warnings)
+        self.assertIn("warning: external link shown as text: https://example.org/p", page.warnings)
+        self.assertIn("warning: external link shown as text: https://example.org/auto", page.warnings)
+
+    def test_regression_guard_only_top_level_blocks_are_spots(self):
+        md = (
+            "## A\n\n- item\n\n  second para\n\n  - nested\n\n> [!NOTE]\n> callout text\n>\n> - in callout\n"
+            "\n## Open questions\n\n1. Q\n\n   - sub\n"
+        )
+        page = make(md_text=md)
+        self.assertEqual(kind_count(page, "li"), 1)
+        self.assertEqual(kind_count(page, "callout"), 1)
+        self.assertEqual(kind_count(page, "q"), 1)
+        self.assertEqual(kind_count(page, "p"), 0)
+        self.assertEqual(page.html.count("data-spot="), 3 + kind_count(page, "intro"))  # no nested spots
+
+    def test_regression_guard_main_reports_fail_for_bad_input_and_renderer(self):
+        with tempfile.TemporaryDirectory() as d:
+            bad = Path(d) / "bad.md"
+            bad.write_bytes(b"# T\n\n\xff\xfe\n")
+            self.assertEqual(build.main([str(bad), "--plan", str(SAMPLE_PLAN), "-o", str(Path(d) / "o")]), 1)
+            orig = build.stub_renderer
+
+            def boom(jobs):
+                raise RuntimeError("chrome exploded")
+
+            build.stub_renderer = boom
+            try:
+                rc = build.main([str(SAMPLE_MD), "--plan", str(SAMPLE_PLAN), "-o", str(Path(d) / "o")])
+            finally:
+                build.stub_renderer = orig
+            self.assertEqual(rc, 1)
 
 
 if __name__ == "__main__":

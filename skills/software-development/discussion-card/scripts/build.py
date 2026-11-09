@@ -31,6 +31,8 @@ LANG_RE = re.compile(r"^[\w+-]+$")
 PLACEHOLDER = "\x00D:{key}\x00"
 PLACEHOLDER_RE = re.compile("\x00D:(.*?)\x00")
 FALLBACK_SLUG = "section"
+INTRO_ID = "card-intro"
+EXTERNAL_RE = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|//)", re.I)
 
 esc = html.escape
 
@@ -56,7 +58,7 @@ def _md() -> MarkdownIt:
 def plain_text(inline) -> str:
     parts = []
     for c in inline.children or []:
-        if c.type in ("text", "code_inline"):
+        if c.type in ("text", "code_inline", "image"):
             parts.append(c.content)
         elif c.type in ("softbreak", "hardbreak"):
             parts.append(" ")
@@ -96,11 +98,62 @@ class _Ctx:
         self.mermaid_n = 0
         self.part_slides: list[dict] = []
         self.chapter_title = ""
+        self.reserved: set[str] = {INTRO_ID}
+        self.diagram_n = 0
+        self.nest = 0  # >0 while rendering the content of a spot
+
+    def warn(self, message: str) -> None:
+        if message not in self.warnings:
+            self.warnings.append(message)
+
+    def alloc(self, base: str) -> str:
+        cand, n = base, 1
+        while cand in self.reserved:
+            n += 1
+            cand = f"{base}-{n}"
+        self.reserved.add(cand)
+        return cand
 
     def inline(self, tok) -> str:
-        return self.md.renderer.renderInline(tok.children or [], self.md.options, {})
+        children = self._no_external(tok.children or [])
+        return self.md.renderer.renderInline(children, self.md.options, {})
+
+    def _no_external(self, children):
+        """Turn external links and images into text so no network reference reaches the output."""
+        from markdown_it.token import Token
+
+        def text(content: str):
+            t = Token("text", "", 0)
+            t.content = content
+            return t
+
+        out, pending = [], []  # pending: (index in out, href) for open external links
+        for c in children:
+            if c.type == "image":
+                src = c.attrGet("src") or ""
+                if src.startswith("data:image/"):
+                    out.append(c)
+                    continue
+                alt = c.content
+                label = f"[image: {alt}]" if alt else "[image]"
+                out.append(text(f"{label} ({src})"))
+                kind = "remote" if EXTERNAL_RE.match(src) else "local"
+                self.warn(f"warning: {kind} image shown as text: {src}")
+            elif c.type == "link_open" and EXTERNAL_RE.match(c.attrGet("href") or ""):
+                pending.append((len(out), c.attrGet("href")))
+            elif c.type == "link_close" and pending:
+                start, href = pending.pop()
+                shown = "".join(x.content for x in out[start:])
+                if shown != href:
+                    out.append(text(f" ({href})"))
+                self.warn(f"warning: external link shown as text: {href}")
+            else:
+                out.append(c)
+        return out
 
     def spot(self, kind: str, text: str) -> str:
+        if self.nest:
+            return ""
         sid = ids.spot_id(self.slug, kind, text, self.seen)
         self.spots.append(sid)
         return f' data-spot="{esc(sid)}" tabindex="0" role="button"'
@@ -120,7 +173,7 @@ def _render(ctx: _Ctx, tokens, in_spot: bool = False) -> str:
             body = ctx.inline(inl)
             if t.hidden:
                 out.append(body)
-            elif in_spot:
+            elif in_spot or ctx.nest:
                 out.append(f"<p>{body}</p>")
             else:
                 out.append(f"<p{ctx.spot('p', inl.content)}>{body}</p>")
@@ -139,6 +192,9 @@ def _render(ctx: _Ctx, tokens, in_spot: bool = False) -> str:
             i = j + 1
         elif t.type == "fence":
             out.append(_fence(ctx, t))
+            i += 1
+        elif t.type == "code_block":
+            out.append(_code_spot(ctx, t.content))
             i += 1
         elif t.type == "heading_open":
             inl = tokens[i + 1]
@@ -164,7 +220,10 @@ def _list(ctx: _Ctx, tokens) -> str:
         inl = _inlines(item)
         text = inl[0].content if inl else ""
         attrs = ctx.spot("li", text)
-        out.append(f"<li{attrs}>{_render(ctx, item, in_spot=True)}</li>")
+        ctx.nest += 1
+        body = _render(ctx, item, in_spot=True)
+        ctx.nest -= 1
+        out.append(f"<li{attrs}>{body}</li>")
         i = j + 1
     out.append(f"</{tag}>")
     return "".join(out)
@@ -217,10 +276,12 @@ def _quote(ctx: _Ctx, tokens) -> str:
     first.content = first.content.lstrip("\n")
     text = " ".join(x.content for x in _inlines(tokens))
     attrs = ctx.spot("callout", text)
+    ctx.nest += 1
+    body = _render(ctx, tokens[1:-1], in_spot=True)
+    ctx.nest -= 1
     return (
         f'<aside class="callout callout-{esc(name.lower())}"{attrs}>'
-        f'<div class="callout-title">{esc(name.title())}</div>'
-        f"{_render(ctx, tokens[1:-1], in_spot=True)}</aside>"
+        f'<div class="callout-title">{esc(name.title())}</div>{body}</aside>'
     )
 
 
@@ -246,6 +307,8 @@ def _fence(ctx: _Ctx, t) -> str:
     except ValueError as e:
         ctx.warnings.append(f"warning: mermaid flowchart shown as code (block {n}): {e}")
         return _code_spot(ctx, t.content)
+    ctx.diagram_n += 1
+    dn = ctx.diagram_n
     hint = ctx.plan.diagrams.get(n)
     if hint is None or hint.split != "subgraphs":
         key = f"{ctx.slug}-d{n}"
@@ -257,7 +320,7 @@ def _fence(ctx: _Ctx, t) -> str:
     out = []
     for k, (sg, part_src) in enumerate(parts, start=1):
         key = f"{ctx.slug}-d{n}-{k}"
-        pid = f"{ctx.slug}-{k}"
+        pid = ctx.alloc(f"{ctx.slug}-d{dn}-{k}")
         title = sg.title or None
         ctx.jobs.append(DiagramJob(key, ctx.slug, part_src, title))
         ctx.spots.append(("diagram", key))
@@ -296,10 +359,12 @@ def _questions(ctx: _Ctx, tokens, hint_options: dict[int, list[str]]):
                 n = len(questions) + 1
                 attrs = ctx.spot("q", inl[0].content if inl else "")
                 questions.append({"id": f"q{n}", "text": text, "options": list(hint_options.get(n, []))})
-                body = ctx.inline(inl[0]) if inl else ""
+                ctx.nest += 1
+                body = _render(ctx, item, in_spot=True)
+                ctx.nest -= 1
                 cards.append(
                     f'<article class="question" data-qid="q{n}"{attrs}>'
-                    f'<p class="question-text">{body}</p></article>'
+                    f'<div class="question-text">{body}</div></article>'
                 )
                 k = e + 1
             out.append(f'<div class="questions">{"".join(cards)}</div>')
@@ -315,6 +380,7 @@ def _questions(ctx: _Ctx, tokens, hint_options: dict[int, list[str]]):
 def _sections(tokens):
     """Return [(title or None, tokens)] split on level-0 H2; first entry is the preamble."""
     secs: list[list] = [[None, []]]
+    seen_h1 = False
     i = 0
     while i < len(tokens):
         t = tokens[i]
@@ -322,8 +388,12 @@ def _sections(tokens):
             inl = tokens[i + 1]
             if t.tag == "h2":
                 secs.append([plain_text(inl), []])
-            i += 3
-            continue
+                i += 3
+                continue
+            if not seen_h1:
+                seen_h1 = True
+                i += 3
+                continue
         secs[-1][1].append(t)
         i += 1
     return secs
@@ -366,7 +436,7 @@ def build_page(
     # intro
     if plan.intro and (plan.intro.lead or plan.intro.cards):
         ctx.slug = "intro"
-        ib = ['<section class="intro" id="intro">']
+        ib = [f'<section class="intro" id="{INTRO_ID}">']
         if plan.intro.lead:
             ib.append(f'<p class="lead">{esc(plan.intro.lead)}</p>')
             words += len(plan.intro.lead.split())
@@ -384,16 +454,11 @@ def build_page(
     chapters: list[dict] = []
     slides: list[dict] = []
     questions: list[dict] = []
-    used_slugs: set[str] = set()
     for title, toks in secs:
-        base = ids.slugify(title) or FALLBACK_SLUG
-        slug, n = base, 1
-        while slug in used_slugs:
-            n += 1
-            slug = f"{base}-{n}"[: ids.SLUG_MAX + 3]
-        used_slugs.add(slug)
+        slug = ctx.alloc(ids.slugify(title) or FALLBACK_SLUG)
         ctx.slug, ctx.chapter_title = slug, title
         ctx.part_slides = []
+        ctx.diagram_n = 0
         hint = hints.get(_norm(title))
         label = (hint.label if hint and hint.label else title)
         fold = bool(hint and hint.fold)
@@ -423,6 +488,20 @@ def build_page(
             raise RuntimeError(f"diagram renderer returned nothing for {job.key}")
         if r.error:
             warnings.append(f"warning: diagram {r.key} shown as code: {r.error}")
+
+    for job in ctx.jobs:
+        r = by_key[job.key]
+        for nb in r.nodes:
+            if nb.spot_id in seen:
+                n = 1
+                while f"{nb.spot_id}-{n + 1}" in seen:
+                    n += 1
+                new = f"{nb.spot_id}-{n + 1}"
+                warnings.append(f"warning: diagram node id {nb.spot_id} repeated, renamed {new}")
+                if r.svg is not None:
+                    r.svg = r.svg.replace(f'data-spot="{nb.spot_id}"', f'data-spot="{new}"')
+                nb.spot_id = new
+            seen.add(nb.spot_id)
 
     def diagram_html(key: str) -> str:
         r = by_key[key]
@@ -518,10 +597,17 @@ def main(argv: list[str] | None = None) -> int:
     except PlanError as e:
         print(f"FAIL: {e}", file=sys.stderr)
         return 2
+    except UnicodeDecodeError as e:
+        print(f"FAIL: {e}", file=sys.stderr)
+        return 1
     except OSError as e:
         print(f"FAIL: {e}", file=sys.stderr)
         return 2
-    page = build_page(md_path, plan, args.ui, stub_renderer)
+    try:
+        page = build_page(md_path, plan, args.ui, stub_renderer)
+    except Exception as e:  # noqa: BLE001 - any build failure is a reported FAIL, not a traceback
+        print(f"FAIL: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
     out.write_text(page.html, encoding="utf-8")
     Path(str(out) + ".meta.json").write_text(json.dumps(_meta(page), ensure_ascii=False, indent=2), encoding="utf-8")
     for w in page.warnings:
