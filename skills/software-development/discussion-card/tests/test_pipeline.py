@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -12,6 +13,7 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parents[1]
 LAUNCHER = SKILL / "scripts" / "discuss.sh"
+BUILD = SKILL / "scripts" / "build.py"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 PASS_RE = re.compile(r"^PASS words=\d+ extra=\d+ spots=\d+ diagrams=(\d+|runtime) offline=ok( ids=(kept|-\d+))?$", re.M)
 MERMAID_MARKER = "__esbuild_esm_mermaid_nm"
@@ -97,6 +99,30 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(page.count('<script id="mermaid-lib">'), 1)
         self.assertIn('class="mermaid-runtime"', page)
         self.assertIn('"runtimeDiagrams": true', page)
+
+    def test_runtime_meta_spots_match_static(self) -> None:
+        """Marks on diagram nodes survive a static -> runtime rebuild: both list the same spot ids."""
+        python = run("--python").stdout.strip()
+        mermaid = run("--mermaid").stdout.strip()
+        self.assertTrue(python and mermaid)
+
+        def meta(name: str, env: dict[str, str]) -> dict:
+            out = self.tmp / "out" / f"{name}.html"
+            merged = dict(os.environ)
+            merged.update(env)
+            r = subprocess.run(
+                [python, "-I", str(BUILD), str(self.md), "--plan", str(self.plan), "-o", str(out), "--mermaid", mermaid],
+                capture_output=True, text=True, env=merged, check=False, timeout=300,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr)
+            return json.loads(Path(str(out) + ".meta.json").read_text(encoding="utf-8")), out.read_text(encoding="utf-8")
+
+        static, _ = meta("static", {})
+        runtime, page = meta("runtime", {"DISCUSS_NO_CHROME": "1"})
+        self.assertTrue(all(d["mode"] == "static" for d in static["diagrams"]))
+        self.assertTrue(all(d["mode"] == "runtime" for d in runtime["diagrams"]))
+        self.assertEqual(runtime["spots"], static["spots"])
+        self.assertIn('data-node-spots="', page)
 
 
 if __name__ == "__main__":

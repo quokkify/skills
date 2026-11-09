@@ -19,7 +19,7 @@ import ids  # noqa: E402
 import mermaid_svg  # noqa: E402
 import ui_text  # noqa: E402
 from mermaid_parse import parse_flowchart, split_subgraphs  # noqa: E402
-from model import DiagramJob, RenderedDiagram  # noqa: E402
+from model import Box, DiagramJob, NodeBox, RenderedDiagram  # noqa: E402
 from plan import Plan, PlanError, load_plan  # noqa: E402
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
@@ -491,6 +491,17 @@ def build_page(
         if r.error:
             warnings.append(f"warning: diagram {r.key} shown as code: {r.error}")
 
+    node_ids: dict[str, list[str]] = {}  # runtime diagrams: Mermaid node id per r.nodes entry
+    for job in ctx.jobs:
+        r = by_key[job.key]
+        if r.mode == "runtime" and not r.nodes:
+            fc = parse_flowchart(0, job.source)
+            node_ids[job.key] = list(fc.nodes)
+            r.nodes = [
+                NodeBox(ids.node_spot_id(job.chapter_slug, nid), label, Box(0, 0, 0, 0), 0.0)
+                for nid, label in fc.nodes.items()
+            ]
+
     for job in ctx.jobs:
         r = by_key[job.key]
         for nb in r.nodes:
@@ -511,7 +522,11 @@ def build_page(
         if r.svg is not None and not r.error:
             return r.svg
         if r.mode == "runtime":
-            return f'<pre class="mermaid-runtime" data-diagram="{esc(key)}">{esc(job.source)}</pre>'
+            spots = dict(zip(node_ids.get(key, []), (nb.spot_id for nb in r.nodes)))
+            return (
+                f'<pre class="mermaid-runtime" data-diagram="{esc(key)}" '
+                f'data-node-spots="{esc(json.dumps(spots, ensure_ascii=False))}">{esc(job.source)}</pre>'
+            )
         return f'<pre class="mermaid-src">{esc(job.source)}</pre>'
 
     body_html = PLACEHOLDER_RE.sub(lambda m: diagram_html(m.group(1)), "".join(parts))

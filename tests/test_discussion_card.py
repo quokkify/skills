@@ -15,7 +15,7 @@ LAUNCHER = SKILL_DIR / "scripts" / "discuss.sh"
 VENV_SETUP_FAILED = 3
 SETUP_TIMEOUT_SECONDS = 600
 SUITE_TIMEOUT_SECONDS = 900
-EXCLUDED_DIRS = {"__pycache__"}
+EXCLUDED_DIRS = {"__pycache__", "node_modules"}
 MACHINE_PATHS = ("/Users/", "/home/")
 # Credentials in URLs (`https://user:token@host`) and SSH remotes (`git@host:owner/repo`)
 # are not e-mail addresses: the local part must not follow `:`, `/` or `@`, nor the host precede `:`.

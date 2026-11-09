@@ -150,6 +150,13 @@ class _PageParser(HTMLParser):
         self._stack.append(tag)
         if "data-spot" in a:
             self.spots.append(a["data-spot"])
+        if "data-node-spots" in a:  # runtime Mermaid: node spots are set at view time
+            try:
+                node_spots = json.loads(a["data-node-spots"])
+            except ValueError:
+                node_spots = {}
+            if isinstance(node_spots, dict):
+                self.spots.extend(v for v in node_spots.values() if isinstance(v, str))
         if tag == "script":
             if a.get("id") == "card-config":
                 self._cfg_buf = []
