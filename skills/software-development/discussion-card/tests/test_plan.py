@@ -95,6 +95,12 @@ class PlanTests(unittest.TestCase):
         self.assertPlanError("version: 1\nkind: retro\nslug: Деплой\n", "slug")
         self.assertPlanError("version: 1\nkind: retro\nslug: Upper\n", "slug")
 
+    def test_slug_regression_guard_trailing_newline_and_length(self):
+        # Regression guard: `$` anchor let "abc\n" through.
+        self.assertPlanError("version: 1\nkind: retro\nslug: |\n  abc\n", "slug")
+        self.assertEqual(load("version: 1\nkind: retro\nslug: " + "a" * 40 + "\n").slug, "a" * 40)
+        self.assertPlanError("version: 1\nkind: retro\nslug: " + "a" * 41 + "\n", "slug")
+
     def test_intro(self):
         p = load(
             "version: 1\nkind: retro\nintro:\n  lead: hi\n  cards:\n"

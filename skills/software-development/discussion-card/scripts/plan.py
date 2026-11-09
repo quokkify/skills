@@ -202,7 +202,7 @@ def load_plan(path: Path, h2_titles: list[str]) -> Plan:
         raise PlanError(f"kind: must be one of {', '.join(KINDS)}, got {kind!r}")
 
     slug = m.get("slug")
-    if slug is not None and (not isinstance(slug, str) or not SLUG_RE.match(slug)):
+    if slug is not None and (not isinstance(slug, str) or not SLUG_RE.fullmatch(slug)):
         raise PlanError("slug: must match ^[a-z0-9-]{1,40}$")
 
     blocks = {b: b in DEFAULT_BLOCKS[kind] for b in BLOCK_NAMES}
