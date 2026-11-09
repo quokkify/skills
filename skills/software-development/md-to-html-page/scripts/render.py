@@ -482,18 +482,68 @@ def paragraph(src: Block, children: list[Token]) -> Block:
     return Block([new_open, new_inline, new_close])
 
 
-def message_block(src: Block, segment: list[Token]) -> tuple[Block, str | None]:
-    found = chat_author(segment)
+def stamp_message(children: list[Token]) -> tuple[list[Token], str] | None:
+    """Split the "(HH:MM):" stamp after the bold author into its own chat_stamp token."""
+    found = chat_author(children)
     if not found:
-        return paragraph(src, segment), None
+        return None
     name, m = found
-    segment = lead_trim(segment)
-    rest = segment[3].content[m.end():]
-    head = [*segment[:3], text_token(m.group(1)), text_token(m.group(2), "chat_stamp"), text_token(rest)]
-    return paragraph(src, head + segment[4:]), name
+    children = lead_trim(children)
+    rest = children[3].content[m.end():]
+    head = [*children[:3], text_token(m.group(1)), text_token(m.group(2), "chat_stamp"), text_token(rest)]
+    return head + children[4:], name
+
+
+def message_block(src: Block, segment: list[Token]) -> tuple[Block, str | None]:
+    stamped = stamp_message(segment)
+    if not stamped:
+        return paragraph(src, segment), None
+    return paragraph(src, stamped[0]), stamped[1]
+
+
+def msg_open_html(name: str, cont: bool) -> str:
+    initials = "".join(w[0] for w in name.split()[:2]).upper()
+    return (f'<div class="msg{" cont" if cont else ""}" data-author="{escapeHtml(name)}" '
+            f'style="--hue: {author_hue(name)}">\n'
+            f'<span class="ava" data-chrome aria-hidden="true">{escapeHtml(initials)}</span>\n'
+            '<div class="msg-body">\n')
+
+
+MSG_CLOSE = "</div></div>\n"
+
+
+def list_chat(b: Block) -> bool:
+    """Thread-export shape: a bullet list whose every top-level item starts with **Name** (HH:MM):."""
+    if b.kind != "bullet_list_open" or b.html is not None:
+        return False
+    toks, level = b.tokens, b.tokens[0].level
+    items = [i for i, t in enumerate(toks) if t.type == "list_item_open" and t.level == level + 1]
+    if len(items) < CHAT_MIN_MESSAGES:
+        return False
+    heads = [(toks[i + 1], toks[i + 2]) if i + 2 < len(toks) else (None, None) for i in items]
+    if not all(p is not None and p.type == "paragraph_open" and inl.type == "inline"
+               and chat_author(inl.children or []) for p, inl in heads):
+        return False
+    prev: str | None = None
+    for i in items:
+        para, inline = toks[i + 1], toks[i + 2]
+        inline.children, name = stamp_message(inline.children or [])
+        para.hidden = toks[i + 3].hidden = False
+        toks[i].type, toks[i].meta["chat"] = "chat_msg_open", (name, name == prev)
+        prev = name
+    for t in toks:
+        if t.type == "list_item_close" and t.level == level + 1:
+            t.type = "chat_msg_close"
+    toks[0].type, toks[-1].type = "chat_open", "chat_close"
+    return True
 
 
 def transform_chat(ctx: Context, blocks: list[Block]) -> list[Block]:
+    list_found = False
+    for b in blocks:
+        list_found = list_chat(b) or list_found
+    if list_found:
+        ctx.mark("chat")
     expanded: list[tuple[Block, str | None]] = []
     for b in blocks:
         if b.kind == "paragraph_open" and b.html is None and len(b.tokens) == 3:
@@ -514,14 +564,9 @@ def transform_chat(ctx: Context, blocks: list[Block]) -> list[Block]:
             continue
         if prev is None:
             out.append(wrap('<div class="chat">\n'))
-        initials = "".join(w[0] for w in name.split()[:2]).upper()
-        cont = " cont" if name == prev else ""
-        out.append(wrap(
-            f'<div class="msg{cont}" data-author="{escapeHtml(name)}" style="--hue: {author_hue(name)}">\n'
-            f'<span class="ava" data-chrome aria-hidden="true">{escapeHtml(initials)}</span>\n'
-            '<div class="msg-body">\n'))
+        out.append(wrap(msg_open_html(name, name == prev)))
         out.append(b)
-        out.append(wrap("</div></div>\n"))
+        out.append(wrap(MSG_CLOSE))
         prev = name
         if i + 1 == len(expanded) or expanded[i + 1][1] is None:
             out.append(wrap("</div>\n"))
@@ -712,6 +757,10 @@ def make_md() -> MarkdownIt:
         "code_inline": rule_code_inline, "fence": rule_fence, "code_block": rule_fence,
         "link_open": rule_link_open, "link_close": rule_link_close, "image": rule_image,
         "blockquote_open": rule_blockquote_open, "blockquote_close": rule_blockquote_close,
+        "chat_open": lambda self, t, i, o, e: '<div class="chat">\n',
+        "chat_close": lambda self, t, i, o, e: "</div>\n",
+        "chat_msg_open": lambda self, t, i, o, e: msg_open_html(*t[i].meta["chat"]),
+        "chat_msg_close": lambda self, t, i, o, e: MSG_CLOSE,
         "chat_stamp": lambda self, t, i, o, e: f'<span class="stamp">{escapeHtml(t[i].content)}</span>',
         "table_open": lambda self, t, i, o, e: '<div class="tbl"><table>\n',
         "table_close": lambda self, t, i, o, e: "</table></div>\n",

@@ -143,6 +143,7 @@ ol.hypotheses > li::before { content: counter(hyp); position: absolute; left: 12
 .ava { width: 34px; height: 34px; border-radius: 50%; background: hsl(var(--hue) var(--hue-s) 48%); color: #fff; font: 700 .78rem/34px var(--sans); text-align: center; }
 .msg-body { min-width: 0; background: hsl(var(--hue) var(--hue-s) var(--bubble-l)); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 7px 14px; }
 .msg-body > p { margin: 0; }
+.msg-body > ul, .msg-body > ol { margin: .4em 0 .1em; }
 .msg-body > p > strong:first-child { color: hsl(var(--hue) 60% var(--name-l)); }
 .msg-body .stamp { color: var(--ink-3); font-size: .82rem; }
 

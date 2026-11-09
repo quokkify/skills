@@ -80,6 +80,37 @@ class ComponentTests(unittest.TestCase):
         self.assertNotEqual(hues["Ann"], hues["Bob"])
         self.assertEqual(len(re.findall(r'<div class="msg[ "]', r.html)), 5)
 
+    def test_thread_list_form_chat(self):
+        r = self.page(fixture("thread-list.md"))
+        self.assertIn("chat", r.transforms)
+        self.assertEqual((r.genre, r.genre_source), ("thread", "detected"))
+        hues = dict(re.findall(r'<div class="msg[^"]*" data-author="([^"]+)" style="--hue: (\d+)"', r.html))
+        self.assertEqual(hues["Ann Example"], str(render.author_hue("Ann Example")))
+        self.assertEqual(hues["Bob Sample"], str(render.author_hue("Bob Sample")))
+        self.assertNotEqual(hues["Ann Example"], hues["Bob Sample"])
+        self.assertEqual(len(re.findall(r'<div class="msg[ "]', r.html)), 4)
+        self.assertNotRegex(r.html, r"<ul>\s*<li><p><strong>Ann")
+        self.assertRegex(r.html, r'<div class="msg-body">\s*<p><strong>Ann Example</strong> <span class="stamp">\(10:01\):</span>')
+
+    def test_thread_list_multiline_item_order_and_nesting(self):
+        r = self.page(fixture("thread-list.md"))
+        body = re.search(r'data-author="Bob Sample".*?</div></div>', r.html, re.S).group(0)
+        self.assertRegex(body, r"the replica lag is back under a second\.<br>\nI will keep the dashboard open")
+        self.assertIn("<li>Restart the consumer.</li>", body)
+        self.assertNotRegex(self.page(fixture("thread-list.md"), breaks="off").html, SOFT_BREAK_BR)
+
+    def test_mixed_list_not_chat(self):
+        src = ("## Replies\n\n- **Ann Example** (10:01): First reply.\n- A plain item without an author.\n"
+               "- **Bob Sample** (10:05): Second reply.\n")
+        r = self.page(src)
+        self.assertNotIn("chat", r.transforms)
+        self.assertIn("<ul>", r.html)
+        self.assertNotIn('class="chat"', r.html)
+
+    def test_single_item_list_not_chat(self):
+        r = self.page("## Replies\n\n- **Ann Example** (10:01): Only reply.\n")
+        self.assertNotIn("chat", r.transforms)
+
     def test_breaks_off_overrides(self):
         r = self.page(fixture("thread.md"), breaks="off")
         self.assertEqual(r.genre, "thread")
