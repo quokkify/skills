@@ -72,7 +72,7 @@ skills/software-development/md-to-html-page/
     mdpage.sh          entry point: venv, render, check, atomic move
     render.py          Markdown → HTML with component transforms
     mermaid_view.py    Mermaid flowchart → derived text view
-    check.py           independent fidelity + offline gate (stdlib only)
+    check.py           independent fidelity + offline gate (markdown-it-py)
     shoot.sh           optional headless-Chrome screenshots (desktop, dark, 390 px)
     requirements.txt   pinned: markdown-it-py, mdit-py-plugins, linkify-it-py, mdurl, Pygments
   assets/
@@ -119,8 +119,9 @@ only for the `thread` genre. Local images under the source's directory are embed
 remote images are never fetched and render as a labelled placeholder with the URL as text.
 Output contains no timestamps or random values.
 
-**`check.py`** — independent of `render.py` (uses stdlib `html.parser` and its own Markdown-side
-normalisation). All gates must pass:
+**`check.py`** — independent of `render.py` (uses markdown-it-py in plain `commonmark` mode with only `table` and
+`strikethrough` enabled, no renderer plugins/rules, and shares no code with `render.py`; HTML side via
+stdlib `html.parser`, own Markdown-side normalisation). All gates must pass:
 
 1. Word multiset: source words vs visible HTML text (excluding `data-chrome`, `data-derived`),
    with `<wbr>` splits rejoined and block boundaries separated; digit tokens reported separately.
