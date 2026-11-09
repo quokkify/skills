@@ -82,6 +82,7 @@ TIME_CELL = re.compile(
 )
 CHAT_STAMP = re.compile(r"^([ \t]*)(\(\d{1,2}:\d{2}(?::\d{2})?\)[ \t]*:)")
 CHAT_MIN_MESSAGES = 2
+SETEXT_MARKUP = ("-", "=")
 CHAT_MAX_NAME = 40
 WRAP = "component_wrap"
 
@@ -515,6 +516,18 @@ def msg_open_html(name: str, cont: bool) -> str:
 MSG_CLOSE = "</div></div>\n"
 
 
+def message_head(tok: Token | None) -> bool:
+    """A chat item opens with a paragraph, or a setext heading made by a stray ---/=== underline."""
+    if tok is None:
+        return False
+    return tok.type == "paragraph_open" or (tok.type == "heading_open" and tok.markup in SETEXT_MARKUP)
+
+
+def as_paragraph(open_tok: Token, close_tok: Token) -> None:
+    open_tok.type, open_tok.tag, open_tok.attrs, open_tok.markup = "paragraph_open", "p", {}, ""
+    close_tok.type, close_tok.tag, close_tok.markup = "paragraph_close", "p", ""
+
+
 def list_chat(b: Block) -> bool:
     """Thread-export shape: a bullet list whose every top-level item starts with **Name** (HH:MM):."""
     if b.kind != "bullet_list_open" or b.html is not None:
@@ -524,12 +537,13 @@ def list_chat(b: Block) -> bool:
     if len(items) < CHAT_MIN_MESSAGES:
         return False
     heads = [(toks[i + 1], toks[i + 2]) if i + 2 < len(toks) else (None, None) for i in items]
-    if not all(p is not None and p.type == "paragraph_open" and inl.type == "inline"
-               and chat_author(inl.children or []) for p, inl in heads):
+    if not all(message_head(p) and inl.type == "inline" and chat_author(inl.children or []) for p, inl in heads):
         return False
     prev: str | None = None
     for i in items:
         para, inline = toks[i + 1], toks[i + 2]
+        if para.type == "heading_open":
+            as_paragraph(para, toks[i + 3])
         inline.children, name = stamp_message(inline.children or [])
         para.hidden = toks[i + 3].hidden = False
         toks[i].type, toks[i].meta["chat"] = "chat_msg_open", (name, name == prev)

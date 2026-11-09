@@ -111,6 +111,25 @@ class ComponentTests(unittest.TestCase):
         r = self.page("## Replies\n\n- **Ann Example** (10:01): Only reply.\n")
         self.assertNotIn("chat", r.transforms)
 
+    def test_chat_list_item_with_setext_underline(self):
+        src = ("## Replies\n\n- **Ann Example** (10:01): First reply.\n"
+               "- **Bob Sample** (10:05): Second reply.\n  ---\n  More from Bob.\n"
+               "- **Ann Example** (10:07): Third reply.\n")
+        r = self.page(src)
+        self.assertIn("chat", r.transforms)
+        self.assertEqual(r.genre, "thread")
+        chat = re.search(r'<div class="chat">.*</div>', r.html, re.S).group(0)
+        self.assertEqual(len(re.findall(r'<div class="msg[ "]', chat)), 3)
+        self.assertNotIn("<h2", chat)
+        self.assertIn("More from Bob.", chat)
+
+    def test_chat_list_item_atx_heading_not_message(self):
+        src = ("## Replies\n\n- ## **Ann Example** (10:00): x\n"
+               "- **Bob Sample** (10:05): Second reply.\n- **Ann Example** (10:07): Third reply.\n")
+        r = self.page(src)
+        self.assertNotIn("chat", r.transforms)
+        self.assertIn("<ul>", r.html)
+
     def test_breaks_off_overrides(self):
         r = self.page(fixture("thread.md"), breaks="off")
         self.assertEqual(r.genre, "thread")
