@@ -190,3 +190,15 @@ ol.hypotheses > li::before { content: counter(hyp); position: absolute; left: 12
   h1, h2, h3 { break-after: avoid; }
   a { color: inherit; }
 }
+
+.diagram, .diagram-source { margin: 1rem 0; }
+.diagram > figcaption { font-size: .8rem; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); margin-bottom: 6px; }
+.diagram-source summary { cursor: pointer; color: var(--ink-2); font-size: .85rem; }
+.mermaid-view { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
+.mermaid-view ol, .mermaid-view ul { list-style: none; margin: 0; padding: 0; }
+.mermaid-view .fl-label { font-weight: 650; }
+.mermaid-view .fl-out { margin: 2px 0 8px 1rem; }
+.mermaid-view .fl-out li::before { content: "\2192\00a0"; color: var(--ink-3); }
+.mermaid-view .fl-out li.fl-labelled::before { content: "\2022\00a0"; }
+.mermaid-view .fl-edge { color: var(--ink-2); font-style: italic; }
+.mermaid-view .fl-edge::after { content: "\00a0\2192"; font-style: normal; }

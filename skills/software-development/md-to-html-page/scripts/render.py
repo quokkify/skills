@@ -26,7 +26,10 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import unquote
 
-from markdown_it import MarkdownIt
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import mermaid_view  # noqa: E402
+from markdown_it import MarkdownIt  # noqa: E402
 from markdown_it.common.utils import escapeHtml
 from markdown_it.token import Token
 from mdit_py_plugins.footnote import footnote_plugin
@@ -651,11 +654,26 @@ def highlight_code(ctx: Context, code: str, lang: str) -> tuple[str, bool]:
     return escapeHtml(code), False
 
 
+def render_mermaid(ctx: Context, code: str) -> str:
+    ctx.mark("mermaid")
+    view = mermaid_view.render(code)
+    derived = (
+        f'<figure class="diagram"><figcaption data-chrome>{escapeHtml(ctx.ui["diagram_text"])}</figcaption>'
+        f"{view}</figure>\n" if view else ""
+    )
+    return (
+        f'{derived}<details class="diagram-source"><summary data-chrome>{escapeHtml(ctx.ui["diagram_source"])}</summary>'
+        f'<pre><code class="language-mermaid">{escapeHtml(code)}</code></pre></details>\n'
+    )
+
+
 def rule_fence(self, tokens, idx, options, env) -> str:
     ctx, tok = _ctx(env), tokens[idx]
     info = tok.info.strip() if tok.type == "fence" else ""
     lang = info.split(maxsplit=1)[0].lower() if info else ""
     code = tok.content[:-1] if tok.content.endswith("\n") else tok.content
+    if lang == "mermaid":
+        return render_mermaid(ctx, code)
     body, lit = highlight_code(ctx, code, lang)
     ctx.mark("code")
     label = f'<span class="lang">{escapeHtml(lang)}</span>' if lang else ""
