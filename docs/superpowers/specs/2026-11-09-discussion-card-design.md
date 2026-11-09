@@ -75,7 +75,7 @@ Success criteria:
 ## Architecture
 
 ```
-discuss.sh <in.md> --plan <card.yaml> [-o out.html] [--ui auto|ru|en] [--previous old.html]
+discuss.sh <in.md> --plan <card.yaml> [-o out.html] [--ui auto|ru|en] [--previous old.html] [--previous-state state.json] [--allow-drop]
    │  creates/reuses pinned venv and Mermaid cache in ${XDG_CACHE_HOME:-~/.cache}/discussion-card
    ├─ python -I plan.py      validate card.yaml against in.md          (FAIL on unknown key / missing `from`)
    ├─ python -I build.py     in.md + plan → page model → out.html.tmp
@@ -108,8 +108,9 @@ skills/software-development/discussion-card/
     render-mermaid.html Chrome-side renderer page (loads cached mermaid-tiny from file://)
   tests/
     fixtures/sample.md, sample.card.yaml, sample-flowchart.svg, …
-    test_plan.py, test_build.py, test_mermaid_svg.py, test_check.py
-    e2e/card.spec.ts    Playwright browser tests
+    test_plan.py, test_build.py, test_mermaid_svg.py, test_check.py   (unittest, run in the skill venv)
+    e2e/card.test.mjs   Playwright browser tests (node --test)
+  scripts/package.json  pinned playwright 1.65.0 (same pin as feature-demo)
 ```
 
 Hub wiring: `tests/test_discussion_card.py`, one line in `docs/skill-catalog.md`, a Mermaid entry
@@ -189,7 +190,7 @@ Defaults per kind: `proposal` → verdict, questions, actions; `retro` → quest
      16px;
    - writes the SVG plus each node's id, label and bounding box, and each edge label's box, as JSON
      to the DOM (`--dump-dom`).
-3. Post-processing maps Mermaid node ids (`flowchart-<id>-<n>`) to spot ids, adds `data-spot`,
+3. Post-processing maps Mermaid node ids (`<renderId>-flowchart-<id>-<n>`, verified on 12.3.0) to spot ids, adds `data-spot`,
    `tabindex` and role, and inlines the SVG. The SVG has no `max-width` scaling; the diagram box
    scrolls horizontally when wider than the column.
 4. Fallback without Chrome:
@@ -252,14 +253,14 @@ build's own escaped output.
 | overlap | any two node boxes, a label and a node, or two labels intersect (build-time render) |
 | font | any diagram text below 14px at scale 1 (build-time render) |
 | offline | any `src`/`href`/`url()`/`@import`/`fetch(` pointing outside the file, except the SVG namespace |
-| id diff | with `--previous`: ids that held marks there and are absent now are listed; fails unless `--allow-drop` |
+| id diff | with `--previous`: ids present there and absent now are listed as a warning; with `--previous-state <export.json>` (the facilitator's JSON save) a dropped id that holds a mark fails unless `--allow-drop` |
 
 Exit codes: 0 pass; 1 check fail or build error (no output written); 2 bad arguments or plan
 schema error; 3 environment (python, venv, Mermaid cache, no network on first run).
 
 ## Testing
 
-- **pytest (skill `tests/`).**
+- **unittest (skill `tests/`, run in the skill venv like `md-to-html-page`).**
   - Plan validation and its error messages.
   - Id derivation and stability across whitespace-only edits.
   - Block-to-spot mapping.
@@ -268,7 +269,7 @@ schema error; 3 environment (python, venv, Mermaid cache, no network on first ru
   - Subgraph split.
   - SVG post-processing on a committed Mermaid-produced fixture SVG, without Chrome.
   - Each check gate on crafted pages.
-- **Playwright (`tests/e2e/card.spec.ts`, hub's existing Playwright).** Builds the fictional
+- **Playwright (`tests/e2e/card.test.mjs`, `node --test`, `playwright` pinned in the skill's `scripts/package.json` as `feature-demo` does).** Builds the fictional
   sample, opens it from `file://` and checks:
   - open spot, set status, comment, reload, state kept;
   - vote, question pick and decision, action item;
