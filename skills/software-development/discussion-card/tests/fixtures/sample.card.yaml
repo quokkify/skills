@@ -1,0 +1,13 @@
+version: 1
+kind: proposal
+intro:
+  lead: "Why this matters"
+  cards:
+    - {title: "Problem", text: "Deploys wait for approval."}
+    - {title: "Proposal", text: "Auto-approve small changes.", accent: true}
+    - {title: "Risk", text: "Thresholds may be wrong.", accent: true}
+questions:
+  options:
+    1: ["Yes", "No"]
+diagrams:
+  2: {split: subgraphs}
