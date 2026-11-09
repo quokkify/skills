@@ -924,11 +924,11 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     try:
         src = args.input.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        print(f"cannot read input: {exc}", file=sys.stderr)
-        return 2
-    result = build(src, source_dir=args.input.parent, stem=args.input.stem, ui=args.ui, breaks=args.breaks)
-    args.output.write_text(result.html, encoding="utf-8")
+        result = build(src, source_dir=args.input.parent, stem=args.input.stem, ui=args.ui, breaks=args.breaks)
+        args.output.write_text(result.html, encoding="utf-8")
+    except Exception as exc:  # one-line summary instead of a traceback; mdpage.sh cleans up
+        print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
     report = [f"genre: {result.genre} ({result.genre_source})",
               f"transforms: {', '.join(result.transforms) or '-'}"]
     report += [f"unresolved: {u}" for u in result.unresolved_links]
