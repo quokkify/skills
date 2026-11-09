@@ -11,10 +11,12 @@ import re
 from dataclasses import dataclass, field
 
 NODE = (
-    r'([A-Za-z_][\w-]*)\s*(?:(\[\[|\[\(|\(\(|\[|\(|\{\{|\{|>)\s*'
+    r'([A-Za-z_](?:\w|-(?![-.]))*)\s*(?:(\[\[|\[\(|\(\(|\[|\(|\{\{|\{|>)\s*'
     r'("[^"]*"|[^\]\)\}]*?)\s*(\]\]|\)\]|\)\)|\]|\)|\}\}|\}))?'
 )
-EDGE = r'\s*(?:--\s+("[^"]*"|.+?)\s+-->|-->\s*\|([^|]*)\|\s*|-\.->|==>|-->|---)\s*'
+EDGE = (
+    r'\s*(?:--\s+("[^"]*"|.+?)\s+-->|(<-->|-\.->|==>|-->|--x|--o|---)\s*(?:\|([^|]*)\|)?)\s*'
+)
 RE_NODE = re.compile(r"^" + NODE)
 RE_EDGE = re.compile(r"^" + EDGE)
 RE_HEAD = re.compile(r"^(flowchart|graph)\s+(LR|RL|TD|TB|BT)\s*$")
@@ -30,12 +32,13 @@ class Edge:
     src: str
     dst: str
     label: str | None = None
+    arrow: str = "-->"
 
 
 @dataclass
 class Subgraph:
     id: str
-    title: str
+    title: str | None
     node_ids: list[str] = field(default_factory=list)
 
 
@@ -146,13 +149,14 @@ def parse_flowchart(index: int, source: str) -> Flowchart:
             em = RE_EDGE.match(ln[pos:])
             if not em:
                 raise ValueError(f"cannot parse line: {ln}")
-            lab = _label(em.group(1) or em.group(2) or "") or None
+            lab = _label(em.group(1) or em.group(3) or "") or None
+            arrow = em.group(2) or "-->"
             pos += em.end()
             got = node_group(ln, pos)
             if got is None:
                 raise ValueError(f"cannot parse line: {ln}")
             cur, pos = got
-            edges.extend(Edge(a, b, lab) for a in prev for b in cur)
+            edges.extend(Edge(a, b, lab, arrow) for a in prev for b in cur)
             prev = cur
     if len(stack) != 1:
         raise ValueError("unclosed subgraph")
@@ -160,20 +164,29 @@ def parse_flowchart(index: int, source: str) -> Flowchart:
 
 
 def split_subgraphs(fc: Flowchart) -> tuple[list[tuple[Subgraph, str]], list[Edge]]:
+    """Return (part sources, cross-part edges).
+
+    Nodes outside every subgraph form a leading synthetic part `Subgraph("", None, ...)`.
+    """
     home = {nid: sg.id for sg in fc.subgraphs for nid in sg.node_ids}
-    parts: list[tuple[Subgraph, str]] = []
+    root_ids = [nid for nid in fc.nodes if nid not in home]
+    groups = list(fc.subgraphs)
+    if root_ids:
+        groups.insert(0, Subgraph("", None, root_ids))
+        home.update({nid: "" for nid in root_ids})
     cross: list[Edge] = []
-    internal: dict[str, list[Edge]] = {sg.id: [] for sg in fc.subgraphs}
+    internal: dict[str, list[Edge]] = {sg.id: [] for sg in groups}
     for e in fc.edges:
-        if e.src in home and home.get(e.src) == home.get(e.dst):
+        if home[e.src] == home[e.dst]:
             internal[home[e.src]].append(e)
         else:
             cross.append(e)
-    for sg in fc.subgraphs:
+    parts: list[tuple[Subgraph, str]] = []
+    for sg in groups:
         lines = [f"flowchart {fc.direction}"]
         lines += [f"  {fc.decls[nid]}" for nid in sg.node_ids]
         for e in internal[sg.id]:
-            arrow = f"-->|{e.label}|" if e.label else "-->"
+            arrow = f"{e.arrow}|{e.label}|" if e.label else e.arrow
             lines.append(f"  {e.src} {arrow} {e.dst}")
         parts.append((sg, "\n".join(lines)))
     return parts, cross
