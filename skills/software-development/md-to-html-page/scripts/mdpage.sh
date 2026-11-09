@@ -4,12 +4,14 @@
 #
 # Renders Markdown into one offline HTML page and gates it with check.py.
 # Exit codes: 0 pass, 1 render error or check FAIL, 2 bad arguments, 3 venv setup failure.
-# Env: MDPAGE_VENV overrides the venv directory.
+# Env: MDPAGE_VENV overrides the venv directory. mdpage replaces an existing directory there
+#      only when it carries the .md-to-html-page marker that mdpage writes into venvs it builds.
 #      MDPAGE_FORCE_FAIL=1 is a test hook: it corrupts the temp page before the check
 #      so the FAIL path can be exercised. Not for normal use.
 
 HERE=$(cd "$(dirname -- "$0")" && pwd) || exit 2
 REQ="$HERE/requirements.txt"
+MARKER=.md-to-html-page
 
 usage() {
     echo "usage: mdpage.sh <in.md> [-o out.html] [--breaks auto|on|off] [--ui auto|ru|en]" >&2
@@ -36,22 +38,23 @@ ensure_venv() {
     if venv_ok; then
         return 0
     fi
-    if [ -e "$VENV" ] && [ ! -f "$VENV/pyvenv.cfg" ]; then
-        echo "mdpage: $VENV exists and is not a venv; refusing to replace it" >&2
+    if [ -e "$VENV" ] && [ ! -f "$VENV/$MARKER" ]; then
+        echo "mdpage: $VENV exists and was not built by mdpage (no $MARKER marker); refusing to replace it" >&2
         exit 3
     fi
     BUILD="$VENV.tmp.$$"
     mkdir -p "$(dirname -- "$VENV")" || exit 3
     rm -rf "$BUILD"
     if python3 -I -m venv "$BUILD" \
-        && "$BUILD/bin/python" -I -m pip install --disable-pip-version-check -q -r "$REQ"; then
+        && "$BUILD/bin/python" -I -m pip install --disable-pip-version-check -q -r "$REQ" \
+        && : > "$BUILD/$MARKER"; then
         if venv_ok; then
             # a concurrent run finished first: keep its venv, drop ours
             rm -rf "$BUILD"; BUILD=
             return 0
         fi
         if [ -e "$VENV" ]; then
-            [ -f "$VENV/pyvenv.cfg" ] || { echo "mdpage: $VENV is not a venv" >&2; exit 3; }
+            [ -f "$VENV/$MARKER" ] || { echo "mdpage: $VENV was not built by mdpage; refusing to replace it" >&2; exit 3; }
             rm -rf "$VENV"
         fi
         # never mv into an existing directory

@@ -2,6 +2,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 FIX = HERE / "fixtures"
 SCRIPT = HERE.parent / "scripts" / "mdpage.sh"
+SHOOT = HERE.parent / "scripts" / "shoot.sh"
+# Stand-in browser: writes the --screenshot target unless its path contains $FAKE_FAIL.
+FAKE_CHROME = """#!/bin/sh
+for a in "$@"; do case $a in --screenshot=*) out=${a#--screenshot=} ;; esac; done
+case $out in *"$FAKE_FAIL"*) exit 1 ;; esac
+printf png > "$out"
+"""
 
 
 def run(args, env=None, cwd=None):
@@ -86,6 +94,32 @@ class MdpageTest(unittest.TestCase):
         self.assertEqual(r.returncode, 3, r.stderr)
         self.assertEqual((d / "marker.txt").read_text(), "keep")
 
+    def test_foreign_venv_is_not_deleted(self):
+        """Regression guard: MDPAGE_VENV pointing at the user's own venv deleted and rebuilt it."""
+        src = self.put()
+        d = self.tmp / "project-venv"
+        subprocess.run([sys.executable, "-I", "-m", "venv", "--without-pip", str(d)], check=True)
+        (d / "keep.txt").write_text("keep")
+        before = sorted(p.relative_to(d) for p in d.rglob("*"))
+        r = run([str(src)], env={"MDPAGE_VENV": str(d)})
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertIn(str(d), r.stderr)
+        self.assertEqual(sorted(p.relative_to(d) for p in d.rglob("*")), before)
+        self.assertEqual((d / "keep.txt").read_text(), "keep")
+        self.assertEqual(sorted(p.name for p in self.tmp.iterdir()), ["bug.md", "project-venv"])
+
+    def test_marked_venv_may_be_rebuilt(self):
+        """Regression guard: a broken venv carrying mdpage's marker is still rebuilt, not refused."""
+        src = self.put()
+        d = self.tmp / "own-venv"
+        d.mkdir()
+        (d / ".md-to-html-page").write_text("")
+        r = run([str(src)], env={"MDPAGE_VENV": str(d), "PIP_INDEX_URL": "http://127.0.0.1:9/",
+                                 "PIP_RETRIES": "0", "PIP_TIMEOUT": "2"})
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertIn("venv setup failed", r.stderr)
+        self.assertNotIn("refusing", r.stderr)
+
     def test_missing_input(self):
         r = run([str(self.tmp / "nope.md")])
         self.assertEqual(r.returncode, 2)
@@ -138,6 +172,51 @@ class MdpageTest(unittest.TestCase):
         p = r.stdout.strip()
         self.assertTrue(os.path.isabs(p))
         self.assertTrue(os.access(p, os.X_OK))
+
+
+class ShootTest(unittest.TestCase):
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.addCleanup(self._td.cleanup)
+        self.tmp = Path(self._td.name)
+        self.page = self.tmp / "page.html"
+        self.page.write_text("<!doctype html><p>x</p>\n")
+        self.chrome = self.tmp / "fake-chrome"
+        self.chrome.write_text(FAKE_CHROME)
+        self.chrome.chmod(0o755)
+        self.out = self.tmp / "shots"
+
+    def shoot(self, fail):
+        env = dict(os.environ, CHROME_BIN=str(self.chrome), FAKE_FAIL=fail)
+        return subprocess.run(["sh", str(SHOOT), str(self.page), str(self.out)],
+                              capture_output=True, text=True, env=env, timeout=60)
+
+    def test_all_shots_written(self):
+        r = self.shoot("no-such-name")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(sorted(p.name for p in self.out.iterdir()), ["dark.png", "desktop.png", "phone.png"])
+
+    def test_stale_png_not_accepted(self):
+        """Regression guard: a PNG left by an earlier run satisfied the size check after a failed shot."""
+        self.out.mkdir()
+        (self.out / "desktop.png").write_text("stale")
+        r = self.shoot("desktop.png")
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("desktop.png", r.stderr)
+        self.assertFalse((self.out / "desktop.png").exists())
+
+    def test_phone_wrapper_removed_on_failure(self):
+        """Regression guard: a failed phone shot left .phone-wrapper.html behind."""
+        r = self.shoot("phone.png")
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertEqual(sorted(p.name for p in self.out.iterdir()), ["dark.png", "desktop.png"])
+
+    def test_no_browser_exit_2(self):
+        env = dict(os.environ, CHROME_BIN=str(self.tmp / "missing"))
+        r = subprocess.run(["sh", str(SHOOT), str(self.page), str(self.out)],
+                           capture_output=True, text=True, env=env, timeout=60)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("no Chrome/Chromium found", r.stderr)
 
 
 if __name__ == "__main__":

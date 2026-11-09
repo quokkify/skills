@@ -36,7 +36,7 @@ a { color: var(--accent); text-underline-offset: 2px; overflow-wrap: anywhere; }
 p, li, dd, td, th { overflow-wrap: break-word; }
 
 /* headings stay block elements: never flex rows */
-h1, h2, h3, h4, h5, h6 { display: block; line-height: 1.25; letter-spacing: -.01em; }
+h1, h2, h3, h4, h5, h6 { display: block; line-height: 1.25; letter-spacing: -.01em; overflow-wrap: anywhere; }
 h1 { font-size: clamp(1.55rem, 1.1rem + 2vw, 2.15rem); margin: .25em 0 .6em; font-weight: 720; }
 h2 { font-size: 1.32rem; margin: 2em 0 .7em; font-weight: 680; }
 h3 { font-size: 1.08rem; margin: 1.6em 0 .5em; font-weight: 650; }

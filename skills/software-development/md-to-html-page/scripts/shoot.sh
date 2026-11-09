@@ -2,7 +2,7 @@
 # shoot.sh <page.html> <out-dir>
 # Headless-Chrome screenshots: desktop.png (1280 wide), dark.png (forced dark), phone.png (390 px).
 # Browser: $CHROME_BIN, then the macOS Chrome app, then google-chrome, chromium, chromium-browser.
-# Writes only into <out-dir>. Exit 2 on bad arguments or when no browser is found.
+# Writes only into <out-dir>. Exit 2 on bad arguments or when no browser is found, 1 when a shot fails.
 
 [ $# -eq 2 ] || { echo "usage: shoot.sh <page.html> <out-dir>" >&2; exit 2; }
 PAGE=$1
@@ -27,9 +27,16 @@ OUTDIR=$(cd "$OUTDIR" && pwd) || exit 2
 PAGE_DIR=$(cd "$(dirname -- "$PAGE")" && pwd) || exit 2
 URL=file://$PAGE_DIR/$(basename -- "$PAGE")
 HEIGHT=${SHOOT_HEIGHT:-2000}
+WRAP=$OUTDIR/.phone-wrapper.html
+# shellcheck disable=SC2329 # invoked via trap
+cleanup() { rm -f "$WRAP"; }
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-shot() { # name extra-flags... url size
+shot() { # name size url extra-flags...
     name=$1; size=$2; url=$3; shift 3
+    rm -f "$OUTDIR/$name.png" || exit 1
     "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
         --window-size="$size" "$@" --screenshot="$OUTDIR/$name.png" "$url" >/dev/null 2>&1
     [ -s "$OUTDIR/$name.png" ] || { echo "shoot: failed to write $name.png" >&2; exit 1; }
@@ -40,8 +47,6 @@ shot desktop "1280,$HEIGHT" "$URL" --blink-settings=preferredColorScheme=1
 shot dark "1280,$HEIGHT" "$URL" --blink-settings=preferredColorScheme=0
 
 # Headless Chrome will not go below ~500 px wide, so the page sits in a 390 px iframe.
-WRAP=$OUTDIR/.phone-wrapper.html
 printf '<!doctype html><html><body style="margin:0;background:#888"><iframe src="%s" style="border:0;width:390px;height:%spx;display:block"></iframe></body></html>\n' \
     "$URL" "$HEIGHT" > "$WRAP"
 shot phone "500,$HEIGHT" "file://$WRAP" --blink-settings=preferredColorScheme=1
-rm -f "$WRAP"

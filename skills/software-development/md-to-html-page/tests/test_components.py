@@ -159,6 +159,15 @@ class ComponentTests(unittest.TestCase):
         r = self.page("# Title\n\n## Fix `src/very/long/module_name.py:120` now\n\nText.\n")
         self.assertIn("<code>src/<wbr>", r.html)
 
+    def test_headings_wrap_long_tokens(self):
+        """Regression guard: a long unbroken token in a heading scrolled the phone page sideways."""
+        css = (SCRIPTS.parent / "assets" / "style.css").read_text(encoding="utf-8")
+        css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+        rules = dict((sel.strip(), body) for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css))
+        body = rules["h1, h2, h3, h4, h5, h6"]
+        self.assertRegex(body, r"overflow-wrap:\s*anywhere")
+        self.assertRegex(body, r"display:\s*block")
+
     def test_incident_timeline(self):
         r = self.page(fixture("incident.md"))
         self.assertEqual(r.genre, "incident")
