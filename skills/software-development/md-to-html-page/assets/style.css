@@ -202,3 +202,5 @@ ol.hypotheses > li::before { content: counter(hyp); position: absolute; left: 12
 .mermaid-view .fl-out li.fl-labelled::before { content: "\2022\00a0"; }
 .mermaid-view .fl-edge { color: var(--ink-2); font-style: italic; }
 .mermaid-view .fl-edge::after { content: "\00a0\2192"; font-style: normal; }
+.mermaid-view .fl-group { margin: 6px 0; padding: 6px 10px; border: 1px dashed var(--line); border-radius: 8px; }
+.mermaid-view .fl-group-label { display: block; font-size: .78rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px; }
