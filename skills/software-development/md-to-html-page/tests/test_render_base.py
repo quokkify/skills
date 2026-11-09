@@ -167,6 +167,27 @@ class RenderBaseTests(unittest.TestCase):
         for s in samples:
             self.assertEqual(render.escape_raw(s), check._escape_raw(s), s)
 
+    def test_html_comments_hidden_and_reported(self):
+        """Regression guard: HTML comments rendered as visible text."""
+        src = ("# T\n\nText <!-- inline\nnote --> after.\n\n<!-- черновик: не показывать -->\n\n"
+               "Keep `<!-- code -->` here.\n\n```\n<!-- fenced -->\n```\n")
+        r = self.render(src)
+        self.assertNotIn("черновик", r.html)
+        self.assertNotIn("inline", r.html.split("<main", 1)[1])
+        self.assertIn("<code>&lt;!-- code --&gt;</code>", r.html)
+        self.assertIn("&lt;!-- fenced --&gt;", r.html)
+        self.assertEqual(r.warnings, ("HTML comment not shown (line 3)", "HTML comment not shown (line 6)"))
+
+    def test_swapped_hrefs_in_rendered_page_fail(self):
+        """Regression guard: swapping two hrefs in a rendered page passed the set-based gate."""
+        src = "# T\n\nSee https://example.com/one and [two](https://example.com/two).\n"
+        r = self.render(src)
+        swapped = (r.html.replace('href="https://example.com/one"', "HREF_A")
+                   .replace('href="https://example.com/two"', 'href="https://example.com/one"')
+                   .replace("HREF_A", 'href="https://example.com/two"'))
+        self.assertNotEqual(swapped, r.html)
+        self.assertEqual(check.check(src, swapped).gate, "blocks")
+
     def test_task_list_checkboxes(self):
         r = self.render(fixture("note.md"))
         self.assertIn('type="checkbox"', r.html)
@@ -222,6 +243,49 @@ class RenderBaseTests(unittest.TestCase):
                 ["genre: note (detected)", "transforms: toc", "unresolved: [[Other note]]"],
             )
             self.assertIn("<title>in</title>", out.read_text(encoding="utf-8"))
+
+    def test_cli_unreadable_input_exit_matches_docstring(self):
+        """Regression guard: the docstring promised exit 2 for unreadable input; the code returns 1."""
+        import subprocess
+
+        self.assertIn("1 when the input cannot be read", " ".join(render.__doc__.split()))
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = subprocess.run(
+                [sys.executable, "-I", str(SCRIPTS / "render.py"), str(Path(tmp, "missing.md")),
+                 "-o", str(Path(tmp, "out.html"))], capture_output=True, text=True, check=False,
+            )
+        self.assertEqual(proc.returncode, 1, proc.stderr)
+        self.assertTrue(proc.stderr.startswith("error: "), proc.stderr)
+
+    def test_late_imports_marked_noqa(self):
+        """Regression guard: imports after the sys.path insert lacked a consistent E402 marker."""
+        lines = (SCRIPTS / "render.py").read_text(encoding="utf-8").splitlines()
+        start = next(i for i, line in enumerate(lines) if line.startswith("sys.path.insert"))
+        late = [line for line in lines[start:] if re.match(r"(?:import|from) \S", line)]
+        self.assertTrue(late)
+        self.assertEqual([line for line in late if not line.endswith("# noqa: E402")], [])
+
+    def test_bom_front_matter_hidden(self):
+        """Regression guard: a UTF-8 BOM before --- showed the front matter and ignored type:."""
+        import subprocess
+
+        self.assertTrue((FIXTURES / "bom-front-matter.md").read_bytes().startswith(b"\xef\xbb\xbf---"))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp, "out.html")
+            proc = subprocess.run(
+                [sys.executable, "-I", str(SCRIPTS / "render.py"), str(FIXTURES / "bom-front-matter.md"),
+                 "-o", str(out)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn("genre: incident (type)", proc.stderr)
+            page_html = out.read_text(encoding="utf-8")
+            self.assertNotIn("platform-team", page_html)
+            self.assertNotIn("<h2", page_html)
+            gate = subprocess.run(
+                [sys.executable, "-I", str(SCRIPTS / "check.py"), str(FIXTURES / "bom-front-matter.md"), str(out)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout)
 
 
 if __name__ == "__main__":

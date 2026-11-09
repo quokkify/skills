@@ -5,7 +5,8 @@ Usage: render.py IN.md -o OUT.html [--ui auto|ru|en] [--breaks auto|on|off]
 
 Writes the page and prints the run report to stderr: "genre: <g> (<source>)",
 "transforms: <list or ->", one "unresolved: <item>" per unresolvable link and one
-"warning: <text>" per warning. Exit 0 on success, 2 when the input cannot be read.
+"warning: <text>" per warning. Exit 0 on success, 1 when the input cannot be read or
+rendering fails.
 
 Pipeline: markdown-it-py tokens -> token passes (callouts, heading ids, links) ->
 block list -> block transforms (genre components plug in here) -> HTML -> page shell
@@ -30,15 +31,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import mermaid_view  # noqa: E402
 from markdown_it import MarkdownIt  # noqa: E402
-from markdown_it.common.utils import escapeHtml
-from markdown_it.token import Token
-from mdit_py_plugins.footnote import footnote_plugin
-from mdit_py_plugins.front_matter import front_matter_plugin
-from mdit_py_plugins.tasklists import tasklists_plugin
-from pygments import highlight
-from pygments.formatters import HtmlFormatter
-from pygments.lexers import get_lexer_by_name
-from pygments.util import ClassNotFound
+from markdown_it.common.utils import escapeHtml  # noqa: E402
+from markdown_it.token import Token  # noqa: E402
+from mdit_py_plugins.footnote import footnote_plugin  # noqa: E402
+from mdit_py_plugins.front_matter import front_matter_plugin  # noqa: E402
+from mdit_py_plugins.tasklists import tasklists_plugin  # noqa: E402
+from pygments import highlight  # noqa: E402
+from pygments.formatters import HtmlFormatter  # noqa: E402
+from pygments.lexers import get_lexer_by_name  # noqa: E402
+from pygments.util import ClassNotFound  # noqa: E402
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
@@ -125,6 +126,8 @@ CALLOUT_KINDS = {
 
 # Same per-tag rule as check.py's reference side (duplicated deliberately, see tests).
 RAW_ALLOWED = re.compile(r"</?(?:b|i|u|s|em|strong|kbd|sup|sub|mark|small|del|ins|br)\s*/?>", re.I)
+# HTML comments are private notes: dropped from raw HTML, reported per line (same rule in check.py).
+HTML_COMMENT = re.compile(r"<!--(?:-?>|[\s\S]*?-->)")
 TASK_CHECKBOX = re.compile(
     r'<input class="task-list-item-checkbox" (?:checked="checked" )?disabled="disabled" type="checkbox">'
 )
@@ -297,6 +300,27 @@ def pass_links(ctx: Context, tokens: list[Token]) -> None:
             elif child.type == "link_close" and open_link is not None:
                 child.meta["unresolved"] = True
                 open_link = None
+
+
+def pass_comments(ctx: Context, tokens: list[Token]) -> None:
+    """Drop HTML comments from raw HTML tokens; code tokens are never touched."""
+    def strip(tok: Token, line: int) -> None:
+        for m in HTML_COMMENT.finditer(tok.content):
+            ctx.warnings.append(f"HTML comment not shown (line {line + tok.content.count(chr(10), 0, m.start()) + 1})")
+        tok.content = HTML_COMMENT.sub("", tok.content)
+
+    last = 0
+    for tok in tokens:
+        if tok.map:
+            last = tok.map[0]
+        if tok.type == "html_block":
+            strip(tok, last)
+        line = last
+        for child in tok.children or []:
+            breaks = child.content.count("\n") + (child.type in ("softbreak", "hardbreak"))
+            if child.type == "html_inline":
+                strip(child, line)
+            line += breaks
 
 
 # ---------- genre components (block transforms) ----------
@@ -620,8 +644,9 @@ def detect_genre(fm_type: str | None, headings: list[str],
     return genre, "detected", warning
 
 
-# pass_links runs first: pass_callouts moves title children out of the inline token.
-TOKEN_PASSES: list[TokenPass] = [pass_links, pass_callouts, pass_headings]
+# pass_comments strips raw HTML first; pass_links precedes pass_callouts, which moves title
+# children out of the inline token.
+TOKEN_PASSES: list[TokenPass] = [pass_comments, pass_links, pass_callouts, pass_headings]
 # Passport and timeline claim tables first; sections then tag lists and wrap H2 sections.
 BLOCK_TRANSFORMS: list[BlockTransform] = [transform_passport, transform_timeline, transform_sections, transform_chat]
 
@@ -937,7 +962,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--breaks", choices=("auto", "on", "off"), default="auto")
     args = ap.parse_args(argv)
     try:
-        src = args.input.read_text(encoding="utf-8")
+        src = args.input.read_text(encoding="utf-8-sig")
         result = build(src, source_dir=args.input.parent, stem=args.input.stem, ui=args.ui, breaks=args.breaks)
         args.output.write_text(result.html, encoding="utf-8")
     except Exception as exc:  # one-line summary instead of a traceback; mdpage.sh cleans up

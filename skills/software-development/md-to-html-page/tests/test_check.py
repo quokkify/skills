@@ -91,6 +91,42 @@ class FidelityTests(unittest.TestCase):
         self.assertTrue(r.ok, r.line)
         self.assertIn("hrefs=2", r.line)
 
+    def test_swapped_hrefs_fail(self):
+        """Regression guard: hrefs were compared as a set, so swapping two targets passed."""
+        md = "[a](https://example.com/a) and [b](https://example.com/b)\n"
+        good = '<p><a href="https://example.com/a">a</a> and <a href="https://example.com/b">b</a></p>'
+        self.assertTrue(check.check(md, page(good)).ok)
+        swapped = good.replace("/a\"", "/tmp\"").replace("/b\"", "/a\"").replace("/tmp\"", "/b\"")
+        r = check.check(md, page(swapped))
+        self.assertEqual(r.gate, "blocks")
+        self.assertTrue(any("order differs at link 1" in s for s in r.samples), r.samples)
+
+    def test_extra_href_fails(self):
+        """Regression guard: an anchor the source does not have must not pass."""
+        r = check.check(MD, page(BODY + '<p><a href="https://example.com/x">x</a></p>'.replace(">x<", "><")))
+        self.assertEqual(r.gate, "blocks")
+        self.assertIn("href extra: 'https://example.com/x'", r.samples)
+
+    def test_linkified_bare_url_counts_as_link(self):
+        """Regression guard: bare URLs are links on both sides of the in-order href list."""
+        md = "See https://example.com/a then [b](https://example.com/b).\n"
+        body = ('<p>See <a href="https://example.com/a">https://example.com/a</a> then '
+                '<a href="https://example.com/b">b</a>.</p>')
+        r = check.check(md, page(body))
+        self.assertTrue(r.ok, r.line)
+        self.assertIn("hrefs=2", r.line)
+        self.assertEqual(check.check(md, page(body.replace('href="https://example.com/a"', ""))).gate, "blocks")
+
+    def test_html_comments_not_expected(self):
+        """Regression guard: HTML comments are private notes; the page must not show them."""
+        md = "# T\n\nText <!-- inline\nnote --> after.\n\n<!-- черновик: не показывать -->\n\n`<!-- c -->`\n"
+        body = "<h1>T</h1><p>Text  after.</p><p><code>&lt;!-- c --&gt;</code></p>"
+        self.assertTrue(check.check(md, page(body)).ok, check.check(md, page(body)).line)
+        shown = body + "<p>&lt;!-- черновик: не показывать --&gt;</p>"
+        self.assertEqual(check.check(md, page(shown)).gate, "words")
+        no_code = body.replace("&lt;!-- c --&gt;", "")
+        self.assertFalse(check.check(md, page(no_code)).ok)
+
     def test_anchor_href_still_required(self):
         r = check.check("[c](#top)\n", page("<p><span>c</span></p>"))
         self.assertEqual(r.gate, "blocks")
@@ -209,7 +245,8 @@ class OfflineTests(unittest.TestCase):
         self.assertEqual(r.gate, "offline")
 
     def test_javascript_url_fails(self):
-        r = self.gate(body=BODY + '<a href="JavaScript:void(0)"></a>')
+        # A chrome anchor is not a source link, so the blocks gate leaves it to the offline gate.
+        r = self.gate(body=BODY + '<a data-chrome href="JavaScript:void(0)"></a>')
         self.assertEqual(r.gate, "offline")
 
     def test_missing_csp_fails(self):
@@ -253,6 +290,13 @@ class CliTests(unittest.TestCase):
         self.assertEqual(bad.returncode, 1)
         self.assertIn("\n  - ", bad.stdout)
         self.assertEqual(self.run_cli(None, page(BODY)).returncode, 2)
+
+    def test_bom_front_matter_not_expected(self):
+        """Regression guard: a UTF-8 BOM made the front matter count as page text."""
+        bom = "\ufeff---\nsecret: x\n---\n\n" + MD
+        self.assertEqual(self.run_cli(bom, page(BODY)).returncode, 0)
+        shown = page("<h2>secret: x</h2>" + BODY)
+        self.assertEqual(self.run_cli(bom, shown).returncode, 1)
 
 
 if __name__ == "__main__":

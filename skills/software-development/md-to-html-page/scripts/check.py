@@ -8,8 +8,8 @@ passes, 1 when a gate fails, 2 when an input cannot be read.
 
 Gates run in the order words -> blocks -> order -> derived -> offline; only the first
 failure is reported. The Markdown side is rendered with plain CommonMark markdown-it
-(table and strikethrough enabled, plus the footnote parser plugin); this module shares
-no code with the renderer.
+(table, strikethrough and schema-only linkify enabled, plus the footnote parser plugin);
+this module shares no code with the renderer.
 """
 from __future__ import annotations
 
@@ -51,6 +51,10 @@ TASK = re.compile(r"^([ \t]*(?:[-*+]|\d+[.)])[ \t]+)\[[ xX]\][ \t]?", re.M)
 WIKILINK = re.compile(r"\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]")
 FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 CODE_SPAN = re.compile(r"(`+)(?:(?!\1).)+?\1(?!`)", re.S)
+# HTML comments in raw HTML are private notes the page drops (code keeps them verbatim).
+HTML_COMMENT = re.compile(r"<!--(?:-?>|[\s\S]*?-->)")
+# Footnote anchors the footnote plugin adds on the page; not source links.
+FOOTNOTE_HREF = re.compile(r"^#fn(?:ref)?\d+(?::\d+)?$")
 RAW_ALLOWED = re.compile(r"</?(?:b|i|u|s|em|strong|kbd|sup|sub|mark|small|del|ins|br)\s*/?>", re.I)
 # Relative links point at files the recipient does not have; the page renders them as
 # plain text, so their hrefs are not required (their text still is).
@@ -99,7 +103,7 @@ class PageText(HTMLParser):
             self.offline_problems.append("meta refresh")
         if tag == "base":
             self.offline_problems.append("<base> element")
-        if tag == "a" and "href" in a and not self.hidden:
+        if tag == "a" and "href" in a and not self.hidden and "data-chrome" not in a:
             self.hrefs.append(a["href"])
         if tag == "wbr":
             return
@@ -244,12 +248,17 @@ def _escape_raw(content: str) -> str:
 
 def build_reference(md_text: str) -> Reference:
     body = normalise(md_text)
-    md = MarkdownIt("commonmark", {"html": True}).enable(["table", "strikethrough"]).use(footnote_plugin)
+    md = (
+        MarkdownIt("commonmark", {"html": True, "linkify": True})
+        .enable(["table", "strikethrough", "linkify"])
+        .use(footnote_plugin)
+    )
+    md.linkify.set({"fuzzy_link": False, "fuzzy_email": False, "fuzzy_ip": False})
     tokens = md.parse(body)
     for tok in tokens:
         for node in [tok, *(tok.children or [])]:
             if node.type in ("html_block", "html_inline"):
-                node.content = _escape_raw(node.content)
+                node.content = _escape_raw(HTML_COMMENT.sub("", node.content))
     fences: list[str] = []
     inline_codes: list[str] = []
     hrefs: list[str] = []
@@ -261,7 +270,7 @@ def build_reference(md_text: str) -> Reference:
                 inline_codes.append(child.content)
             elif child.type == "link_open":
                 href = child.attrGet("href") or ""
-                if not RELATIVE_HREF.match(href):
+                if not RELATIVE_HREF.match(href) and not FOOTNOTE_HREF.match(href):
                     hrefs.append(href)
     page = parse_page(md.renderer.render(tokens, md.options, {}))
     return Reference(body, "".join(page.parts), tuple(fences), tuple(inline_codes), tuple(hrefs))
@@ -295,13 +304,25 @@ def _gate_words(ref_text: str, page_text: str) -> CheckResult | None:
 def _gate_blocks(ref: Reference, page: PageText) -> CheckResult | None:
     pres = {p.rstrip("\n") for p in page.pres}
     codes = set(page.codes)
-    hrefs = set(page.hrefs)
     samples = [f"code block not verbatim: {c[:60]!r}" for c in ref.fences if c not in pres]
     samples += [f"inline code missing: {c[:60]!r}" for c in ref.inline_codes if c not in codes]
-    samples += [f"href missing: {h[:80]!r}" for h in ref.hrefs if h not in hrefs]
+    samples += _href_samples(list(ref.hrefs), [h for h in page.hrefs if not FOOTNOTE_HREF.match(h)])
     if not samples:
         return None
     return _fail("blocks", f"{len(samples)} code/link item(s) not preserved", samples)
+
+
+def _href_samples(want: list[str], got: list[str]) -> list[str]:
+    """Link targets must appear on the page in source order, each one exactly once."""
+    if want == got:
+        return []
+    missing, extra = Counter(want) - Counter(got), Counter(got) - Counter(want)
+    samples = [f"href missing: {h[:80]!r}" for h in missing.elements()]
+    samples += [f"href extra: {h[:80]!r}" for h in extra.elements()]
+    if not samples:
+        k = next(i for i, (w, g) in enumerate(zip(want, got)) if w != g)
+        samples.append(f"href order differs at link {k + 1}: md={want[k][:80]!r} html={got[k][:80]!r}")
+    return samples
 
 
 def _squeeze(text: str) -> list[str]:
@@ -382,7 +403,7 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 2
     try:
-        md_text = Path(argv[1]).read_text(encoding="utf-8")
+        md_text = Path(argv[1]).read_text(encoding="utf-8-sig")
         html_text = Path(argv[2]).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         print(f"cannot read input: {exc}", file=sys.stderr)
