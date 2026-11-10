@@ -110,6 +110,13 @@ class DiscussionCardSkillTest(unittest.TestCase):
                         findings.append(f"{rel}:{number}: e-mail {match.group(0)}")
         self.assertEqual(findings, [])
 
+    def test_regression_guard_spec_has_no_source_session_context(self) -> None:
+        spec = Path(__file__).resolve().parents[1] / "docs" / "superpowers" / "specs" / "2026-11-09-discussion-card-design.md"
+        text = spec.read_text(encoding="utf-8")
+        self.assertNotIn("tournament", text)
+        self.assertNotIn("source session", text)
+        self.assertIn("Generalised from a hand-built prototype.", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -5,7 +5,7 @@
 # loading <page.html>#<id> so the presenter view opens on that slide.
 # Browser: $CHROME_BIN, then the macOS Chrome app, then google-chrome, chromium, chromium-browser.
 # Writes only into <out-dir>. Exit 2 on bad arguments or when no browser is found, 1 when a shot fails.
-# Provenance: adapted from md-to-html-page/scripts/shoot.sh (same hub); --slides is new.
+# Provenance: adapted from the md-to-html-page skill (proposed for this hub); --slides is new.
 
 SLIDES=0
 if [ $# -eq 3 ] && [ "$3" = "--slides" ]; then

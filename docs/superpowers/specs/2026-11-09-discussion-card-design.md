@@ -203,7 +203,7 @@ Defaults per kind: `proposal` → verdict, questions, actions; `retro` → quest
 
 ## Engine (assets/engine.js, engine.css)
 
-Generalised from the page that won the tournament run in the source session. It contains:
+Generalised from a hand-built prototype. It contains:
 
 - **Spots.** Click or Enter opens the drawer with a status (ok / needs change / discuss) and
   comments (text, optional author, time).
