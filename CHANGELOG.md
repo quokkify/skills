@@ -2,10 +2,12 @@
 
 ## [0.18.0](https://github.com/quokkify/skills/compare/v0.17.0...v0.18.0) (2026-11-10)
 
+<!-- project-toolkit:release-notes v2 -->
+**At a glance:** 1 new
 
-### ✨ Features
+### ✨ New
 
-* **skills:** add mr-glab-review ([#167](https://github.com/quokkify/skills/issues/167)) ([a306555](https://github.com/quokkify/skills/commit/a306555b614718aa7b4c265967a05850010524a4))
+- **skills:** add mr-glab-review ([#167](https://github.com/quokkify/skills/pull/167))
 
 ## [0.17.0](https://github.com/quokkify/skills/compare/v0.16.0...v0.17.0) (2026-11-10)
 
