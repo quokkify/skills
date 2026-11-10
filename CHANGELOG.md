@@ -2,11 +2,13 @@
 
 ## [0.17.0](https://github.com/quokkify/skills/compare/v0.16.0...v0.17.0) (2026-11-10)
 
+<!-- project-toolkit:release-notes v2 -->
+**At a glance:** 2 new
 
-### ✨ Features
+### ✨ New
 
-* **discussion-card:** add interactive discussion card skill ([#166](https://github.com/quokkify/skills/issues/166)) ([e03d4de](https://github.com/quokkify/skills/commit/e03d4de783ccfa03d0ebd4b7e242a19de42afe4d))
-* **md-to-html-page:** render Markdown into an offline, genre-aware HTML page ([#164](https://github.com/quokkify/skills/issues/164)) ([d28aedd](https://github.com/quokkify/skills/commit/d28aedd51eac16c9f3421f9cd7778918e0df7f0e))
+- **discussion-card:** add interactive discussion card skill ([#166](https://github.com/quokkify/skills/pull/166))
+- **md-to-html-page:** render Markdown into an offline, genre-aware HTML page ([#164](https://github.com/quokkify/skills/pull/164))
 
 ## [0.16.0](https://github.com/quokkify/skills/compare/v0.15.0...v0.16.0) (2026-11-08)
 
