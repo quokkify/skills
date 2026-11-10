@@ -69,6 +69,9 @@
   const num = (v) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
   const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  // Ids this build does not know are kept (another build of the card may own them), never rendered.
+  const KEEP_ID = /^[\p{L}\p{N}_.:-]{1,200}$/u;
+  const QIDS = new Set(QUESTIONS.map((q) => q.id));
 
   function sanitize(s) {
     const b = blank();
@@ -82,7 +85,7 @@
     if (isObj(s.spots)) {
       for (const id of Object.keys(s.spots)) {
         const v = s.spots[id];
-        if (!knownSpots.has(id) || !isObj(v)) continue;
+        if (!(knownSpots.has(id) || KEEP_ID.test(id)) || !isObj(v)) continue;
         const status = STATUSES.includes(v.status) ? v.status : null;
         const comments = (Array.isArray(v.comments) ? v.comments : [])
           .filter((c) => isObj(c) && typeof c.text === 'string' && c.text.trim())
@@ -96,6 +99,11 @@
         if (!isObj(v)) continue;
         const opts = Array.isArray(q.options) ? q.options : [];
         b.questions[q.id] = { pick: opts.includes(v.pick) ? v.pick : null, decision: str(v.decision, CAP.decision) };
+      }
+      for (const id of Object.keys(s.questions)) {
+        const v = s.questions[id];
+        if (QIDS.has(id) || !KEEP_ID.test(id) || !isObj(v)) continue;
+        b.questions[id] = { pick: typeof v.pick === 'string' ? v.pick.slice(0, CAP.names) : null, decision: str(v.decision, CAP.decision) };
       }
     }
     if (Array.isArray(s.actions)) {

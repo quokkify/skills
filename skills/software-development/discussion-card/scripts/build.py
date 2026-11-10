@@ -71,6 +71,13 @@ def h2_titles(md_text: str) -> list[str]:
     return [plain_text(toks[i + 1]) for i, t in enumerate(toks) if t.type == "heading_open" and t.tag == "h2" and t.level == 0]
 
 
+def default_slug(md_path: Path) -> str:
+    """`<parent dir>-<stem>` so same-named sources in different folders get different storage keys."""
+    path = Path(md_path).resolve()
+    parts = [p for p in (ids.slugify(path.parent.name), ids.slugify(path.stem)) if p]
+    return "-".join(parts)[: ids.SLUG_MAX].strip("-") or FALLBACK_SLUG
+
+
 def stub_renderer(jobs: list[DiagramJob]) -> list[RenderedDiagram]:
     return [
         RenderedDiagram(j.key, f'<pre class="mermaid-src">{esc(j.source)}</pre>', [], [], None, "code")
@@ -360,12 +367,13 @@ def _questions(ctx: _Ctx, tokens, hint_options: dict[int, list[str]]):
                 text = " ".join(plain_text(x) for x in inl[:1]) if inl else ""
                 n = len(questions) + 1
                 attrs = ctx.spot("q", inl[0].content if inl else "")
-                questions.append({"id": f"q{n}", "text": text, "options": list(hint_options.get(n, []))})
+                qid = ctx.spots[-1]  # keyed by text, not position, so answers follow the question
+                questions.append({"id": qid, "text": text, "options": list(hint_options.get(n, []))})
                 ctx.nest += 1
                 body = _render(ctx, item, in_spot=True)
                 ctx.nest -= 1
                 cards.append(
-                    f'<article class="question" data-qid="q{n}"{attrs}>'
+                    f'<article class="question" data-qid="{esc(qid)}"{attrs}>'
                     f'<div class="question-text">{body}</div></article>'
                 )
                 k = e + 1
@@ -414,7 +422,7 @@ def build_page(
     md = _md()
     tokens = md.parse(text)
     h1 = next((plain_text(tokens[i + 1]) for i, t in enumerate(tokens) if t.type == "heading_open" and t.tag == "h1" and t.level == 0), None)
-    doc_slug = plan.slug or ids.slugify(Path(md_path).stem) or FALLBACK_SLUG
+    doc_slug = plan.slug or default_slug(Path(md_path))
     warnings: list[str] = []
     seen: set[str] = set()
     ctx = _Ctx(md, plan, seen, warnings)

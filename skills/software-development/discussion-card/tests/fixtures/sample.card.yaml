@@ -1,5 +1,6 @@
 version: 1
 kind: proposal
+slug: sample
 intro:
   lead: "Why this matters"
   cards:

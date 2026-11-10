@@ -54,7 +54,11 @@ class BuildTest(unittest.TestCase):
     def test_questions_from_h2_list(self):
         page = make()
         qs = page.config["questions"]
-        self.assertEqual([q["id"] for q in qs], ["q1", "q2", "q3"])
+        qids = [q["id"] for q in qs]
+        self.assertTrue(all(re.fullmatch(r"open-questions-q-[0-9a-f]{6}", q) for q in qids), qids)
+        self.assertEqual(qids, [s for s in page.spots if "-q-" in s])
+        for q in qids:
+            self.assertIn(f'data-qid="{q}" data-spot="{q}"', page.html)
         self.assertEqual(qs[0]["options"], ["Yes", "No"])
         self.assertEqual(qs[1]["options"], [])
         self.assertEqual(qs[0]["text"], "Should small changes skip approval completely?")
@@ -322,6 +326,43 @@ class ManyFormsRenderTest(unittest.TestCase):
         self.assertIn("Start &rarr; First", page.html)
         self.assertIn("First &rarr; two", page.html)
         self.assertEqual(sorted(s["id"] for s in page.config["slides"]), ["flow", "flow-d1-1", "flow-d1-2", "flow-d1-3"])
+
+
+class StableKeysTest(unittest.TestCase):
+    def test_regression_guard_default_slug_includes_parent_dir(self):
+        # two `design.md` in different folders used to share one storage key and wipe each other's marks
+        with tempfile.TemporaryDirectory() as d:
+            keys = []
+            for team in ("teamA", "teamB"):
+                md = Path(d) / team / "design.md"
+                md.parent.mkdir()
+                md.write_text("# D\n\n## Goal\n\nShip.\n", encoding="utf-8")
+                pp = md.parent / "c.yaml"
+                pp.write_text("version: 1\nkind: review\n", encoding="utf-8")
+                page = build.build_page(md, load_plan(pp, ["Goal"]), "en", build.stub_renderer)
+                keys.append(page.config["storageKey"])
+        self.assertEqual(keys, ["discussion-card:teama-design:v1", "discussion-card:teamb-design:v1"])
+
+    def test_default_slug_trim_and_fallbacks(self):
+        self.assertEqual(build.default_slug(Path("/design.md")), "design")
+        long = build.default_slug(Path("/x") / ("a" * 30) / ("b" * 30 + ".md"))
+        self.assertEqual(long, "a" * 30 + "-" + "b" * 9)
+        self.assertRegex(build.default_slug(Path("/x/Отдел/План работ.md")), r"^[a-z0-9-]{1,40}$")
+        self.assertEqual(build.default_slug(Path("/x/team/---.md")), "team")
+
+    def test_plan_slug_wins(self):
+        page = make()
+        self.assertEqual(page.config["storageKey"], "discussion-card:sample:v1")
+
+    def test_regression_guard_question_ids_follow_text_not_position(self):
+        md = lambda qs: "# Q\n\n## Open questions\n\n" + "".join(f"{i}. {q}\n" for i, q in enumerate(qs, 1))
+        plan = "version: 1\nkind: review\nquestions:\n  options:\n    2: [A, B]\n"
+        before = make(md_text=md(["One?", "Two?"]), plan_text=plan).config["questions"]
+        after = make(md_text=md(["One?", "New?", "Two?"]), plan_text=plan).config["questions"]
+        self.assertEqual(after[0]["id"], before[0]["id"])
+        self.assertEqual(after[2]["id"], before[1]["id"])
+        self.assertNotIn(after[1]["id"], {q["id"] for q in before})
+        self.assertEqual(after[1]["options"], ["A", "B"])  # plan options still map by 1-based number
 
 
 if __name__ == "__main__":

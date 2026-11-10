@@ -2,7 +2,7 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -23,8 +23,8 @@ const BUILD_TIMEOUT_MS = 300_000;
 
 let tmp, staticUrl, runtimeUrl, browser;
 
-function build(out, env = {}) {
-  execFileSync('sh', [LAUNCHER, SAMPLE, '--plan', PLAN, '-o', out], {
+function build(out, env = {}, md = SAMPLE, plan = PLAN) {
+  execFileSync('sh', [LAUNCHER, md, '--plan', plan, '-o', out], {
     env: { ...process.env, ...env },
     stdio: 'pipe',
     timeout: BUILD_TIMEOUT_MS,
@@ -57,6 +57,9 @@ const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)
 const firstSpot = (page, chapter) =>
   page.evaluate((c) => document.querySelector(`#${c} [data-spot]`).dataset.spot, chapter);
 const spot = (page, id) => page.locator(`[data-spot="${id}"]`);
+const questionIds = (page) =>
+  page.evaluate(() => [...document.querySelectorAll('article.question[data-qid]')].map((q) => q.dataset.qid));
+const ready = (page) => page.waitForFunction(() => document.documentElement.classList.contains('dc-ready'));
 
 before(async () => {
   tmp = mkdtempSync(path.join(os.tmpdir(), 'discussion-card-e2e-'));
@@ -102,8 +105,10 @@ describe('discussion card engine', () => {
     await page.click('[data-vote="for"][data-d="1"]');
     await page.click('[data-vote="against"][data-d="1"]');
     await page.fill('#dc-v-for-names', 'Ana, Bo');
-    await page.click('.dc-opt[data-q="q1"][data-opt="Yes"]');
-    await page.fill('[data-dec="q1"]', 'Pilot on one service first');
+    const [q1] = await questionIds(page);
+    assert.match(q1, /^open-questions-q-[0-9a-f]{6}$/);
+    await page.click(`.dc-opt[data-q="${q1}"][data-opt="Yes"]`);
+    await page.fill(`[data-dec="${q1}"]`, 'Pilot on one service first');
     await page.fill('#dc-act-text', 'Write the threshold doc');
     await page.fill('#dc-act-owner', 'Bo');
     await page.click('#dc-act-add');
@@ -115,13 +120,13 @@ describe('discussion card engine', () => {
     assert.equal(await page.locator('#dc-v-for').innerText(), '2');
     assert.equal(await page.locator('#dc-v-against').innerText(), '1');
     assert.equal(await page.inputValue('#dc-v-for-names'), 'Ana, Bo');
-    assert.equal(await page.getAttribute('.dc-opt[data-q="q1"][data-opt="Yes"]', 'aria-pressed'), 'true');
-    assert.equal(await page.inputValue('[data-dec="q1"]'), 'Pilot on one service first');
+    assert.equal(await page.getAttribute(`.dc-opt[data-q="${q1}"][data-opt="Yes"]`, 'aria-pressed'), 'true');
+    assert.equal(await page.inputValue(`[data-dec="${q1}"]`), 'Pilot on one service first');
     assert.match(await page.locator('#dc-act-list').innerText(), /Write the threshold doc/);
     assert.equal(await page.locator('#dc-act-list input[type="checkbox"]').first().isChecked(), true);
     const s = await stored(page);
     assert.deepEqual(s.vote, { for: 2, against: 1, forNames: 'Ana, Bo', againstNames: '' });
-    assert.deepEqual(s.questions.q1, { pick: 'Yes', decision: 'Pilot on one service first' });
+    assert.deepEqual(s.questions[q1], { pick: 'Yes', decision: 'Pilot on one service first' });
     assert.deepEqual(Object.keys(s.actions[0]).sort(), ['done', 'id', 'owner', 'text']);
     assert.equal(s.actions[0].done, true);
     assert.deepEqual(errors, []);
@@ -293,6 +298,7 @@ describe('discussion card engine', () => {
   test('import sanitises junk', async () => {
     const { context, page } = await open();
     const id = await firstSpot(page, 'problem');
+    const [q1] = await questionIds(page);
     const junk = {
       vote: { for: -5, against: 'x', forNames: 'a'.repeat(1000), againstNames: 7 },
       spots: {
@@ -300,7 +306,7 @@ describe('discussion card engine', () => {
         'not-a-spot': { status: 'ok', comments: [] },
         '<img src=x onerror=alert(1)>': { status: 'change' },
       },
-      questions: { q1: { pick: 'Maybe', decision: 7 }, zz: { pick: 'Yes', decision: 'x' } },
+      questions: { [q1]: { pick: 'Maybe', decision: 7 }, zz: { pick: 'Yes', decision: 'x' }, '<b>': { decision: 'x' } },
       actions: [{ text: 't', owner: 'o'.repeat(200), done: 'yes' }, 5, null, { owner: 'no text' }],
       extra: { evil: true },
     };
@@ -312,13 +318,16 @@ describe('discussion card engine', () => {
     const s = await stored(page);
     assert.deepEqual(Object.keys(s).sort(), ['actions', 'questions', 'spots', 'vote']);
     assert.deepEqual(s.vote, { for: 0, against: 0, forNames: 'a'.repeat(500), againstNames: '' });
-    assert.deepEqual(Object.keys(s.spots), [id]);
+    // unknown ids are kept for other builds of the card; ids that cannot be spot ids are dropped
+    assert.deepEqual(Object.keys(s.spots).sort(), [id, 'not-a-spot'].sort());
+    assert.deepEqual(s.spots['not-a-spot'], { status: 'ok', comments: [] });
     assert.equal(s.spots[id].status, null);
     assert.equal(s.spots[id].comments.length, 1);
     assert.equal(s.spots[id].comments[0].text.length, 4000);
     assert.equal(s.spots[id].comments[0].who.length, 80);
-    assert.deepEqual(Object.keys(s.questions), ['q1']);
-    assert.deepEqual(s.questions.q1, { pick: null, decision: '' });
+    assert.deepEqual(Object.keys(s.questions).sort(), [q1, 'zz'].sort());
+    assert.deepEqual(s.questions[q1], { pick: null, decision: '' });
+    assert.deepEqual(s.questions.zz, { pick: 'Yes', decision: 'x' });
     assert.equal(s.actions.length, 1);
     assert.equal(s.actions[0].owner.length, 80);
     assert.equal(s.actions[0].done, false);
@@ -345,6 +354,94 @@ describe('discussion card engine', () => {
     await page.click('.dc-st[data-s="change"]');
     assert.equal(await node.getAttribute('data-heat'), 'change');
     assert.deepEqual(errors, []);
+    await context.close();
+  });
+
+  test('regression guard: same-stem cards in different dirs keep separate marks', async () => {
+    const md = '# Design\n\n## Goal\n\nShip the thing.\n\nKeep it small.\n';
+    const plan = 'version: 1\nkind: review\n';
+    const urls = {};
+    for (const team of ['teamA', 'teamB']) {
+      const dir = path.join(tmp, 'stem', team);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(path.join(dir, 'design.md'), md);
+      writeFileSync(path.join(dir, 'design.card.yaml'), plan);
+      urls[team] = build(path.join(dir, 'design.card.html'), {}, path.join(dir, 'design.md'), path.join(dir, 'design.card.yaml'));
+    }
+    const context = await browser.newContext({ viewport: NARROW });
+    const page = await context.newPage();
+    const mark = async (url, n, status) => {
+      await page.goto(url);
+      await ready(page);
+      const id = await page.evaluate((k) => document.querySelectorAll('#goal [data-spot]')[k].dataset.spot, n);
+      await spot(page, id).click();
+      await page.click(`.dc-st[data-s="${status}"]`);
+      return id;
+    };
+    const a = await mark(urls.teamA, 0, 'change');
+    const b = await mark(urls.teamB, 1, 'discuss');
+    await page.goto(urls.teamA);
+    await ready(page);
+    assert.equal(await spot(page, a).getAttribute('data-heat'), 'change', 'card A mark survives opening card B');
+    assert.equal(await spot(page, b).getAttribute('data-heat'), null);
+    const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => !/:(mode|theme)$/.test(k)).sort());
+    assert.deepEqual(keys, ['discussion-card:teama-design:v1', 'discussion-card:teamb-design:v1']);
+    await context.close();
+  });
+
+  test('regression guard: unknown spot ids in storage survive a save', async () => {
+    const { context, page } = await open();
+    const id = await firstSpot(page, 'problem');
+    await page.evaluate((k) => {
+      localStorage.setItem(k, JSON.stringify({ spots: { 'elsewhere-p-abcdef': { status: 'change', comments: [] } },
+        questions: { 'elsewhere-q-abcdef': { pick: null, decision: 'keep me' } } }));
+    }, KEY);
+    await page.reload();
+    await ready(page);
+    assert.equal(await page.locator('#dc-hot [data-goto="elsewhere-p-abcdef"]').count(), 0, 'not rendered');
+    await spot(page, id).click();
+    await page.click('.dc-st[data-s="ok"]');
+    const s = await stored(page);
+    assert.deepEqual(s.spots['elsewhere-p-abcdef'], { status: 'change', comments: [] });
+    assert.deepEqual(s.questions['elsewhere-q-abcdef'], { pick: null, decision: 'keep me' });
+    assert.equal(s.spots[id].status, 'ok');
+    await page.keyboard.press('Escape');
+    await page.click('#dc-menu-btn');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#dc-export-md')]);
+    const text = readFileSync(await dl.path(), 'utf8');
+    assert.ok(!text.includes('keep me'), 'unknown question not exported');
+    await context.close();
+  });
+
+  test('regression guard: question decision follows its text after a question is inserted before it', async () => {
+    const dir = path.join(tmp, 'qmove');
+    mkdirSync(dir, { recursive: true });
+    const mdPath = path.join(dir, 'q.md');
+    const planPath = path.join(dir, 'q.card.yaml');
+    const out = path.join(dir, 'q.card.html');
+    const md = (qs) => '# Q\n\n## Open questions\n\n' + qs.map((q, i) => `${i + 1}. ${q}\n`).join('');
+    writeFileSync(planPath, 'version: 1\nkind: review\nslug: qmove\n');
+    writeFileSync(mdPath, md(['First question?', 'Second question?']));
+    const url = build(out, {}, mdPath, planPath);
+    const context = await browser.newContext({ viewport: NARROW });
+    const page = await context.newPage();
+    await page.goto(url);
+    await ready(page);
+    const before = await questionIds(page);
+    await page.fill(`[data-dec="${before[1]}"]`, 'Decided for the second');
+    await page.waitForTimeout(500);
+
+    writeFileSync(mdPath, md(['First question?', 'A new question?', 'Second question?']));
+    build(out, {}, mdPath, planPath);
+    await page.reload();
+    await ready(page);
+    const after = await questionIds(page);
+    assert.equal(after.length, 3);
+    assert.equal(after[2], before[1]);
+    const decided = page.locator(`article.question[data-qid="${after[2]}"]`);
+    assert.match(await decided.innerText(), /Second question\?/);
+    assert.equal(await decided.locator('textarea').inputValue(), 'Decided for the second');
+    assert.equal(await page.locator(`[data-dec="${after[1]}"]`).inputValue(), '');
     await context.close();
   });
 });
