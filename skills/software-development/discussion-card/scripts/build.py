@@ -76,8 +76,9 @@ def h2_titles(md_text: str) -> list[str]:
 def default_slug(md_path: Path) -> str:
     """`<parent dir>-<stem>` so same-named sources in different folders get different storage keys."""
     path = Path(md_path).resolve()
-    parts = [p for p in (ids.slugify(path.parent.name), ids.slugify(path.stem)) if p]
-    return "-".join(parts)[: ids.SLUG_MAX].strip("-") or FALLBACK_SLUG
+    parent, stem = ids.slugify(path.parent.name), ids.slugify(path.stem)
+    parent = parent[: max(0, ids.SLUG_MAX - len(stem) - 1)].strip("-")
+    return "-".join(p for p in (parent, stem) if p) or FALLBACK_SLUG
 
 
 def stub_renderer(jobs: list[DiagramJob]) -> list[RenderedDiagram]:

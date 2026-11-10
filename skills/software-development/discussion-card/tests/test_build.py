@@ -346,9 +346,19 @@ class StableKeysTest(unittest.TestCase):
     def test_default_slug_trim_and_fallbacks(self):
         self.assertEqual(build.default_slug(Path("/design.md")), "design")
         long = build.default_slug(Path("/x") / ("a" * 30) / ("b" * 30 + ".md"))
-        self.assertEqual(long, "a" * 30 + "-" + "b" * 9)
+        self.assertEqual(long, "a" * 9 + "-" + "b" * 30)
         self.assertRegex(build.default_slug(Path("/x/Отдел/План работ.md")), r"^[a-z0-9-]{1,40}$")
         self.assertEqual(build.default_slug(Path("/x/team/---.md")), "team")
+
+    def test_regression_guard_default_slug_keeps_stem_with_long_parent(self):
+        # a ~39+ char parent used to cut the stem off, so sibling cards shared one storage key
+        parent = Path("/tmp/2026-11-09-discussion-card-review-notes-long")
+        slugs = [build.default_slug(parent / name) for name in ("a.md", "b.md")]
+        self.assertNotEqual(slugs[0], slugs[1])
+        for slug, stem in zip(slugs, ("a", "b")):
+            self.assertLessEqual(len(slug), 40)
+            self.assertTrue(slug.endswith("-" + stem))
+            self.assertRegex(slug, r"^[a-z0-9-]{1,40}$")
 
     def test_plan_slug_wins(self):
         page = make()
