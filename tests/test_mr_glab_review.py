@@ -297,6 +297,99 @@ class MrGlabTest(unittest.TestCase):
         self.assertEqual(data["iid"], 42)
         self.assertEqual(data["encoded_project"], "group%2Fapp")
 
+    # --- state helpers: record-draft and reconcile ---
+
+    @staticmethod
+    def _state() -> dict:
+        return {"mr": "u", "items": [
+            {"id": 1, "status": "pending", "draft_id": None, "text": "a"},
+            {"id": 2, "status": "pending", "draft_id": None, "text": "b"},
+        ]}
+
+    def test_record_draft_sets_status_and_id(self) -> None:
+        state = self._state()
+        result = self.m.record_draft(state, 2, {"id": 77, "note": "b"})
+        item = next(i for i in result["items"] if i["id"] == 2)
+        self.assertEqual((item["status"], item["draft_id"]), ("drafted", 77))
+        self.assertEqual(result["items"][0]["status"], "pending")
+
+    def test_record_draft_missing_item(self) -> None:
+        with self.assertRaises(ValueError):
+            self.m.record_draft(self._state(), 9, {"id": 1})
+
+    def test_record_draft_response_without_integer_id(self) -> None:
+        for response in ({}, {"id": "5"}, {"id": True}, {"id": None}):
+            with self.assertRaises(ValueError, msg=str(response)):
+                self.m.record_draft(self._state(), 1, response)
+
+    def test_reconcile_ok(self) -> None:
+        state = self._state()
+        state["items"][0].update(status="drafted", draft_id=10)
+        result = self.m.reconcile(state, [{"id": 10}])
+        self.assertEqual(result, {"missing": [], "foreign": [], "ok": True})
+
+    def test_reconcile_missing_and_foreign(self) -> None:
+        state = self._state()
+        state["items"][0].update(status="drafted", draft_id=10)
+        state["items"][1].update(status="drafted", draft_id=11)
+        result = self.m.reconcile(state, [{"id": 11}, {"id": 12}])
+        self.assertEqual(result, {"missing": [1], "foreign": [12], "ok": False})
+
+    def test_cli_record_draft(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            state_file = Path(tmp) / "state.json"
+            resp = Path(tmp) / "resp.json"
+            state_file.write_text(json.dumps(self._state()), encoding="utf-8")
+            resp.write_text(json.dumps({"id": 5}), encoding="utf-8")
+
+            def run(item: str, response: Path) -> subprocess.CompletedProcess:
+                return subprocess.run(
+                    [sys.executable, str(SCRIPT), "record-draft", "--state", str(state_file),
+                     "--item", item, "--response", str(response)],
+                    capture_output=True, text=True,
+                )
+
+            self.assertEqual(run("1", resp).returncode, 0)
+            saved = json.loads(state_file.read_text(encoding="utf-8"))
+            self.assertEqual(saved["items"][0]["draft_id"], 5)
+            self.assertEqual(run("9", resp).returncode, 2)
+            resp.write_text("{}", encoding="utf-8")
+            self.assertEqual(run("2", resp).returncode, 2)
+            resp.write_text("not json", encoding="utf-8")
+            self.assertEqual(run("2", resp).returncode, 2)
+            self.assertEqual(run("2", Path(tmp) / "absent.json").returncode, 2)
+            self.assertEqual(
+                [p.name for p in Path(tmp).iterdir() if p.name.endswith(".tmp")], [])
+
+    def test_cli_reconcile_exit_codes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            state_file = Path(tmp) / "state.json"
+            drafts = Path(tmp) / "drafts.json"
+            state = self._state()
+            state["items"][0].update(status="drafted", draft_id=10)
+            state_file.write_text(json.dumps(state), encoding="utf-8")
+
+            def run() -> subprocess.CompletedProcess:
+                return subprocess.run(
+                    [sys.executable, str(SCRIPT), "reconcile", "--state", str(state_file),
+                     "--drafts", str(drafts)],
+                    capture_output=True, text=True,
+                )
+
+            drafts.write_text(json.dumps([{"id": 10}]), encoding="utf-8")
+            ok = run()
+            self.assertEqual(ok.returncode, 0)
+            self.assertTrue(json.loads(ok.stdout)["ok"])
+            drafts.write_text(json.dumps([{"id": 3}]), encoding="utf-8")
+            bad = run()
+            self.assertEqual(bad.returncode, 1)
+            self.assertEqual(json.loads(bad.stdout),
+                             {"missing": [1], "foreign": [3], "ok": False})
+            drafts.write_text("{}", encoding="utf-8")
+            self.assertEqual(run().returncode, 2)
+            drafts.write_text("nope", encoding="utf-8")
+            self.assertEqual(run().returncode, 2)
+
     def test_skill_has_no_machine_paths_or_real_emails(self) -> None:
         for path in sorted(SKILL_DIR.rglob("*")):
             rel = path.relative_to(SKILL_DIR)

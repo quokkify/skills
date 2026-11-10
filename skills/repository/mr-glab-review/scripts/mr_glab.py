@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import quote, urlparse
@@ -172,6 +174,41 @@ def draft_note_payload(
     return {"note": note, "position": position}
 
 
+def record_draft(state: dict, item_id: int, response: dict) -> dict:
+    """Mark an item drafted with the draft id from a draft-note POST response."""
+    draft_id = response.get("id") if isinstance(response, dict) else None
+    if not isinstance(draft_id, int) or isinstance(draft_id, bool):
+        raise ValueError("response has no integer id")
+    for item in state.get("items", []):
+        if item.get("id") == item_id:
+            item["status"] = "drafted"
+            item["draft_id"] = draft_id
+            return state
+    raise ValueError(f"no item with id {item_id}")
+
+
+def reconcile(state: dict, drafts: list[dict]) -> dict:
+    """Compare drafted items with the API draft list by draft id."""
+    listed = {draft.get("id") for draft in drafts}
+    drafted = [i for i in state.get("items", []) if i.get("status") == "drafted"]
+    referenced = {i.get("draft_id") for i in drafted}
+    missing = [i["id"] for i in drafted if i.get("draft_id") not in listed]
+    foreign = [d.get("id") for d in drafts if d.get("id") not in referenced]
+    return {"missing": missing, "foreign": foreign, "ok": not missing and not foreign}
+
+
+def write_json_atomic(path: Path, data: dict) -> None:
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, ensure_ascii=False, indent=2)
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -204,6 +241,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--old-path", help="old-side path for a renamed file (default: --path)")
     p.add_argument("--old-line", type=int, help="old-side line; give it for unchanged lines only")
     p.add_argument("--out", required=True)
+
+    p = sub.add_parser("record-draft", help="mark a state item drafted from a draft-note POST response")
+    p.add_argument("--state", required=True)
+    p.add_argument("--item", required=True, type=int)
+    p.add_argument("--response", required=True)
+
+    p = sub.add_parser(
+        "reconcile", help="compare drafted items with the draft list; exit 1 if they differ"
+    )
+    p.add_argument("--state", required=True)
+    p.add_argument("--drafts", required=True)
     return parser
 
 
@@ -233,6 +281,20 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             print(json.dumps(position))
             return 0
+        if args.command == "record-draft":
+            state_path = Path(args.state)
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            response = json.loads(Path(args.response).read_text(encoding="utf-8"))
+            write_json_atomic(state_path, record_draft(state, args.item, response))
+            return 0
+        if args.command == "reconcile":
+            state = json.loads(Path(args.state).read_text(encoding="utf-8"))
+            drafts = json.loads(Path(args.drafts).read_text(encoding="utf-8"))
+            if not isinstance(drafts, list):
+                raise ValueError("drafts file must hold a JSON list")
+            result = reconcile(state, drafts)
+            print(json.dumps(result))
+            return 0 if result["ok"] else 1
         note = Path(args.note_file).read_text(encoding="utf-8")
         refs = None
         if args.refs_file:

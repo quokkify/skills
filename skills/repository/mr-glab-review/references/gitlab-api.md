@@ -22,7 +22,16 @@ The diff must come from `glab mr diff`: the line helpers expect its unified form
   python3 -c 'import json,sys; json.dump(json.load(sys.stdin)["diff_refs"], sys.stdout)' < <scratch>/mr.json > <scratch>/refs.json
   ```
 
-- Compare the number of files in `mr.diff` (`grep -c '^diff --git' <scratch>/mr.diff`) with `changes_count` in `mr.json`, and check its `overflow` flag. If files are missing, or `overflow` is `true`, tell the reviewer which files the review cannot see before going on.
+- Compare the number of files in `mr.diff` (`grep -c '^diff --git' <scratch>/mr.diff`) with `changes_count` in `mr.json`, and check its `overflow` flag; a missing `overflow` field means `false`. If files are missing, or `overflow` is `true`, tell the reviewer which files the review cannot see before going on.
+- Get the reviewer's username and the existing discussions, so findings the reviewer already raised are not duplicated. Quote the URL in the shell; add `--paginate` when the MR may have more than 100 discussions:
+
+  ```bash
+  glab api --hostname <host> user    # "username" is the reviewer
+  glab api --hostname <host> 'projects/<encoded>/merge_requests/<iid>/discussions?per_page=100' > <scratch>/discussions.json
+  ```
+
+  Each discussion holds `notes[]` with `author.username`, `system`, `body`, `resolved` and, for inline notes, `position`.
+
 - Find the new-side line number for a snippet with `python3 <skill-dir>/scripts/mr_glab.py new-line <scratch>/mr.diff <path> <text>`. An empty list means the text is not in the diff. More than one number means the match is ambiguous; pick by context.
 - Check that a line can carry an inline position with `python3 <skill-dir>/scripts/mr_glab.py in-diff <scratch>/mr.diff <path> <line>` (exit 0 = in diff, 1 = not in diff, 2 = usage or IO error).
 - Get the full position of a new-side line with `python3 <skill-dir>/scripts/mr_glab.py position <scratch>/mr.diff <path> <new_line>`. It prints `{"new_path", "old_path", "new_line", "old_line"}`; `old_path` differs from `new_path` for a renamed file, and `old_line` is `null` for an added line and set for an unchanged context line. Exit 1 means the line is not in the diff; exit 2 is a usage or IO error.
@@ -33,7 +42,7 @@ Approved comments are staged as draft notes. A draft is visible only to its auth
 
 Fill the payload flags from the `position` output: `--path` = `new_path`, `--old-path` = `old_path`, `--line` = `new_line`, and `--old-line` = `old_line` only when it is not `null`. GitLab needs only `new_line` for an added line but both lines for an unchanged one.
 
-Build the payload, then send it as JSON:
+Build the payload, send it as JSON and save the response, then record it in the state file:
 
 ```bash
 python3 <skill-dir>/scripts/mr_glab.py draft-payload \
@@ -44,8 +53,13 @@ python3 <skill-dir>/scripts/mr_glab.py draft-payload \
 
 glab api --hostname <host> --method POST \
   projects/<encoded>/merge_requests/<iid>/draft_notes \
-  -H 'Content-Type: application/json' --input <scratch>/draft.json
+  -H 'Content-Type: application/json' --input <scratch>/draft.json > <scratch>/draft-response.json
+
+python3 <skill-dir>/scripts/mr_glab.py record-draft \
+  --state <state-file> --item <item_id> --response <scratch>/draft-response.json
 ```
+
+`record-draft` needs an integer `id` in the response, sets the item's `status` to `drafted` and its `draft_id`, and rewrites the state file atomically (exit 2 on a missing item, a response without `id`, or invalid JSON).
 
 Endpoint reference: `POST projects/:id/merge_requests/:iid/draft_notes`. Never put `:id`-style placeholders in a command: `glab api` substitutes them from the repository in the current directory, which may be a different project. Always use `<encoded>` and `<iid>`.
 
@@ -74,14 +88,21 @@ The payload is a JSON object with a `"note"` field and, for an inline comment, a
 List and remove drafts:
 
 ```bash
-glab api --hostname <host> projects/<encoded>/merge_requests/<iid>/draft_notes
+glab api --hostname <host> projects/<encoded>/merge_requests/<iid>/draft_notes > <scratch>/drafts.json
 glab api --hostname <host> --method DELETE \
   projects/<encoded>/merge_requests/<iid>/draft_notes/<draft_note_id>
 ```
 
 ## Publish
 
-Publish every staged draft in one batch, only after the reviewer confirms the final list:
+Right before publishing, list the drafts again into `<scratch>/drafts.json` and reconcile them with the state file:
+
+```bash
+python3 <skill-dir>/scripts/mr_glab.py reconcile --state <state-file> --drafts <scratch>/drafts.json
+# {"missing": [item ids whose draft is gone], "foreign": [draft ids no item references], "ok": true}
+```
+
+Exit 0 means `ok`; exit 1 means the sets differ (resolve `missing` and `foreign` first); exit 2 is a usage or IO error. Then publish every staged draft in one batch, only after the reviewer confirms the final list:
 
 ```bash
 glab api --hostname <host> --method POST \
