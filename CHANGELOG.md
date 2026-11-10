@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.18.0](https://github.com/quokkify/skills/compare/v0.17.0...v0.18.0) (2026-11-10)
+
+<!-- project-toolkit:release-notes v2 -->
+**At a glance:** 1 new
+
+### ✨ New
+
+- **skills:** add mr-glab-review ([#167](https://github.com/quokkify/skills/pull/167))
+
 ## [0.17.0](https://github.com/quokkify/skills/compare/v0.16.0...v0.17.0) (2026-11-10)
 
 <!-- project-toolkit:release-notes v2 -->
