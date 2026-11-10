@@ -1,6 +1,6 @@
 ---
 name: mr-glab-review
-description: Review a GitLab merge request together with the human reviewer: verify findings, approve each comment one by one, stage approved ones as draft notes in a light, friendly format, and publish them in one batch.
+description: Review a GitLab merge request together with the human reviewer — verify findings, approve each comment one by one, stage approved ones as draft notes in a light, friendly format, and publish them in one batch.
 ---
 
 # MR GitLab Review
@@ -44,7 +44,7 @@ Work silently; report only problems.
 
 1. Run `glab auth status --hostname <host>`. On failure, stop and ask the reviewer to log in.
 2. Resolve the MR, save `mr.json`, `refs.json` and `mr.diff` to `<scratch>` as in [`references/gitlab-api.md#resolve-the-mr`](references/gitlab-api.md#resolve-the-mr).
-3. List the reviewer's existing drafts on the MR ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)). If there are drafts, or a state file for this MR exists in `<scratch>`, offer to resume (see [Resume](#resume)) before starting a new review.
+3. List the reviewer's existing drafts on the MR ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)). If there are drafts, or a state file for this MR exists in `<scratch>`, offer to resume (see [Resume](#resume)) before starting a new review. If the reviewer declines, leave those drafts untouched: they are not part of this session, and Phase 4 reconciles them before anything is published.
 4. Create the state file with `mr` and `diff_refs`.
 
 ✅ Check: `mr.diff` is stored, `base_sha`, `head_sha` and `start_sha` are known, and existing drafts are accounted for.
@@ -79,13 +79,15 @@ Walk the items one at a time. For each, show:
 2. the target: `file:line` (inline) or *general note*;
 3. the ready comment text, already passing the [checklist](references/comment-style.md#checklist) and the `stop_list` check.
 
-Ask through the runtime's structured-choice prompt when one is available (otherwise a short numbered prompt), with one item per question and these options:
+Ask through the runtime's structured-choice prompt when one is available (otherwise a short numbered prompt), one item per question. Offer **Yes / Edit / Brainstorm / Skip** as the choices; accept **Back to N** through the prompt's free-text ("Other") answer or the numbered fallback, and say so in the question.
 
-- **Yes**: build the payload and create the draft note immediately ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)); record its `draft_id` and set `status: "drafted"` in the state file.
+- **Yes**: build the payload and create the draft note immediately ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)); record its `draft_id` and set `status: "drafted"` in the state file. If the request fails, follow [`references/gitlab-api.md#errors`](references/gitlab-api.md#errors); on 400 or 422 for an inline position, show the reviewer a general-note version naming `file:line` and ask again.
 - **Edit**: apply the requested change, show the new version, ask again.
 - **Brainstorm**: start one subagent with a focused question: the options for this point and a reusable pattern already in the repository, with `file:line`. Redraft from its answer, show it and ask again. Never publish the subagent's output directly.
 - **Skip**: set `status: "skipped"`; nothing is staged.
-- **Back to N**: return to item N. If it is already drafted and the reviewer changes it, delete that draft and stage a new one (drafts are not edited in place).
+- **Back to N**: return to item N. If it is already drafted and the reviewer changes it, delete that draft ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)) and stage a new one (drafts are not edited in place).
+
+Every redraft, after Edit or Brainstorm, re-runs the [checklist](references/comment-style.md#checklist) and the `stop_list` check before it is shown.
 
 Never batch several items into one approval, and never treat silence or a general "looks good" as a yes for the remaining items.
 
@@ -93,15 +95,19 @@ Never batch several items into one approval, and never treat silence or a genera
 
 ## Phase 4 — Publish
 
-1. List the drafts on the MR and compare them with the state file.
-2. Summarise for the reviewer: the drafted items (gist and target) and the skipped ones.
-3. Ask once: "Publish all drafts now?" Only an explicit yes publishes. Otherwise leave the drafts staged and tell the reviewer they stay private until published.
-4. On yes, publish in one batch and confirm the notes are visible ([`references/gitlab-api.md#publish`](references/gitlab-api.md#publish)).
-5. Report the links to the new threads.
+`bulk_publish` publishes **every** draft the reviewer has on the MR, including drafts this session never approved (declined at Phase 0, or made in the web UI). So:
+
+1. List the drafts on the MR through the API and reconcile them with the state file by `draft_id`.
+2. Show the reviewer every draft without a matching `drafted` item, one at a time: keep it (add it to the state file as a `drafted` item) or delete it ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)). A `drafted` item whose draft is missing goes back to Phase 3.
+3. Summarise every draft that will be published (gist and target), then the skipped items.
+4. Ask once: "Publish all drafts now?" Only an explicit yes publishes. Otherwise leave the drafts staged and tell the reviewer they stay private until published.
+5. Right before publishing, list the drafts again; the set of ids must equal the `drafted` items. If it differs, go back to step 1.
+6. On yes, publish in one batch and confirm the notes are visible ([`references/gitlab-api.md#publish`](references/gitlab-api.md#publish)).
+7. Report the links to the new threads.
 
 To change a note after publishing, follow [`references/gitlab-api.md#edit-a-note`](references/gitlab-api.md#edit-a-note), again only after the reviewer approves the new text.
 
-✅ Check: every drafted item is visible as a thread on the MR, and no skipped item was published.
+✅ Check: before `bulk_publish`, the API draft list equals the `drafted` items by id; afterwards, the published notes listed in the MR discussions match the `drafted` items, and none matches a `skipped` item.
 
 ## Resume
 
@@ -128,7 +134,7 @@ The state file `<scratch>/mr-glab-review-<iid>.json` records the session:
 
 To resume an interrupted session:
 
-1. Re-run Phase 0 steps 1–3. If the MR `head_sha` changed, re-download the diff and re-check every pending inline target with `in-diff`; drafts already staged keep their old position, so tell the reviewer which ones may need restaging.
+1. Re-run Phase 0 steps 1–3. If the MR `head_sha` changed, re-download the diff, refresh `diff_refs` in `refs.json` and the state file before staging any new draft, and re-check every pending inline target with `in-diff`; drafts already staged keep their old position, so tell the reviewer which ones may need restaging.
 2. Reconcile the state file with the listed drafts so nothing is duplicated: a `drafted` item whose `draft_id` is missing from the list goes back to `pending`; a listed draft with no matching item is shown to the reviewer, who keeps it (add it as a `drafted` item) or deletes it.
 3. Continue Phase 3 from the first `pending` item.
 

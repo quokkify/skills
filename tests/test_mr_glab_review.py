@@ -23,7 +23,7 @@ EMAIL_RE = re.compile(
 ALLOWED_EMAIL_DOMAIN = "example.com"
 SKILL_MD = SKILL_DIR / "SKILL.md"
 SKILL_DESCRIPTION = (
-    "Review a GitLab merge request together with the human reviewer: verify findings, "
+    "Review a GitLab merge request together with the human reviewer — verify findings, "
     "approve each comment one by one, stage approved ones as draft notes in a light, "
     "friendly format, and publish them in one batch."
 )
@@ -249,6 +249,7 @@ class MrGlabTest(unittest.TestCase):
         fields = dict(line.split(": ", 1) for line in match.group(1).splitlines())
         self.assertEqual(fields.get("name"), "mr-glab-review")
         self.assertEqual(fields.get("description"), SKILL_DESCRIPTION)
+        self.assertNotIn(": ", fields["description"], "unquoted YAML scalar must not contain ': '")
 
     def test_skill_has_all_phases(self) -> None:
         headings = [
