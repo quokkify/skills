@@ -122,4 +122,4 @@ Known limits: the checker proves the source text is on the page and the page is 
 
 ## Provenance and licence
 
-The venv handling in `scripts/discuss.sh`, plus `scripts/mermaid_parse.py` and `scripts/shoot.sh`, is adapted from the md-to-html-page skill (proposed for this hub); the code is copied, not imported, and the design-token palette comes from the same skill. Mermaid (`@mermaid-js/tiny`, MIT) is downloaded at first run, not shipped in the repository, and is inlined only in runtime-fallback pages; see `THIRD_PARTY_NOTICES.md`.
+The venv handling in `scripts/discuss.sh`, plus `scripts/mermaid_parse.py` and `scripts/shoot.sh`, is adapted from the md-to-html-page skill in this hub; the code is copied, not imported, and the design-token palette comes from the same skill. Mermaid (`@mermaid-js/tiny`, MIT) is downloaded at first run, not shipped in the repository, and is inlined only in runtime-fallback pages; see `THIRD_PARTY_NOTICES.md`.

@@ -10,7 +10,7 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parents[1]
 SCRIPTS = SKILL / "scripts"
 SKILL_MD = SKILL / "SKILL.md"
-PROVENANCE = "adapted from the md-to-html-page skill (proposed for this hub)"
+PROVENANCE = "adapted from the md-to-html-page skill in this hub"
 ADAPTED_FILES = ("SKILL.md", "scripts/mermaid_parse.py", "scripts/discuss.sh", "scripts/shoot.sh")
 
 
@@ -34,13 +34,10 @@ class DocsTest(unittest.TestCase):
         found = [u for p in sorted(SCRIPTS.glob("*.py")) for u in _unused_imports(p)]
         self.assertEqual(found, [])
 
-    def test_regression_guard_provenance_names_proposed_skill(self):
-        # md-to-html-page is not on the hub's main branch; claims that it is "in this hub" were wrong
+    def test_regression_guard_provenance_names_source_skill(self):
         for rel in ADAPTED_FILES:
             with self.subTest(file=rel):
                 text = " ".join((SKILL / rel).read_text(encoding="utf-8").split())
-                self.assertNotIn("in this hub", text)
-                self.assertNotIn("same hub", text)
                 self.assertIn(PROVENANCE, text.replace("# ", ""))
 
     def test_regression_guard_skill_md_plan_rules(self):

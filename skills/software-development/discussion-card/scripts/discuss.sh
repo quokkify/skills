@@ -14,7 +14,7 @@
 # Test hooks, not for normal use:
 #      DISCUSS_FORCE_FAIL=1 corrupts the temp page before the check so the FAIL path can be tested.
 #      DISCUSS_NO_CHROME=1 makes the build ignore Chrome and take the runtime Mermaid fallback.
-# Venv handling is adapted from the md-to-html-page skill (proposed for this hub); copied, not imported.
+# Venv handling is adapted from the md-to-html-page skill in this hub; copied, not imported.
 
 HERE=$(cd "$(dirname -- "$0")" && pwd) || exit 2
 REQ="$HERE/requirements.txt"

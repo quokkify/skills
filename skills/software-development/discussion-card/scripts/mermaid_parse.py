@@ -1,6 +1,6 @@
 """Parse Mermaid flowcharts and split them into one valid source per subgraph.
 
-Provenance: adapted from the md-to-html-page skill (proposed for this hub), its
+Provenance: adapted from the md-to-html-page skill in this hub, its
 `scripts/mermaid_view.py`. The node/edge grammar is reused and extended; this module keeps the node ids,
 original node declarations, edges and subgraph membership instead of rendering HTML.
 There is no runtime import from `md-to-html-page`.
