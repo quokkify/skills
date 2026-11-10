@@ -1,0 +1,1368 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Portable skills, private configuration boundaries, and safer harnesses for AI agents.">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.24">
+    
+    
+      
+        <title>discussion-card Implementation Plan - Agent Skills Hub</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../../assets/stylesheets/modern/main.28978c9b.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#discussion-card-implementation-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Agent Skills Hub" class="md-header__button md-logo" aria-label="Agent Skills Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Skills Hub
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              discussion-card Implementation Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m3.55 19.09 1.41 1.41 1.8-1.79-1.42-1.42M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6c0-3.32-2.69-6-6-6m8 7h3v-2h-3m-2.76 7.71 1.8 1.79 1.41-1.41-1.79-1.8M20.45 5l-1.41-1.4-1.8 1.79 1.42 1.42M13 1h-2v3h2M6.76 5.39 4.96 3.6 3.55 5l1.79 1.81zM1 13h3v-2H1m12 9h-2v3h2"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/quokkify/skills" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    quokkify/skills
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../project-architecture/" class="md-tabs__link">
+        
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../quick-start/" class="md-tabs__link">
+          
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../adr/" class="md-tabs__link">
+          
+  
+  Decisions
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../FAQ/" class="md-tabs__link">
+        
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Agent Skills Hub" class="md-nav__button md-logo" aria-label="Agent Skills Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+
+    </a>
+    Agent Skills Hub
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/quokkify/skills" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    quokkify/skills
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../project-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../skill-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/how-to-use-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to Use These Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/reviewing-and-promoting-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviewing and Promoting Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/releases-and-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases and Dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decision Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0001-publish-generic-global-agent-adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001: Publish Generic Global Agent Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0002-reference-project-toolkit-by-release-tag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002: Reference Project-Toolkit By Release Tag
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0003-require-omc-and-superpowers-companions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003: Require OMC And Superpowers Companions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0004-workflow-precedence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004: Workflow Precedence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0005-superpowers-owns-process-on-claude/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0005: Superpowers Owns Process On Claude
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../FAQ/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Constraints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-focus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review Focus
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Review Focus">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-1-skill-scaffold-launcher-and-hub-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 1: Skill scaffold, launcher and hub test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-2-plan-schema-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 2: Plan schema and validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-3-mermaid-flowchart-parser-and-subgraph-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 3: Mermaid flowchart parser and subgraph split
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-4-page-model-and-html-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 4: Page model and HTML assembly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-5-build-time-mermaid-render-to-svg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 5: Build-time Mermaid render to SVG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-6-checks-and-check-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 6: Checks and check line
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-7-pipeline-sample-end-to-end-and-screenshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 7: Pipeline, sample end-to-end and screenshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-8-engine-and-browser-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 8: Engine and browser tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-9-skillmd-hub-wiring-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task 9: SKILL.md, hub wiring and validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+  
+
+
+<h1 id="discussion-card-implementation-plan">discussion-card Implementation Plan<a class="headerlink" href="#discussion-card-implementation-plan" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> A hub skill that turns one Markdown file plus an agent-written <code>card.yaml</code> into one offline, interactive HTML discussion card. Mermaid flowcharts become clickable diagrams, and the build is gated by checks.</p>
+<p><strong>Architecture:</strong>
+- <code>discuss.sh</code> builds and reuses a pinned venv and a sha256-verified Mermaid cache.
+- It runs <code>plan.py</code> (validate), <code>build.py</code> (page model and HTML), <code>mermaid_svg.py</code> (Mermaid rendered in headless Chrome into static SVG) and <code>check.py</code> (gates).
+- A generic <code>engine.js</code>/<code>engine.css</code> provides all interactivity and reads only <code>#card-config</code> and <code>data-spot</code> elements.</p>
+<p><strong>Tech Stack:</strong> Python ≥3.10 (unittest, markdown-it-py set, PyYAML), POSIX sh, headless Chrome, <code>@mermaid-js/tiny</code> 12.3.0 (MIT), vanilla JS/CSS, Playwright 1.65.0 with <code>node --test</code> for browser tests.</p>
+<p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-11-09-discussion-card-design.md</code></p>
+<h2 id="global-constraints">Global Constraints<a class="headerlink" href="#global-constraints" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Skill dir: <code>skills/software-development/discussion-card/</code>. No runtime imports from <code>md-to-html-page</code>. Copied files keep a provenance line in <code>SKILL.md</code>.</li>
+<li>Python ≥3.10. Scripts run as <code>python -I</code>. Third-party Python only from the pinned <code>scripts/requirements.txt</code>: <code>markdown-it-py==4.2.0</code>, <code>mdit-py-plugins==0.6.1</code>, <code>linkify-it-py==2.2.0</code>, <code>mdurl==0.1.2</code>, <code>Pygments==2.21.0</code>, <code>PyYAML==6.0.3</code>.</li>
+<li>Cache root <code>${XDG_CACHE_HOME:-$HOME/.cache}/discussion-card/</code>. Venv dir <code>&lt;root&gt;/&lt;sha256(requirements)[:12]&gt;</code> with marker <code>.discussion-card</code>. <code>DISCUSS_VENV</code> overrides it; the script refuses to replace an existing dir without the marker (exit 3).</li>
+<li><code>scripts/mermaid.lock</code>:</li>
+<li><code>version=12.3.0</code></li>
+<li><code>url=https://cdn.jsdelivr.net/npm/@mermaid-js/tiny@12.3.0/dist/mermaid.tiny.js</code></li>
+<li><code>sha256=c41f5236091b83f524c4940f97a16b2b14a76f21ff84aea4fd6b66421d8a2a9a</code></li>
+<li>Cached as <code>&lt;root&gt;/mermaid-12.3.0.js</code>; <code>DISCUSS_MERMAID</code> overrides the path. A sha mismatch is exit 3.</li>
+<li>Chrome: <code>CHROME_BIN</code>, else <code>/Applications/Google Chrome.app/Contents/MacOS/Google Chrome</code>, else <code>google-chrome</code>/<code>chromium</code> on PATH. Flags: <code>--headless=new --disable-gpu --allow-file-access-from-files --virtual-time-budget=15000 --dump-dom</code>.</li>
+<li>Mermaid: <code>securityLevel: 'strict'</code>, <code>themeVariables.fontSize: '16px'</code>. Rendered node DOM id is <code>&lt;renderId&gt;-flowchart-&lt;nodeId&gt;-&lt;n&gt;</code> (verified on 12.3.0).</li>
+<li>Spot ids:</li>
+<li>Mermaid node: <code>&lt;chapter-slug&gt;-&lt;nodeId&gt;</code>.</li>
+<li>Other spots: <code>&lt;chapter-slug&gt;-&lt;kind&gt;-&lt;sha1(normalised text)[:6]&gt;</code>, with collisions suffixed <code>-2</code>, <code>-3</code> in source order.</li>
+<li><code>kind</code> ∈ <code>p|li|tr|callout|code|intro|q</code>.</li>
+<li>Chapter slug: ASCII, transliterated, lowercase, hyphenated, ≤40 chars.</li>
+<li>Normalised text means whitespace collapsed and stripped.</li>
+<li>Storage key <code>discussion-card:&lt;slug&gt;:v1</code>. Presenter mode key <code>&lt;storage key&gt;:mode</code>. State shape exactly as in spec §Engine.</li>
+<li>Check line: <code>PASS words=&lt;n&gt; extra=&lt;n&gt; spots=&lt;n&gt; diagrams=&lt;n&gt;|runtime offline=ok [ids=kept|ids=-k]</code>, or <code>FAIL &lt;gate&gt;: &lt;reason&gt;</code> followed by up to 5 sample lines.</li>
+<li>Exit codes: 0 pass; 1 check fail or build error (no output written); 2 bad args or plan schema; 3 environment.</li>
+<li>Output <code>&lt;name&gt;.card.html</code> next to the source unless <code>-o</code>. An existing output is moved to <code>&lt;name&gt;.card.backup.html</code> before replacing.</li>
+<li>Diagram text ≥14px at scale 1. Diagram SVGs are never scaled down.</li>
+<li>No network at view time. No <code>innerHTML</code> with source or user data in <code>engine.js</code>.</li>
+<li>Skill files contain no machine paths (<code>/Users/</code>, <code>/home/</code>) and no e-mails except <code>example.com</code>. These are checked by the hub test.</li>
+<li>UI labels in <code>ru</code> and <code>en</code>; <code>--ui auto</code> picks <code>ru</code> when Cyrillic letters are the majority.</li>
+</ul>
+<h2 id="review-focus">Review Focus<a class="headerlink" href="#review-focus" title="Permanent link">&para;</a></h2>
+<ol>
+<li>A source with no H2 and no Mermaid builds one chapter, with no diagram gates applied and no crash. Pinned in Task 4: <code>test_no_h2_single_chapter</code>.</li>
+<li>A Mermaid block with a syntax error, or a non-flowchart type, gives a warning plus a code block, not a crash or a FAIL. Pinned in Task 5: <code>test_render_error_becomes_code_block</code>.</li>
+<li>Source text holding HTML or script (<code>&lt;img src=x onerror=…&gt;</code>, <code>&lt;/script&gt;</code>) is escaped in the page and in <code>#card-config</code>. Pinned in Task 4: <code>test_source_html_is_escaped</code>.</li>
+<li>localStorage throws (private mode) and the page still renders and works for the session. Pinned in Task 8: <code>storage unavailable still works</code>.</li>
+<li>An imported JSON with junk, foreign ids or huge strings is sanitised: unknown statuses are dropped and strings capped (comment 4000, names 80/500). Pinned in Task 8: <code>import sanitises junk</code>.</li>
+</ol>
+<hr />
+<h3 id="task-1-skill-scaffold-launcher-and-hub-test">Task 1: Skill scaffold, launcher and hub test<a class="headerlink" href="#task-1-skill-scaffold-launcher-and-hub-test" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong>
+- Create: <code>skills/software-development/discussion-card/scripts/discuss.sh</code>, <code>scripts/requirements.txt</code>, <code>scripts/mermaid.lock</code>, <code>tests/__init__.py</code>, <code>tests/test_launcher.py</code>
+- Create: <code>tests/test_discussion_card.py</code> (hub)</p>
+<p><strong>Interfaces:</strong>
+- Produces:
+  - <code>discuss.sh --python</code> prints the venv python path.
+  - <code>discuss.sh --mermaid</code> prints the verified Mermaid JS path.
+  - <code>discuss.sh &lt;in.md&gt; --plan &lt;card.yaml&gt; [-o out.html] [--ui auto|ru|en] [--previous old.html] [--allow-drop]</code> is a stub that exits 1 with <code>build: not implemented</code> until Task 7.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Write failing tests</strong> in <code>tests/test_launcher.py</code> (unittest; they run the script via <code>subprocess</code>):</li>
+<li><code>test_no_args_exit_2</code>: no args → exit 2, stderr starts with <code>usage: discuss.sh</code>.</li>
+<li><code>test_non_md_input_exit_2</code>: input <code>x.txt</code> → exit 2.</li>
+<li><code>test_mermaid_sha_mismatch_exit_3</code>: set <code>DISCUSS_MERMAID</code> to a temp file with <code>garbage</code>; <code>--mermaid</code> → exit 3, stderr contains <code>sha256 mismatch</code>.</li>
+<li><code>test_foreign_venv_refused</code>: set <code>DISCUSS_VENV</code> to a temp dir with no marker; <code>--python</code> → exit 3, stderr contains <code>not built by discuss</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run</strong> <code>python3 -m unittest discover -s skills/software-development/discussion-card/tests -v</code>. Expected: 4 failures (script missing).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement <code>discuss.sh</code>.</strong></li>
+<li>POSIX sh.</li>
+<li>Venv handling adapted from <code>md-to-html-page/scripts/mdpage.sh</code> (marker, atomic tmp dir, concurrent-run tolerance).</li>
+<li>Mermaid fetch with <code>curl -fsSL</code> into <code>&lt;file&gt;.tmp.$$</code>, then sha256 verify (<code>shasum -a 256</code> or <code>sha256sum</code>), then <code>mv</code>.</li>
+<li>Parse <code>mermaid.lock</code> with <code>sed</code>.</li>
+<li>Write <code>requirements.txt</code> and <code>mermaid.lock</code> with the Global Constraints values.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run the tests.</strong> Expected: 4 PASS.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Create the hub test</strong> <code>tests/test_discussion_card.py</code>, modelled on the <code>md-to-html-page</code> hub test:</li>
+<li><code>test_skill_suites_pass</code> resolves the venv via <code>discuss.sh --python</code> (skip on exit 3) and runs <code>-m unittest discover -s &lt;skill&gt;/tests</code>.</li>
+<li><code>test_skill_md_frontmatter</code> checks <code>name == "discussion-card"</code> and a non-empty description.</li>
+<li><code>test_skill_has_no_machine_paths</code>.</li>
+<li><code>test_skill_has_no_real_emails</code>.</li>
+</ul>
+<p>Add a minimal <code>SKILL.md</code> (frontmatter <code>name</code>, <code>description</code>; body: one line "Work in progress").
+- [ ] <strong>Step 6: Run</strong> <code>python3 -m unittest tests.test_discussion_card -v</code>. Expected: PASS.
+- [ ] <strong>Step 7: Commit</strong> <code>feat(discussion-card): add launcher, pinned venv and mermaid cache</code>.</p>
+<h3 id="task-2-plan-schema-and-validation">Task 2: Plan schema and validation<a class="headerlink" href="#task-2-plan-schema-and-validation" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> Create <code>scripts/plan.py</code>, <code>tests/test_plan.py</code>, <code>tests/fixtures/plan_*.yaml</code></p>
+<p><strong>Interfaces:</strong>
+- Produces:
+  - <code>class PlanError(Exception)</code>.
+  - <code>@dataclass Plan(version:int, kind:str, slug:str|None, blocks:dict[str,bool], intro:Intro|None, chapters:list[ChapterHint], questions:QuestionsHint|None, diagrams:dict[int,DiagramHint])</code>.
+  - <code>Intro(lead:str|None, cards:list[IntroCard(title, text, accent=False)])</code>.
+  - <code>ChapterHint(from_:str, label:str|None, fold:bool)</code>.
+  - <code>QuestionsHint(from_:str|None, options:dict[int,list[str]])</code>.
+  - <code>DiagramHint(split:str|None)</code>, where <code>split</code> must be <code>"subgraphs"</code>.
+  - <code>load_plan(path:Path, h2_titles:list[str]) -&gt; Plan</code>.
+  - <code>DEFAULT_BLOCKS = {"proposal": {"verdict","questions","actions"}, "retro": {"questions","actions"}, "review": {"questions"}}</code>.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Failing tests.</strong></li>
+<li><code>test_minimal_plan_defaults</code>: <code>{version:1, kind:retro}</code> gives blocks <code>{verdict:False, questions:True, actions:True}</code>.</li>
+<li><code>test_blocks_override</code>.</li>
+<li><code>test_unknown_key_errors</code>: the message names the key path, e.g. <code>unknown key: chapters[0].hide</code>.</li>
+<li><code>test_version_2_errors</code>.</li>
+<li><code>test_kind_invalid_errors</code>.</li>
+<li><code>test_chapter_from_must_match_h2</code>: the message is <code>chapters[0].from "X" matches no H2</code>; matching is case- and whitespace-insensitive.</li>
+<li><code>test_questions_options_keys_int</code>.</li>
+<li><code>test_diagram_split_only_subgraphs</code>.</li>
+<li><code>test_slug_ascii_only</code>: must match <code>^[a-z0-9-]{1,40}$</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run</strong> the module's tests. Expected: FAIL (module missing).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement</strong> <code>load_plan</code> with <code>yaml.safe_load</code> and explicit allowed-key sets per mapping. Every error raises <code>PlanError(&lt;path&gt;: &lt;reason&gt;)</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run.</strong> Expected: PASS.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Commit</strong> <code>feat(discussion-card): validate card.yaml plans</code>.</li>
+</ul>
+<h3 id="task-3-mermaid-flowchart-parser-and-subgraph-split">Task 3: Mermaid flowchart parser and subgraph split<a class="headerlink" href="#task-3-mermaid-flowchart-parser-and-subgraph-split" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong>
+- Create <code>scripts/mermaid_parse.py</code>, <code>tests/test_mermaid_parse.py</code>.
+- Copy-adapt from <code>md-to-html-page/scripts/mermaid_view.py</code> and add a provenance comment at the top.</p>
+<p><strong>Interfaces:</strong>
+- Produces:
+  - <code>@dataclass Flowchart(index:int, direction:str, source:str, nodes:dict[str,str], edges:list[Edge], subgraphs:list[Subgraph])</code>. <code>nodes</code> maps id to label text with <code>&lt;br/&gt;</code> turned into a space.
+  - <code>Edge(src, dst, label:str|None)</code>.
+  - <code>Subgraph(id, title, node_ids:list[str])</code>.
+  - <code>find_mermaid_blocks(tokens) -&gt; list[tuple[int, str, str]]</code>, returning <code>(index, kind, source)</code>. The index is 1-based over all mermaid fences; <code>kind</code> is the first word.
+  - <code>parse_flowchart(index, source) -&gt; Flowchart</code>.
+  - <code>split_subgraphs(fc) -&gt; tuple[list[tuple[Subgraph, str]], list[Edge]]</code>, returning (part sources, cross-part edges).</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Failing tests</strong> use the shapes from the spec. Copy the <code>md-to-html-page</code> fixture cases for <code>&amp;</code>, chains, <code>subgraph X["Title"]</code>, <code>%%</code> comments, <code>;</code>, quoted labels with <code>&lt;br/&gt;</code>, and <code>-- "label" --&gt;</code>.</li>
+<li><code>test_fanin_ampersand</code>: <code>C1 &amp; C2 --&gt; D</code> gives two edges.</li>
+<li><code>test_subgraph_membership</code>.</li>
+<li><code>test_split_keeps_internal_edges_and_returns_cross_edges</code>.</li>
+<li><code>test_split_part_source_is_valid_flowchart</code>: it starts with <code>flowchart &lt;dir&gt;</code>, holds only that part's nodes, and declares node shapes and labels exactly as the source did.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run.</strong> Expected: FAIL.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement</strong> by adapting the parser. <code>split_subgraphs</code> emits for each part <code>flowchart &lt;dir&gt;</code>, then each member node's original declaration line fragment, then the internal edges.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run.</strong> Expected: PASS.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Commit</strong> <code>feat(discussion-card): parse and split mermaid flowcharts</code>.</li>
+</ul>
+<h3 id="task-4-page-model-and-html-assembly">Task 4: Page model and HTML assembly<a class="headerlink" href="#task-4-page-model-and-html-assembly" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> Create <code>scripts/build.py</code>, <code>scripts/ids.py</code>, <code>scripts/ui_text.py</code>, <code>tests/test_build.py</code>, <code>tests/test_ids.py</code>, <code>tests/fixtures/sample.md</code>, <code>tests/fixtures/sample.card.yaml</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>load_plan</code>, <code>Plan</code> (Task 2); <code>find_mermaid_blocks</code>, <code>parse_flowchart</code>, <code>split_subgraphs</code> (Task 3).
+- Produces:
+  - <code>ids.slugify(text:str) -&gt; str</code>.
+  - <code>ids.spot_id(chapter_slug:str, kind:str, text:str, seen:set[str]) -&gt; str</code>.
+  - <code>ids.node_spot_id(chapter_slug, node_id) -&gt; str</code>.
+  - <code>build.build_page(md_path:Path, plan:Plan, ui:str, diagram_renderer:Callable[[list[DiagramJob]], list[RenderedDiagram]]) -&gt; Page</code>.
+  - <code>@dataclass DiagramJob(key:str, chapter_slug:str, source:str, title:str|None)</code>.
+  - <code>RenderedDiagram</code> is defined in Task 5. Here a stub renderer returns <code>&lt;pre class="mermaid-src"&gt;</code>.
+  - <code>@dataclass Page(html:str, spots:list[str], intro_words:int, config:dict, warnings:list[str])</code>.
+  - <code>build.main(argv) -&gt; int</code> handles <code>build.py in.md --plan p.yaml -o out.tmp --ui ru</code>.
+  - <code>ui_text.LABELS: dict[str, dict[str,str]]</code> keyed <code>ru</code>/<code>en</code>.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Write <code>tests/fixtures/sample.md</code>.</strong> It is a fictional deploy-approval note with:</li>
+<li>an H1;</li>
+<li>H2 "Problem" with a paragraph;</li>
+<li>H2 "How it works" with a flowchart LR of 4 nodes and edge labels;</li>
+<li>H2 "Pipeline path" with a flowchart TD of 3 subgraphs;</li>
+<li>H2 "Rules" with a 3-row table;</li>
+<li>H2 "Situations" with an ordered list of 4;</li>
+<li>a <code>&gt; [!NOTE]</code> callout;</li>
+<li>H2 "Open questions" with an ordered list of 3.</li>
+</ul>
+<p><code>sample.card.yaml</code> sets kind <code>proposal</code>, an intro with 3 cards, options for question 1, and <code>diagrams: {2: {split: subgraphs}}</code>.
+- [ ] <strong>Step 2: Failing tests.</strong>
+  - <code>test_ids.py</code>:
+    - <code>test_slugify_cyrillic</code>: <code>Как это работает</code> → <code>kak-eto-rabotaet</code>;
+    - <code>test_spot_id_stable_on_whitespace</code>;
+    - <code>test_spot_id_collision_suffix</code>;
+    - <code>test_node_spot_id</code>.
+  - <code>test_build.py</code>:
+    - <code>test_chapters_follow_h2_order</code>;
+    - <code>test_every_block_is_a_spot</code> (counts: 1 p, 3 tr, 4 li, 1 callout, 3 intro, 3 q);
+    - <code>test_questions_from_h2_list</code> (options attached to q1);
+    - <code>test_split_diagram_yields_three_jobs</code>;
+    - <code>test_config_json</code> (key <code>discussion-card:sample:v1</code>, slides list, blocks);
+    - <code>test_fold_chapter_rendered_as_details</code>;
+    - <code>test_no_h2_single_chapter</code>;
+    - <code>test_source_html_is_escaped</code> (<code>&lt;img src=x onerror=alert(1)&gt;</code> appears only escaped; <code>&lt;/script&gt;</code> inside config JSON is escaped as <code>&lt;\/script&gt;</code>).
+- [ ] <strong>Step 3: Run.</strong> Expected: FAIL.
+- [ ] <strong>Step 4: Implement.</strong>
+  - <code>ids.slugify</code> transliterates with a fixed Cyrillic map in-module, then lowercases, replaces non <code>[a-z0-9]</code> with <code>-</code>, and trims to 40 chars.
+  - <code>build_page</code>:
+    - walks markdown-it tokens and groups them by H2;
+    - every paragraph, list item, table body row, callout blockquote and code fence gets <code>data-spot</code> with <code>tabindex="0"</code> and <code>role="button"</code>;
+    - the questions H2 list becomes question cards with ids <code>q1…qN</code>;
+    - mermaid fences become <code>DiagramJob</code>s;
+    - other fences become code spots;
+    - all text is escaped with <code>html.escape</code>;
+    - config is embedded via <code>json.dumps(...).replace("&lt;/", "&lt;\\/")</code>;
+    - <code>engine.css</code>/<code>engine.js</code> are inlined from <code>assets/</code> (empty placeholders until Task 8).
+- [ ] <strong>Step 5: Run.</strong> Expected: PASS.
+- [ ] <strong>Step 6: Commit</strong> <code>feat(discussion-card): build page model and HTML</code>.</p>
+<h3 id="task-5-build-time-mermaid-render-to-svg">Task 5: Build-time Mermaid render to SVG<a class="headerlink" href="#task-5-build-time-mermaid-render-to-svg" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> Create <code>scripts/mermaid_svg.py</code>, <code>assets/render-mermaid.html</code>, <code>tests/test_mermaid_svg.py</code>, <code>tests/fixtures/sample-flowchart.svg</code>, <code>tests/fixtures/sample-flowchart.json</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>DiagramJob</code> (Task 4).
+- Produces:
+  - <code>@dataclass RenderedDiagram(key:str, svg:str|None, nodes:list[NodeBox], labels:list[Box], error:str|None, mode:str)</code>, with <code>mode</code> ∈ <code>"static"|"runtime"|"code"</code>.
+  - <code>NodeBox(spot_id:str, label:str, box:Box, font_px:float)</code>.
+  - <code>Box(x, y, w, h)</code>.
+  - <code>render(jobs, mermaid_js:Path, chrome:str|None) -&gt; list[RenderedDiagram]</code>.
+  - <code>annotate_svg(svg:str, render_id:str, chapter_slug:str) -&gt; tuple[str, list[str]]</code>, returning the annotated SVG and the spot ids.
+  - <code>find_chrome() -&gt; str|None</code>.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Capture the fixture once (needs Chrome).</strong> Render the sample's first flowchart through <code>render-mermaid.html</code> and save the SVG and the box JSON to <code>tests/fixtures/</code>. The JSON format is <code>{"nodes":[{"domId","label","x","y","w","h","fontPx"}],"labels":[{"x","y","w","h"}]}</code>, with numbers rounded to 1 decimal.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Failing tests.</strong> None of these need Chrome except the last.</li>
+<li><code>test_annotate_svg_adds_data_spot</code>: every <code>g.node</code> gets <code>data-spot="&lt;chapter&gt;-&lt;nodeId&gt;"</code>, <code>tabindex="0"</code> and <code>role="button"</code>; the regex strips <code>^&lt;renderId&gt;-flowchart-</code> and <code>-\d+$</code>.</li>
+<li><code>test_annotate_svg_removes_max_width</code>: the <code>style="max-width:…"</code> attribute is gone, and <code>width</code> is set to the viewBox width.</li>
+<li><code>test_render_error_becomes_code_block</code>: a fake chrome runner returns <code>{"error":"Parse error"}</code> → <code>mode=="code"</code> and <code>error</code> set.</li>
+<li><code>test_no_chrome_runtime_mode</code>: <code>chrome=None</code> → <code>mode=="runtime"</code> and <code>svg is None</code>.</li>
+<li><code>test_real_render</code> runs only when <code>find_chrome()</code> succeeds; it is never marked skip in CI as evidence. It checks that node count = 4 and that every <code>font_px &gt;= 14</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Run.</strong> Expected: FAIL.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Implement.</strong></li>
+<li><strong><code>render-mermaid.html</code>.</strong> It reads <code>jobs.json</code> via a <code>&lt;script src="jobs.js"&gt;</code> that sets <code>window.JOBS</code>, which avoids <code>fetch</code> on <code>file://</code>. It initialises Mermaid with the Global Constraints settings and renders each job with id <code>d&lt;k&gt;</code>. For each node it collects the bbox via <code>getBBox()</code> mapped to <code>{x,y,width,height}</code> (<code>getBBox</code> does not JSON-serialise) plus the computed font size. It writes <code>&lt;script id="result" type="application/json"&gt;</code> and sets <code>document.title="DONE"</code>.</li>
+<li><strong><code>render()</code>.</strong> It writes <code>mermaid.js</code>, <code>jobs.js</code> and the page into a temp dir, runs Chrome with the Global Constraints flags via <code>subprocess.run(..., timeout=60)</code>, and parses <code>#result</code> from the dumped DOM.</li>
+<li><strong>Runtime mode.</strong> It returns a placeholder; Task 7 inlines the Mermaid JS for runtime mode.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Run.</strong> Expected: PASS (<code>test_real_render</code> runs locally).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 6: Commit</strong> <code>feat(discussion-card): render mermaid to static svg at build time</code>.</li>
+</ul>
+<h3 id="task-6-checks-and-check-line">Task 6: Checks and check line<a class="headerlink" href="#task-6-checks-and-check-line" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> Create <code>scripts/check.py</code>, <code>tests/test_check.py</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: the <code>Page</code> and <code>RenderedDiagram</code> boxes, through a sidecar JSON <code>&lt;out&gt;.tmp.meta.json</code> that <code>build.py</code> writes: <code>{spots, intro_words, diagrams:[{key,mode,nodes,labels}], warnings}</code>.
+- Produces:
+  - <code>check(md_path, html_path, meta_path, previous:Path|None, allow_drop:bool) -&gt; CheckResult(ok:bool, line:str, samples:list[str])</code>.
+  - <code>main(argv) -&gt; int</code>.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Failing tests,</strong> one per gate, on crafted pages:</li>
+<li><code>test_words_missing_fails</code> (sample names the word);</li>
+<li><code>test_extra_counted_not_failing</code>;</li>
+<li><code>test_duplicate_spot_fails</code>;</li>
+<li><code>test_mermaid_node_without_spot_fails</code>;</li>
+<li><code>test_overlap_fails</code> (two label boxes intersect by 1px);</li>
+<li><code>test_font_below_14_fails</code>;</li>
+<li><code>test_offline_external_src_fails</code> (<code>&lt;img src="https://x"&gt;</code>) and <code>test_svg_namespace_allowed</code>;</li>
+<li><code>test_id_diff_lists_dropped_marked_ids</code> (previous page plus a previous state JSON fixture with a mark on a now-missing id → FAIL unless <code>allow_drop</code>);</li>
+<li><code>test_runtime_mode_skips_overlap_and_font_with_reason</code> (line contains <code>diagrams=runtime</code>, warnings name the skipped gates);</li>
+<li><code>test_pass_line_format</code> (regex for the exact Global Constraints line).</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run.</strong> Expected: FAIL.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement.</strong></li>
+<li><strong>Words.</strong> The words check tokenises the source text with markdown-it (inline text, table cells, code, Mermaid labels). It compares multisets of normalised words (casefold, <code>\w+</code>) with the page's visible text plus SVG <code>&lt;text&gt;</code>/<code>foreignObject</code> text.</li>
+<li><strong>Previous marks.</strong> The id diff reads marked ids from <code>--previous</code> by parsing that page's <code>#card-config</code> spots. Marks themselves live in the browser, so the diff reports dropped ids that existed. A dropped id fails only with <code>--previous-state &lt;state.json&gt;</code> (the user's JSON export) when that id holds a mark. Add this flag to <code>discuss.sh</code> in Task 7.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run.</strong> Expected: PASS.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Commit</strong> <code>feat(discussion-card): add check gates and check line</code>.</li>
+</ul>
+<h3 id="task-7-pipeline-sample-end-to-end-and-screenshots">Task 7: Pipeline, sample end-to-end and screenshots<a class="headerlink" href="#task-7-pipeline-sample-end-to-end-and-screenshots" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> Modify <code>scripts/discuss.sh</code>. Create <code>scripts/shoot.sh</code>, <code>tests/test_pipeline.py</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: Tasks 2–6.
+- Produces: the full CLI from Global Constraints, plus <code>--previous-state &lt;json&gt;</code>. <code>shoot.sh &lt;page.html&gt; &lt;out-dir&gt; [--slides]</code> writes <code>desktop.png</code>, <code>dark.png</code> and <code>phone.png</code>, and with <code>--slides</code> writes <code>slide-&lt;id&gt;.png</code> at 1920x1080.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Failing tests</strong> in <code>tests/test_pipeline.py</code>:</li>
+<li><code>test_sample_passes</code>: <code>discuss.sh sample.md --plan sample.card.yaml -o tmp/out.html</code> → exit 0, stdout matches the PASS regex, output exists.</li>
+<li><code>test_fail_writes_nothing</code>: with <code>DISCUSS_FORCE_FAIL=1</code> (a test hook that corrupts the temp page, as <code>mdpage.sh</code> does) → exit 1, no output file.</li>
+<li><code>test_rebuild_backs_up_previous</code>.</li>
+<li><code>test_plan_error_exit_2</code>.</li>
+<li><code>test_runtime_fallback_inlines_mermaid</code>: with <code>CHROME_BIN=/nonexistent</code> → exit 0, the line has <code>diagrams=runtime</code>, and the HTML contains the Mermaid IIFE marker <code>__esbuild_esm_mermaid_nm</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run.</strong> Expected: FAIL.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement.</strong></li>
+<li><strong><code>discuss.sh</code> order:</strong> parse args → ensure venv and Mermaid → <code>build.py</code> (renderer from <code>mermaid_svg</code>) → <code>check.py</code> → on PASS, back up and <code>mv</code>; on FAIL, <code>rm</code> the tmp.</li>
+<li><strong>Runtime mode:</strong> <code>build.py</code> inlines the Mermaid JS and the engine renders it on load (Task 8 wires it).</li>
+<li><strong><code>shoot.sh</code>:</strong> adapted from <code>md-to-html-page/scripts/shoot.sh</code>. <code>--slides</code> loads <code>page.html#&lt;slide&gt;</code> for each slide id from <code>#card-config</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run.</strong> Expected: PASS.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Commit</strong> <code>feat(discussion-card): wire build pipeline end to end</code>.</li>
+</ul>
+<h3 id="task-8-engine-and-browser-tests">Task 8: Engine and browser tests<a class="headerlink" href="#task-8-engine-and-browser-tests" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> Create <code>assets/engine.js</code>, <code>assets/engine.css</code>, <code>scripts/package.json</code>, <code>tests/e2e/card.test.mjs</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes:
+  - <code>#card-config</code> (Task 4): <code>{storageKey, ui, labels, chapters:[{id,title,label,fold}], slides:[{id,chapter,title}], blocks, questions:[{id,text,options}], runtimeDiagrams:bool}</code>;
+  - elements <code>[data-spot]</code>, <code>section.chapter[data-chapter]</code>, <code>[data-slide]</code>.
+- Produces: the user-visible behaviour in spec §Engine.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Write failing browser tests</strong> in <code>card.test.mjs</code> with <code>node:test</code> and Playwright Chromium. <code>before</code> builds the sample via <code>discuss.sh</code> into a temp dir and opens it with <code>file://</code>.</li>
+<li><code>spot mark and comment persist across reload</code>.</li>
+<li><code>vote question action item persist</code>.</li>
+<li><code>hot chip jumps to slide and opens drawer</code>.</li>
+<li><code>presenter keys and hash</code>: ArrowRight changes <code>location.hash</code>. In a tall slide (the 1280x600 viewport makes "Pipeline path" tall), the first PageDown scrolls (<code>scrollY</code> grows, hash unchanged) and a later one advances.</li>
+<li><code>P toggles mode and is remembered</code>.</li>
+<li><code>markdown export contains comment and verdict</code>: capture via <code>page.on('download')</code>.</li>
+<li><code>phone 390 has no horizontal page scroll</code>: <code>document.documentElement.scrollWidth &lt;= 390</code>.</li>
+<li><code>dark theme tokens apply</code>.</li>
+<li><code>storage unavailable still works</code>: an init script makes <code>localStorage.getItem</code> throw; marking still works in the session and a toast is visible.</li>
+<li><code>import sanitises junk</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2:</strong> <code>cd scripts &amp;&amp; npm install &amp;&amp; npx playwright install chromium</code>, then <code>npm test</code>. Expected: FAIL.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Implement the engine.</strong></li>
+<li><strong>Starting point.</strong> Generalise the reference page's logic (spots registry, drawer, vote, questions, actions, hot strip, TOC, presenter, export/import, theme) into a config-driven engine. The reference page is handed over out of band. It holds private content, so never commit it or copy any of its text: take only its logic.</li>
+<li><strong>What to drop.</strong> Content-specific text, hard-coded question lists and slide tables.</li>
+<li><strong>Labels.</strong> All labels come from <code>config.labels</code>.</li>
+<li><strong>Runtime diagrams.</strong> When <code>runtimeDiagrams</code> is set, render <code>pre.mermaid-runtime</code> blocks with the inlined Mermaid, then annotate nodes with the same id rule as <code>annotate_svg</code> before registering spots.</li>
+<li><strong>Safety.</strong> User text uses <code>textContent</code> only.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run</strong> <code>npm test</code>. Expected: all PASS. Also run the Python suites. Expected: PASS.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5:</strong> Run <code>scripts/shoot.sh out.html shots --slides</code> on the sample and look at <code>desktop.png</code> and two slide shots. Fix visible defects once.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 6: Commit</strong> <code>feat(discussion-card): add interactive engine and browser tests</code>.</li>
+</ul>
+<h3 id="task-9-skillmd-hub-wiring-and-validation">Task 9: SKILL.md, hub wiring and validation<a class="headerlink" href="#task-9-skillmd-hub-wiring-and-validation" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong>
+- Modify <code>skills/software-development/discussion-card/SKILL.md</code>, <code>docs/skill-catalog.md</code>, <code>THIRD_PARTY_NOTICES.md</code>.
+- Modify <code>tests/test_discussion_card.py</code>: add <code>test_node_suite_present</code>, asserting that <code>tests/e2e/card.test.mjs</code> exists and <code>scripts/package.json</code> pins <code>playwright</code> to <code>1.65.0</code>.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Write <code>SKILL.md</code>.</strong> Follow the <code>md-to-html-page</code> shape: frontmatter; Prerequisites (python, Chrome optional, network on first run); What Claude does (the 5 steps from spec §Agent procedure, including the who-writes question and the whiteboard redirect); Command and flags table; <code>card.yaml</code> reference; Checks and exit codes; Troubleshooting; Provenance (files adapted from <code>md-to-html-page</code>); Mermaid licence note.</li>
+</ul>
+<p>Description: <code>Use when a Markdown design note, proposal or process description should become an offline interactive card for a screen-shared discussion (retro, design review, for/against vote): clickable Mermaid diagrams, marks and comments, presenter mode, and a Markdown summary export.</code>
+- [ ] <strong>Step 2:</strong> Add the catalog line under Software development, matching the neighbouring format. Add the <code>THIRD_PARTY_NOTICES.md</code> entry: <code>@mermaid-js/tiny</code> 12.3.0, MIT, downloaded at first run and inlined only in runtime-fallback pages.
+- [ ] <strong>Step 3: Run</strong> <code>python3 -m unittest tests.test_discussion_card -v</code> and <code>./scripts/validate.sh --ci</code>. Expected: PASS. Then run <code>./scripts/validate.sh --full</code>. Expected: PASS; it needs zensical 0.0.24 via uvx and gitleaks ≥ 8.30.1, and if either is missing, report it rather than skipping silently.
+- [ ] <strong>Step 4:</strong> Scan changed files for <code>TODO|TBD|skip|only(</code> and machine paths. Expected: none.
+- [ ] <strong>Step 5: Commit</strong> <code>docs(discussion-card): document the skill and wire it into the hub</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      
+      <script id="__config" type="application/json">{"annotate":null,"base":"../../..","features":["search.suggest","search.highlight","navigation.footer","navigation.top","navigation.tabs","navigation.sections","navigation.instant","navigation.instant.progress","content.code.copy","content.code.annotate"],"search":"../../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.16f8adc2.min.js"></script>
+      
+    
+  </body>
+</html>
