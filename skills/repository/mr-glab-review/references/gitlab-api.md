@@ -1,6 +1,6 @@
 # GitLab API recipes
 
-All calls use the GitLab REST API v4 through `glab api`. Add `--hostname <host>` when the MR lives on a host other than the default `glab` host. `<skill-dir>` is the directory that contains this skill. `<scratch>` is a temporary directory for the session.
+All calls use the GitLab REST API v4 through `glab api`. Add `--hostname <host>` when the MR lives on a host other than the default `glab` host. `<skill-dir>` is the directory that contains this skill. `<scratch>` is a temporary directory for the session, used only for disposable files (diff, payloads). The resume state file lives elsewhere: `<state_dir>/<host>__<encoded_project>__<iid>.json`, where `<state_dir>` is the profile `state_dir` or `${XDG_STATE_HOME:-~/.local/state}/mr-glab-review`.
 
 ## Resolve the MR
 
@@ -11,8 +11,10 @@ python3 <skill-dir>/scripts/mr_glab.py parse-url https://example.gitlab.com/grou
 # {"host": "example.gitlab.com", "project_path": "group/app", "iid": 42, "encoded_project": "group%2Fapp"}
 
 glab api --hostname <host> projects/<encoded>/merge_requests/<iid> > <scratch>/mr.json
-glab mr diff <iid> --repo <host>/<project_path> --color=never > <scratch>/mr.diff
+glab mr diff <iid> --repo https://<host>/<project_path> --color=never > <scratch>/mr.diff
 ```
+
+The diff must come from `glab mr diff`: the line helpers expect its unified format and its paths.
 
 - `diff_refs` in `mr.json` holds `base_sha`, `head_sha` and `start_sha`. Extract that object to `<scratch>/refs.json`; `draft-payload` reads it:
 
@@ -20,19 +22,24 @@ glab mr diff <iid> --repo <host>/<project_path> --color=never > <scratch>/mr.dif
   python3 -c 'import json,sys; json.dump(json.load(sys.stdin)["diff_refs"], sys.stdout)' < <scratch>/mr.json > <scratch>/refs.json
   ```
 
+- Compare the number of files in `mr.diff` (`grep -c '^diff --git' <scratch>/mr.diff`) with `changes_count` in `mr.json`, and check its `overflow` flag. If files are missing, or `overflow` is `true`, tell the reviewer which files the review cannot see before going on.
 - Find the new-side line number for a snippet with `python3 <skill-dir>/scripts/mr_glab.py new-line <scratch>/mr.diff <path> <text>`. An empty list means the text is not in the diff. More than one number means the match is ambiguous; pick by context.
 - Check that a line can carry an inline position with `python3 <skill-dir>/scripts/mr_glab.py in-diff <scratch>/mr.diff <path> <line>` (exit 0 = in diff, 1 = not in diff, 2 = usage or IO error).
+- Get the full position of a new-side line with `python3 <skill-dir>/scripts/mr_glab.py position <scratch>/mr.diff <path> <new_line>`. It prints `{"new_path", "old_path", "new_line", "old_line"}`; `old_path` differs from `new_path` for a renamed file, and `old_line` is `null` for an added line and set for an unchanged context line. Exit 1 means the line is not in the diff; exit 2 is a usage or IO error.
 
 ## Draft notes
 
 Approved comments are staged as draft notes. A draft is visible only to its author until it is published.
+
+Fill the payload flags from the `position` output: `--path` = `new_path`, `--old-path` = `old_path`, `--line` = `new_line`, and `--old-line` = `old_line` only when it is not `null`. GitLab needs only `new_line` for an added line but both lines for an unchanged one.
 
 Build the payload, then send it as JSON:
 
 ```bash
 python3 <skill-dir>/scripts/mr_glab.py draft-payload \
   --note-file <scratch>/note.md \
-  --refs-file <scratch>/refs.json --path <path> --line <n> \
+  --refs-file <scratch>/refs.json --path <new_path> --old-path <old_path> \
+  --line <new_line> [--old-line <old_line>] \
   --out <scratch>/draft.json
 
 glab api --hostname <host> --method POST \
@@ -42,7 +49,7 @@ glab api --hostname <host> --method POST \
 
 Endpoint reference: `POST projects/:id/merge_requests/:iid/draft_notes`. Never put `:id`-style placeholders in a command: `glab api` substitutes them from the repository in the current directory, which may be a different project. Always use `<encoded>` and `<iid>`.
 
-Omit `--refs-file`, `--path` and `--line` for a general note.
+Omit `--refs-file`, `--path`, `--old-path`, `--line` and `--old-line` for a general note.
 
 The payload is a JSON object with a `"note"` field and, for an inline comment, a `position` object:
 
@@ -54,14 +61,15 @@ The payload is a JSON object with a `"note"` field and, for an inline comment, a
     "base_sha": "<base_sha>",
     "head_sha": "<head_sha>",
     "start_sha": "<start_sha>",
-    "new_path": "<path>",
-    "old_path": "<path>",
-    "new_line": 12
+    "new_path": "<new_path>",
+    "old_path": "<old_path>",
+    "new_line": 12,
+    "old_line": 11
   }
 }
 ```
 
-An inline position is valid only for a line present in the diff. Otherwise stage a general note that names `file:line` in its first line.
+`old_line` appears only for an unchanged context line. An inline position is valid only for a line present in the diff. Otherwise stage a general note that names `file:line` in its first line.
 
 List and remove drafts:
 
@@ -85,6 +93,8 @@ Afterwards list the MR discussions to confirm the notes are visible:
 ```bash
 glab api --hostname <host> projects/<encoded>/merge_requests/<iid>/discussions
 ```
+
+Build each thread link as `<mr web_url>#note_<note_id>`, with `web_url` from `mr.json` and the note id from the discussions list.
 
 ## Edit a note
 

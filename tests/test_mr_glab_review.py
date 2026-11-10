@@ -92,10 +92,8 @@ class MrGlabTest(unittest.TestCase):
         # Regression guard: both " " (glab) and "" blank context lines must advance the counter.
         diff = (
             "diff --git a/A.java b/A.java\n--- a/A.java\n+++ b/A.java\n"
-            "@@ -1,4 +1,4 @@\n one\n \n\n+four\n-x\n"
+            "@@ -1,3 +1,4 @@\n one\n\x20\n\n+four\n"
         )
-        diff = diff.replace("-x\n", "")
-        diff = diff.replace("@@ -1,4 +1,4 @@", "@@ -1,3 +1,4 @@")
         lines = self.m.new_line_map(diff)["A.java"]
         self.assertEqual(lines, {1: "one", 2: "", 3: "", 4: "four"})
 
@@ -129,6 +127,67 @@ class MrGlabTest(unittest.TestCase):
         lines = self.m.new_line_map(self.diff)["src/NewHelper.java"]
         self.assertEqual(lines[3], "public class NewHelper {}")
 
+    def test_position_for_added_line_has_no_old_line(self) -> None:
+        self.assertEqual(
+            self.m.position_for(self.diff, "src/OrderGenerator.java", 34),
+            {"new_path": "src/OrderGenerator.java", "old_path": "src/OrderGenerator.java",
+             "new_line": 34, "old_line": None},
+        )
+
+    def test_position_for_context_line_tracks_old_side(self) -> None:
+        position = self.m.position_for(self.diff, "src/OrderGenerator.java", 31)
+        self.assertEqual(position["old_line"], 30)
+        # After one removed and two added lines the old side lags by one.
+        self.assertEqual(self.m.position_for(self.diff, "src/OrderGenerator.java", 36)["old_line"], 34)
+        self.assertEqual(self.m.position_for(self.diff, "src/OrderGenerator.java", 52)["old_line"], 50)
+
+    def test_position_for_renamed_file_uses_old_path(self) -> None:
+        self.assertEqual(
+            self.m.position_for(self.diff, "src/UserSteps.java", 4),
+            {"new_path": "src/UserSteps.java", "old_path": "old/UserSteps.java",
+             "new_line": 4, "old_line": 3},
+        )
+
+    def test_position_for_rename_without_minus_header_uses_rename_from(self) -> None:
+        diff = (
+            "diff --git a/x/A.java b/y/A.java\nrename from x/A.java\nrename to y/A.java\n"
+            "+++ b/y/A.java\n@@ -1 +1,2 @@\n a\n+b\n"
+        )
+        self.assertEqual(self.m.position_for(diff, "y/A.java", 1)["old_path"], "x/A.java")
+
+    def test_position_for_new_file_old_path_equals_new_path(self) -> None:
+        self.assertEqual(
+            self.m.position_for(self.diff, "src/NewHelper.java", 1),
+            {"new_path": "src/NewHelper.java", "old_path": "src/NewHelper.java",
+             "new_line": 1, "old_line": None},
+        )
+
+    def test_position_for_line_not_in_diff_is_none(self) -> None:
+        self.assertIsNone(self.m.position_for(self.diff, "src/OrderGenerator.java", 1))
+        self.assertIsNone(self.m.position_for(self.diff, "src/Missing.java", 1))
+
+    def test_cli_position(self) -> None:
+        def run(path: str, line: str) -> subprocess.CompletedProcess:
+            return subprocess.run(
+                [sys.executable, str(SCRIPT), "position", str(FIXTURE), path, line],
+                capture_output=True, text=True,
+            )
+        result = run("src/UserSteps.java", "1")
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(
+            json.loads(result.stdout),
+            {"new_path": "src/UserSteps.java", "old_path": "old/UserSteps.java",
+             "new_line": 1, "old_line": 1},
+        )
+        self.assertEqual(run("src/OrderGenerator.java", "1").returncode, 1)
+        self.assertEqual(
+            subprocess.run(
+                [sys.executable, str(SCRIPT), "position", "/nonexistent/mr.diff", "A", "1"],
+                capture_output=True, text=True,
+            ).returncode,
+            2,
+        )
+
     def test_general_payload(self) -> None:
         self.assertEqual(self.m.draft_note_payload("hi"), {"note": "hi"})
 
@@ -150,6 +209,22 @@ class MrGlabTest(unittest.TestCase):
                 },
             },
         )
+
+    def test_inline_payload_with_old_path_and_old_line(self) -> None:
+        refs = {"base_sha": "b", "head_sha": "h", "start_sha": "s"}
+        payload = self.m.draft_note_payload(
+            "hi", refs, "src/UserSteps.java", 4, old_path="old/UserSteps.java", old_line=3
+        )
+        self.assertEqual(payload["position"]["old_path"], "old/UserSteps.java")
+        self.assertEqual(payload["position"]["new_path"], "src/UserSteps.java")
+        self.assertEqual(payload["position"]["old_line"], 3)
+        self.assertEqual(payload["position"]["new_line"], 4)
+
+    def test_old_fields_without_position_raise(self) -> None:
+        with self.assertRaises(ValueError):
+            self.m.draft_note_payload("hi", old_line=3)
+        with self.assertRaises(ValueError):
+            self.m.draft_note_payload("hi", old_path="old/A.java")
 
     def test_partial_position_raises(self) -> None:
         with self.assertRaises(ValueError):
@@ -191,6 +266,26 @@ class MrGlabTest(unittest.TestCase):
             )
             data = json.loads(out.read_text(encoding="utf-8"))
             self.assertEqual(data["position"]["new_line"], 5)
+            self.assertEqual(data["position"]["old_path"], "src/A.java")
+            self.assertNotIn("old_line", data["position"])
+
+    def test_cli_draft_payload_with_old_path_and_old_line(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            note = tmp_path / "note.md"
+            refs = tmp_path / "refs.json"
+            out = tmp_path / "out.json"
+            note.write_text("body", encoding="utf-8")
+            refs.write_text(json.dumps({"base_sha": "b", "head_sha": "h", "start_sha": "s"}))
+            subprocess.run(
+                [sys.executable, str(SCRIPT), "draft-payload", "--note-file", str(note),
+                 "--refs-file", str(refs), "--path", "src/UserSteps.java", "--line", "4",
+                 "--old-path", "old/UserSteps.java", "--old-line", "3", "--out", str(out)],
+                check=True,
+            )
+            position = json.loads(out.read_text(encoding="utf-8"))["position"]
+            self.assertEqual(position["old_path"], "old/UserSteps.java")
+            self.assertEqual(position["old_line"], 3)
 
     def test_cli_parse_url(self) -> None:
         result = subprocess.run(
@@ -240,7 +335,6 @@ class MrGlabTest(unittest.TestCase):
         for part in parts:
             self.assertRegex(part, r"(?m)^Before:$")
             self.assertRegex(part, r"(?m)^After:$")
-
 
     def test_skill_frontmatter(self) -> None:
         text = SKILL_MD.read_text(encoding="utf-8")

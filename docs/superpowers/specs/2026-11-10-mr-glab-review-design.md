@@ -59,7 +59,7 @@ result, not proof). Closest, and ideas taken from each:
 | `SKILL.md` | The phased process below; each phase ends in a check. |
 | `references/comment-style.md` | Comment style guide, marker vocabulary, checklist, three anonymised before/after pairs. |
 | `references/gitlab-api.md` | Recipes: draft note with position, general note, `bulk_publish`, editing a note, computing `new_line` from a diff, handling 429/401. |
-| `scripts/` | Small Python helper: map a diff line to its new-file line number; create, list and publish draft notes. Covered by pytest on a stored diff fixture. |
+| `scripts/` | Small Python helper: maps a diff line to its new-file line number; builds draft-note payloads and positions; glab performs the calls. Covered by unittest on a stored diff fixture. |
 
 All API calls go through `glab api` (no extra dependency). Project ID and
 `diff_refs` are resolved from the MR URL, never hardcoded.
@@ -151,7 +151,7 @@ Following `writing-skills`:
 2. **With the skill on a real MR, drafts only:** drafts are created and then
    deleted. Verify: nothing published without a yes; `new_line` correct; texts
    pass the checklist; interruption → resume from the state file.
-3. **Helper script:** pytest on a stored diff fixture (line mapping, draft payload
+3. **Helper script:** unittest on a stored diff fixture (line mapping, draft payload
    shape), run by `validate.sh --full`.
 4. **Leak guard:** the hub's validation plus a manual review of the PR diff.
 

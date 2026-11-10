@@ -120,10 +120,10 @@ git commit -m "feat(mr-glab-review): add diff-line and draft-note helper"
 - [ ] **Step 3: With the skill, drafts only** (stop before Phase 4). Check: (1) no published note appears (`glab api .../notes` unchanged); (2) each draft's `position.new_line` matches the intended line in the GitLab UI; (3) every text passes the checklist; (4) interrupt after two items, start a new session, confirm resume from state file and existing drafts without duplicates.
 - [ ] **Step 4: Clean up** the test drafts (DELETE each `draft_notes/:id`) and record results for the PR test plan.
 
-### Task 5: Private wrapper `aqa-mr-glab-review` (outside the hub)
+### Task 5: Private wrapper `<private-wrapper>` (outside the hub)
 
 **Files:**
-- Create: `<local skills dir>/aqa-mr-glab-review/SKILL.md` — **never added to the hub repo or any public place.**
+- Create: `<local skills dir>/<private-wrapper>/SKILL.md` — **never added to the hub repo or any public place.**
 
 - [ ] **Step 1: Write the wrapper**: when to use (work MRs); the profile block (host, language, requirements source and how to read it, extra conventions taken from the reviewer's saved preferences, leak stop-list); "invoke `mr-glab-review` with this profile".
 - [ ] **Step 2: Leak gate before the hub PR:** `grep -rniE '<stop-list>' skills/repository/mr-glab-review docs/superpowers tests/test_mr_glab_review.py tests/fixtures/mr_glab_review` → Expected: no output. Then `./scripts/validate.sh --full` → PASS.
