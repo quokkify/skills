@@ -21,6 +21,18 @@ EMAIL_RE = re.compile(
     r"(?<![A-Za-z0-9._%+:/@-])[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)(?![A-Za-z0-9:-]|\.[A-Za-z0-9])"
 )
 ALLOWED_EMAIL_DOMAIN = "example.com"
+SKILL_MD = SKILL_DIR / "SKILL.md"
+SKILL_DESCRIPTION = (
+    "Review a GitLab merge request together with the human reviewer: verify findings, "
+    "approve each comment one by one, stage approved ones as draft notes in a light, "
+    "friendly format, and publish them in one batch."
+)
+
+
+def github_slug(heading: str) -> str:
+    """GitHub-style anchor: lowercase, drop punctuation except hyphens and spaces, spaces to hyphens."""
+    kept = re.sub(r"[^\w\- ]", "", heading.strip().lower())
+    return kept.replace(" ", "-")
 
 
 def load_module():
@@ -228,6 +240,52 @@ class MrGlabTest(unittest.TestCase):
         for part in parts:
             self.assertRegex(part, r"(?m)^Before:$")
             self.assertRegex(part, r"(?m)^After:$")
+
+
+    def test_skill_frontmatter(self) -> None:
+        text = SKILL_MD.read_text(encoding="utf-8")
+        match = re.match(r"---\n(.*?)\n---\n", text, flags=re.S)
+        self.assertIsNotNone(match, "SKILL.md lacks frontmatter")
+        fields = dict(line.split(": ", 1) for line in match.group(1).splitlines())
+        self.assertEqual(fields.get("name"), "mr-glab-review")
+        self.assertEqual(fields.get("description"), SKILL_DESCRIPTION)
+
+    def test_skill_has_all_phases(self) -> None:
+        headings = [
+            line.lstrip("#").strip()
+            for line in SKILL_MD.read_text(encoding="utf-8").splitlines()
+            if line.startswith("#")
+        ]
+        for wanted in ("Phase 0", "Phase 1", "Phase 2", "Phase 3", "Phase 4", "Profile", "Resume"):
+            self.assertTrue(
+                any(h.startswith(wanted) for h in headings), f"SKILL.md lacks heading '{wanted}'"
+            )
+
+    def test_skill_links_resolve(self) -> None:
+        text = SKILL_MD.read_text(encoding="utf-8")
+        links = re.findall(r"\]\((references/[^)#\s]+)(?:#([^)\s]+))?\)", text)
+        self.assertTrue(links, "SKILL.md links no references")
+        for target, anchor in links:
+            path = SKILL_DIR / target
+            self.assertTrue(path.is_file(), f"missing link target {target}")
+            if not anchor:
+                continue
+            slugs = {
+                github_slug(line.lstrip("#"))
+                for line in path.read_text(encoding="utf-8").splitlines()
+                if line.startswith("#")
+            }
+            self.assertIn(anchor, slugs, f"{target} has no heading for #{anchor}")
+
+    def test_catalog_lists_skill(self) -> None:
+        catalog = (ROOT / "docs" / "skill-catalog.md").read_text(encoding="utf-8")
+        section = catalog.split("\n## repository\n", 1)[1].split("\n## ", 1)[0]
+        self.assertIn(
+            "- [`mr-glab-review`](../skills/repository/mr-glab-review/SKILL.md) — "
+            "review a GitLab MR with the reviewer item by item and publish approved, "
+            "friendly comments in one batch.",
+            section,
+        )
 
 
 if __name__ == "__main__":
