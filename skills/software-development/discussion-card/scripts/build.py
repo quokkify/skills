@@ -318,6 +318,7 @@ def _fence(ctx: _Ctx, t) -> str:
         return f'<figure class="diagram" data-diagram="{esc(key)}">{PLACEHOLDER.format(key=key)}</figure>'
     parts, cross = split_subgraphs(fc)
     home = {nid: k for k, (sg, _) in enumerate(parts) for nid in sg.node_ids}
+    home.update({sg.id: k for k, (sg, _) in enumerate(parts) if sg.id})
     out = []
     for k, (sg, part_src) in enumerate(parts, start=1):
         key = f"{ctx.slug}-d{n}-{k}"
@@ -335,8 +336,8 @@ def _fence(ctx: _Ctx, t) -> str:
             if home[e.src] == k - 1:
                 lab = f" ({esc(e.label)})" if e.label else ""
                 out.append(
-                    f'<div class="diagram-link" aria-hidden="true">&darr; {esc(fc.nodes[e.src])} &rarr; '
-                    f"{esc(fc.nodes[e.dst])}{lab}</div>"
+                    f'<div class="diagram-link" aria-hidden="true">&darr; {esc(fc.label_of(e.src))} &rarr; '
+                    f"{esc(fc.label_of(e.dst))}{lab}</div>"
                 )
     return f'<div class="diagram-split">{"".join(out)}</div>'
 

@@ -144,5 +144,131 @@ class NoSpaceEdgeTests(unittest.TestCase):
         self.assertEqual(list(fc.nodes), ["node-1", "node-2", "n-3"])
 
 
+class GrammarFormsTests(unittest.TestCase):
+    """Regression guard: forms Mermaid renders fine used to fail the parse and turn the diagram into code."""
+
+    NODE_CASES = {
+        "A([Stadium])": ("A", "Stadium"),
+        "A[[Sub]]": ("A", "Sub"),
+        "A[(Db)]": ("A", "Db"),
+        "A(((Twice)))": ("A", "Twice"),
+        "A>Flag]": ("A", "Flag"),
+        "A{{Hex}}": ("A", "Hex"),
+        "A[/Lean/]": ("A", "Lean"),
+        "A[\\Back\\]": ("A", "Back"),
+        "A[/Trap\\]": ("A", "Trap"),
+        "A[x]:::cls": ("A", "x"),
+        "A:::cls": ("A", "A"),
+        "1[One]": ("1", "One"),
+        "Узел[Привет]": ("Узел", "Привет"),
+        'A["paren (x) ] inside"]': ("A", "paren (x) ] inside"),
+    }
+
+    EDGE_CASES = {
+        "A ---> B": Edge("A", "B", None, "--->"),
+        "A ----> B": Edge("A", "B", None, "---->"),
+        "A ---- B": Edge("A", "B", None, "----"),
+        "A -. t .-> B": Edge("A", "B", "t", "-.->"),
+        "A -. two words .- B": Edge("A", "B", "two words", "-.-"),
+        "A -..-> B": Edge("A", "B", None, "-..->"),
+        "A == t ==> B": Edge("A", "B", "t", "==>"),
+        "A ===> B": Edge("A", "B", None, "===>"),
+        "A === B": Edge("A", "B", None, "==="),
+        "A x--x B": Edge("A", "B", None, "x--x"),
+        "A o--o B": Edge("A", "B", None, "o--o"),
+        "A <==> B": Edge("A", "B", None, "<==>"),
+        "A ~~~ B": Edge("A", "B", None, "~~~"),
+        "A -- t --> B": Edge("A", "B", "t", "-->"),
+        "A -- t --- B": Edge("A", "B", "t", "---"),
+        "A --> o": Edge("A", "o", None, "-->"),
+        "A --- xray": Edge("A", "xray", None, "---"),
+        "1 --> 2": Edge("1", "2", None, "-->"),
+        "A[x]:::c --> B([y]):::d": Edge("A", "B", None, "-->"),
+    }
+
+    def test_node_shapes_and_ids(self):
+        for line, (nid, label) in self.NODE_CASES.items():
+            with self.subTest(line=line):
+                fc = parse_flowchart(1, f"flowchart LR\n {line}")
+                self.assertEqual(fc.nodes, {nid: label})
+
+    def test_edge_forms(self):
+        for line, want in self.EDGE_CASES.items():
+            with self.subTest(line=line):
+                fc = parse_flowchart(1, f"flowchart LR\n {line}")
+                self.assertEqual(fc.edges, [want])
+                self.assertEqual(set(fc.nodes), {want.src, want.dst})
+
+    def test_graph_without_direction_is_tb(self):
+        for head in ("graph", "flowchart"):
+            with self.subTest(head=head):
+                fc = parse_flowchart(1, f"{head}\n A --> B")
+                self.assertEqual(fc.direction, "TB")
+                self.assertEqual(set(fc.nodes), {"A", "B"})
+
+    def test_class_suffix_not_in_split_decl(self):
+        src = "flowchart LR\n subgraph s\n  A[x]:::hot --> B\n end"
+        (_, text), = split_subgraphs(parse_flowchart(1, src))[0]
+        self.assertIn("A[x]", text)
+        self.assertNotIn(":::", text)
+
+    def test_text_label_arrow_survives_split(self):
+        src = "flowchart LR\n subgraph s\n  A -. maybe .-> B\n  B == sure ==> C\n end"
+        (_, text), = split_subgraphs(parse_flowchart(1, src))[0]
+        self.assertIn("A -.->|maybe| B", text)
+        self.assertIn("B ==>|sure| C", text)
+        again = parse_flowchart(1, text)
+        self.assertEqual(again.edges, [Edge("A", "B", "maybe", "-.->"), Edge("B", "C", "sure", "==>")])
+
+    def test_unsupported_forms_raise_named_reason(self):
+        cases = {
+            "A@{ shape: rect, label: x }": "@{",
+            "A e1@--> B": "edge ids",
+        }
+        for line, reason in cases.items():
+            with self.subTest(line=line):
+                with self.assertRaises(ValueError) as cm:
+                    parse_flowchart(1, f"flowchart LR\n {line}")
+                self.assertIn(reason, str(cm.exception))
+
+
+class SubgraphEndpointTests(unittest.TestCase):
+    """Regression guard: an edge to a subgraph id created a phantom node (extra spot, root-part box)."""
+
+    SRC = (
+        "flowchart LR\n"
+        "  X --> one\n"
+        "  subgraph one [First]\n"
+        "    A --> B\n"
+        "  end\n"
+        "  subgraph two\n"
+        "    C\n"
+        "  end\n"
+        "  one --> two\n"
+    )
+
+    def test_subgraph_ids_are_not_nodes(self):
+        fc = parse_flowchart(1, self.SRC)
+        self.assertEqual(set(fc.nodes), {"X", "A", "B", "C"})
+        self.assertIn(Edge("X", "one", None), fc.edges)
+        self.assertIn(Edge("one", "two", None), fc.edges)
+
+    def test_split_has_no_phantom_parts_or_nodes(self):
+        fc = parse_flowchart(1, self.SRC)
+        parts, cross = split_subgraphs(fc)
+        self.assertEqual([sg.id for sg, _ in parts], ["", "one", "two"])
+        self.assertEqual(parts[0][0].node_ids, ["X"])
+        for _, text in parts:
+            self.assertNotRegex(text, r"(?m)^\s+(one|two)\b")
+            self.assertEqual(set(parse_flowchart(1, text).nodes) & {"one", "two"}, set())
+        self.assertEqual(cross, [Edge("X", "one", None), Edge("one", "two", None)])
+        self.assertEqual(fc.label_of("one"), "First")
+        self.assertEqual(fc.label_of("X"), "X")
+
+    def test_subgraph_declared_after_use(self):
+        fc = parse_flowchart(1, "flowchart LR\n A --> late\n subgraph late\n  B\n end")
+        self.assertEqual(set(fc.nodes), {"A", "B"})
+
+
 if __name__ == "__main__":
     unittest.main()

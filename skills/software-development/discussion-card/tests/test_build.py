@@ -137,10 +137,13 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(kind_count(page, "code"), 1)
 
     def test_unparsable_flowchart_becomes_code_with_warning(self):
-        md = "# T\n\n## A\n\n```mermaid\nflowchart\n```\n"
+        md = "# T\n\n## A\n\n```mermaid\nflowchart LR\n  A e1@--> B\n```\n"
         page = make(md_text=md)
         self.assertEqual(kind_count(page, "code"), 1)
-        self.assertTrue(any("block 1" in w for w in page.warnings))
+        self.assertTrue(
+            any(w.startswith("warning: mermaid flowchart shown as code (block 1): edge ids") for w in page.warnings),
+            page.warnings,
+        )
 
     def test_main_writes_output_and_sidecar(self):
         with tempfile.TemporaryDirectory() as d:
@@ -259,6 +262,66 @@ class RegressionGuards(unittest.TestCase):
             finally:
                 build.stub_renderer = orig
             self.assertEqual(rc, 1)
+
+
+MANY_FORMS = (
+    "## Forms\n\n```mermaid\ngraph\n"
+    "  A([Stadium]):::hot ---> B[Box]\n"
+    "  B -. maybe .-> C{Choice}\n"
+    "  C == sure ==> 1[Numbered]\n"
+    "  1 x--x Узел[Привет]\n"
+    "  Узел o--o D[(Store)]\n"
+    "  subgraph grp [Group]\n"
+    "    E[Inner]\n"
+    "  end\n"
+    "  D --> grp\n"
+    "  classDef hot fill:#fee\n"
+    "```\n"
+)
+
+
+class ManyFormsRenderTest(unittest.TestCase):
+    """Regression guard: Mermaid forms the parser rejected turned the whole diagram into code."""
+
+    def test_regression_guard_many_forms_render_static_with_node_spots(self):
+        import subprocess
+
+        import mermaid_svg
+        from mermaid_parse import parse_flowchart
+
+        chrome = mermaid_svg.find_chrome()
+        if chrome is None:
+            self.skipTest("chrome not found")
+        launcher = Path(build.__file__).resolve().parent / "discuss.sh"
+        proc = subprocess.run(["sh", str(launcher), "--mermaid"], capture_output=True, text=True, check=False)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        mjs = Path(proc.stdout.strip())
+        with tempfile.TemporaryDirectory() as d:
+            md = Path(d) / "forms.md"
+            md.write_text(MANY_FORMS, encoding="utf-8")
+            pp = Path(d) / "c.yaml"
+            pp.write_text("version: 1\nkind: review\n", encoding="utf-8")
+            page = build.build_page(
+                md, load_plan(pp, ["Forms"]), "en", lambda jobs: mermaid_svg.render(jobs, mjs, chrome)
+            )
+        self.assertEqual([w for w in page.warnings if "shown as code" in w], [])
+        self.assertEqual([d.mode for d in page.diagrams], ["static"])
+        src = MANY_FORMS.split("```mermaid\n")[1].split("```")[0]
+        want = {f"forms-{n}" for n in parse_flowchart(1, src).nodes}
+        self.assertEqual(want, {f"forms-{n}" for n in ["A", "B", "C", "1", "Узел", "D", "E"]})
+        self.assertEqual(set(page.spots), want)
+        for sid in want:
+            self.assertIn(f'data-spot="{sid}"', page.html)
+
+    def test_regression_guard_split_cross_link_to_subgraph_id(self):
+        md_text = (
+            "## Flow\n\n```mermaid\nflowchart LR\n  X[Start] --> one\n"
+            "  subgraph one [First]\n    A --> B\n  end\n  subgraph two\n    C\n  end\n  one --> two\n```\n"
+        )
+        page = make(md_text=md_text, plan_text="version: 1\nkind: review\ndiagrams:\n  1: {split: subgraphs}\n")
+        self.assertIn("Start &rarr; First", page.html)
+        self.assertIn("First &rarr; two", page.html)
+        self.assertEqual(sorted(s["id"] for s in page.config["slides"]), ["flow", "flow-d1-1", "flow-d1-2", "flow-d1-3"])
 
 
 if __name__ == "__main__":
