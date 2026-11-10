@@ -1,0 +1,48 @@
+diff --git a/src/OrderGenerator.java b/src/OrderGenerator.java
+index 1111111..2222222 100644
+--- a/src/OrderGenerator.java
++++ b/src/OrderGenerator.java
+@@ -10,6 +10,7 @@ public class OrderGenerator {
+     private final String prefix;
+     private final int size;
+
++    private final String currency;
+     public Order first() {
+         return Order.builder()
+             .id(1)
+@@ -30,8 +31,9 @@ public class OrderGenerator {
+     public Order second() {
+         return Order.builder()
+             .id(2)
+-            .legacy(true)
++            .currency(currency)
++            .total(10)
+         .build();
+     }
+
+     public Order third() {
+@@ -50,3 +52,4 @@ public class OrderGenerator {
+         .build();
+     }
+ }
+diff --git a/old/UserSteps.java b/src/UserSteps.java
+similarity index 90%
+rename from old/UserSteps.java
+rename to src/UserSteps.java
+index 3333333..4444444 100644
+--- a/old/UserSteps.java
++++ b/src/UserSteps.java
+@@ -1,3 +1,4 @@
+ package steps;
+
++import java.util.List;
+ public class UserSteps {
+diff --git a/src/NewHelper.java b/src/NewHelper.java
+new file mode 100644
+index 0000000..5555555
+--- /dev/null
++++ b/src/NewHelper.java
+@@ -0,0 +1,3 @@
++package helpers;
++
++public class NewHelper {}
