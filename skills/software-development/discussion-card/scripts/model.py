@@ -36,3 +36,4 @@ class RenderedDiagram:
     labels: list[Box] = field(default_factory=list)
     error: str | None = None
     mode: str = "code"  # "static" | "runtime" | "code"
+    warning: str | None = None  # build warning for a runtime fallback, e.g. a failed Chrome run

@@ -28,7 +28,7 @@
     for (var k = 0; k < window.JOBS.length; k++) {
       var job = window.JOBS[k], res = { key: job.key };
       try {
-        var out = await mermaid.render('d' + (k + 1), job.source);
+        var out = await mermaid.render('dc-m' + (k + 1), job.source);
         var holder = document.createElement('div');
         holder.innerHTML = out.svg;
         stage.appendChild(holder);

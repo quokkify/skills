@@ -82,6 +82,18 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(backup.read_bytes(), first)
         self.assertIn("ids=kept", r.stdout, "--previous should default to the existing output")
 
+    def test_regression_guard_previous_defaults_with_previous_state(self) -> None:
+        # --previous-state used to switch off the --previous default, hiding dropped unmarked ids
+        self.assertEqual(self.build().returncode, 0)
+        text = self.md.read_text(encoding="utf-8")
+        self.md.write_text(text.replace("even for one-line changes.", "even for tiny changes."), encoding="utf-8")
+        state = self.tmp / "state.json"
+        state.write_text("{}", encoding="utf-8")
+        r = self.build("--previous-state", str(state))
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        self.assertIn("ids=-1", r.stdout)
+        self.assertIn("warning: dropped id: problem-p-", r.stderr + r.stdout)
+
     def test_plan_error_exit_2(self) -> None:
         self.plan.write_text("version: 1\nbogus_key: 1\n", encoding="utf-8")
         r = self.build()

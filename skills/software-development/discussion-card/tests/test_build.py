@@ -365,5 +365,56 @@ class StableKeysTest(unittest.TestCase):
         self.assertEqual(after[1]["options"], ["A", "B"])  # plan options still map by 1-based number
 
 
+class OutputAndLicenceTest(unittest.TestCase):
+    def test_regression_guard_runtime_page_carries_mermaid_licence(self):
+        lock = dict(
+            ln.split("=", 1) for ln in (Path(build.__file__).parent / "mermaid.lock").read_text().split("\n") if "=" in ln
+        )
+        banner = f"/*! @mermaid-js/tiny {lock['version']} | MIT License | Copyright (c) 2014 - 2022 Knut Sveidqvist */"
+
+        def runtime(jobs):
+            return [RenderedDiagram(j.key, None, [], [], None, "runtime") for j in jobs]
+
+        with tempfile.TemporaryDirectory() as d:
+            mjs = Path(d) / "mermaid.js"
+            mjs.write_text("var mermaid = {};", encoding="utf-8")
+            md = Path(d) / "s.md"
+            md.write_text("## F\n\n```mermaid\nflowchart TD\n A-->B\n```\n", encoding="utf-8")
+            pp = Path(d) / "c.yaml"
+            pp.write_text("version: 1\nkind: review\n", encoding="utf-8")
+            page = build.build_page(md, load_plan(pp, ["F"]), "en", runtime, mjs)
+        self.assertIn(f'<script id="mermaid-lib">{banner}\nvar mermaid = {{}};</script>', page.html)
+
+    def test_regression_guard_unwritable_output_is_fail_not_traceback(self):
+        import contextlib
+        import io
+
+        err = io.StringIO()
+        with tempfile.TemporaryDirectory() as d, contextlib.redirect_stderr(err):
+            rc = build.main([str(SAMPLE_MD), "--plan", str(SAMPLE_PLAN), "-o", str(Path(d) / "missing" / "o.html")])
+        self.assertEqual(rc, 1)
+        self.assertTrue(err.getvalue().startswith("FAIL: "), err.getvalue())
+        self.assertNotIn("Traceback", err.getvalue())
+
+    def test_regression_guard_chrome_failure_warning_replaces_no_chrome_warning(self):
+        def failed(jobs):
+            return [
+                RenderedDiagram(j.key, None, [], [], None, "runtime", "warning: chrome render failed, using runtime diagrams: boom")
+                for j in jobs
+            ]
+
+        with tempfile.TemporaryDirectory() as d:
+            md = Path(d) / "s.md"
+            md.write_text("## F\n\n```mermaid\nflowchart TD\n A-->B\n```\n", encoding="utf-8")
+            pp = Path(d) / "c.yaml"
+            pp.write_text("version: 1\nkind: review\n", encoding="utf-8")
+            page = build.build_page(md, load_plan(pp, ["F"]), "en", failed)
+        self.assertIn("warning: chrome render failed, using runtime diagrams: boom", page.warnings)
+        self.assertFalse(any("Chrome not available" in w for w in page.warnings), page.warnings)
+        self.assertFalse(any("shown as code" in w for w in page.warnings), page.warnings)
+        self.assertIn('class="mermaid-runtime"', page.html)
+        self.assertEqual(page.spots, ["f-A", "f-B"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -23,6 +23,8 @@ from model import Box, DiagramJob, NodeBox, RenderedDiagram  # noqa: E402
 from plan import Plan, PlanError, load_plan  # noqa: E402
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
+MERMAID_LOCK = Path(__file__).resolve().parent / "mermaid.lock"
+MERMAID_BANNER = "/*! @mermaid-js/tiny {version} | MIT License | Copyright (c) 2014 - 2022 Knut Sveidqvist */\n"
 STORAGE_KEY = "discussion-card:{slug}:v1"
 QUESTIONS_H2 = re.compile(
     r"open questions?|questions?|to decide|decisions? needed|вопрос|нужно решить|что решить|обсудить"
@@ -547,7 +549,10 @@ def build_page(
             spots.append(s)
 
     runtime = any(r.mode == "runtime" for r in by_key.values())
-    if runtime:
+    fallback = [r.warning for r in by_key.values() if r.mode == "runtime" and r.warning]
+    for w in fallback:
+        ctx.warn(w)
+    if runtime and not fallback:
         warnings.append("warning: Chrome not available, diagrams render at view time (runtime Mermaid inlined)")
     config = {
         "storageKey": STORAGE_KEY.format(slug=doc_slug),
@@ -573,11 +578,19 @@ def _asset(name: str, closer: str) -> str:
     return text.replace(closer, "<\\/" + closer[2:])
 
 
+def _mermaid_banner() -> str:
+    for line in MERMAID_LOCK.read_text(encoding="utf-8").splitlines():
+        key, _, value = line.partition("=")
+        if key.strip() == "version" and value.strip():
+            return MERMAID_BANNER.format(version=value.strip())
+    raise RuntimeError(f"no version in {MERMAID_LOCK.name}")
+
+
 def _assemble(title: str, ui: str, body: str, config: dict, mermaid_js: Path | None = None) -> str:
     lib = ""
     if mermaid_js is not None:
         text = Path(mermaid_js).read_text(encoding="utf-8").replace("</script", "<\\/script")
-        lib = f'<script id="mermaid-lib">{text}</script>'
+        lib = f'<script id="mermaid-lib">{_mermaid_banner()}{text}</script>'
     return (
         f'<!DOCTYPE html>\n<html lang="{esc(ui)}"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -647,8 +660,12 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as e:  # noqa: BLE001 - any build failure is a reported FAIL, not a traceback
         print(f"FAIL: {type(e).__name__}: {e}", file=sys.stderr)
         return 1
-    out.write_text(page.html, encoding="utf-8")
-    Path(str(out) + ".meta.json").write_text(json.dumps(_meta(page), ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        out.write_text(page.html, encoding="utf-8")
+        Path(str(out) + ".meta.json").write_text(json.dumps(_meta(page), ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        print(f"FAIL: cannot write output: {e}", file=sys.stderr)
+        return 1
     for w in page.warnings:
         print(w, file=sys.stderr)
     return 0

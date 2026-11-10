@@ -186,7 +186,7 @@ case $OUT in
     *.html) BACKUP=${OUT%.html}.backup.html ;;
     *) BACKUP=$OUT.backup ;;
 esac
-[ -n "$PREV" ] || [ -n "$PSTATE" ] || [ ! -f "$OUT" ] || PREV=$OUT
+[ -n "$PREV" ] || [ ! -f "$OUT" ] || PREV=$OUT
 
 ensure_venv
 ensure_mermaid

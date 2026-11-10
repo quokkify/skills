@@ -1,7 +1,6 @@
 """Render Mermaid flowchart DiagramJobs to static SVG in headless Chrome."""
 from __future__ import annotations
 
-import html
 import json
 import os
 import re
@@ -26,6 +25,8 @@ CHROME_FLAGS = [
     "--dump-dom",
 ]
 TIMEOUT_S = 60
+RENDER_ID = "dc-m{k}"  # engine-owned prefix: cannot equal a chapter id such as `d1`
+CHROME_FAILED = "warning: chrome render failed, using runtime diagrams: {reason}"
 
 ChromeRunner = Callable[[str, Path], str]
 
@@ -34,7 +35,7 @@ def find_chrome() -> str | None:
     if os.environ.get("DISCUSS_NO_CHROME") == "1":  # test hook: force the runtime fallback
         return None
     env = os.environ.get("CHROME_BIN")
-    if env:
+    if env and os.path.isfile(env) and os.access(env, os.X_OK):
         return env
     if os.path.isfile(MAC_CHROME) and os.access(MAC_CHROME, os.X_OK):
         return MAC_CHROME
@@ -126,8 +127,8 @@ def render(
         try:
             results = _parse(run(chrome, tmp / "render-mermaid.html"))
         except (RuntimeError, ValueError, subprocess.SubprocessError, OSError) as e:
-            msg = f"mermaid render failed: {e}"
-            return [RenderedDiagram(j.key, None, [], [], msg, "code") for j in jobs]
+            msg = CHROME_FAILED.format(reason=f"{type(e).__name__}: {e}")
+            return [RenderedDiagram(j.key, None, [], [], None, "runtime", msg) for j in jobs]
     by_key = {r.get("key"): r for r in results}
     batch_err = results[0].get("error") if results and results[0].get("key") is None else None
     out: list[RenderedDiagram] = []
@@ -137,7 +138,7 @@ def render(
         if r is None or err or not r.get("svg"):
             out.append(RenderedDiagram(j.key, None, [], [], err or "no result for diagram", "code"))
             continue
-        render_id = f"d{k}"
+        render_id = RENDER_ID.format(k=k)
         svg, _ = annotate_svg(r["svg"], render_id, j.chapter_slug)
         nodes = [
             NodeBox(f"{j.chapter_slug}-{_node_id(n['domId'], render_id)}", n["label"], _box(n), float(n["fontPx"]))
