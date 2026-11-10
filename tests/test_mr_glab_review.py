@@ -226,8 +226,8 @@ class MrGlabTest(unittest.TestCase):
         parts = re.split(r"^### Example", text, flags=re.M)[1:]
         self.assertEqual(len(parts), 3)
         for part in parts:
-            self.assertIn("Before", part)
-            self.assertIn("After", part)
+            self.assertRegex(part, r"(?m)^Before:$")
+            self.assertRegex(part, r"(?m)^After:$")
 
 
 if __name__ == "__main__":

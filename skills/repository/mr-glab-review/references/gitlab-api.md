@@ -11,10 +11,15 @@ python3 <skill-dir>/scripts/mr_glab.py parse-url https://example.gitlab.com/grou
 # {"host": "example.gitlab.com", "project_path": "group/app", "iid": 42, "encoded_project": "group%2Fapp"}
 
 glab api --hostname <host> projects/<encoded>/merge_requests/<iid> > <scratch>/mr.json
-glab mr diff <iid> --repo <project_path> --color=never > <scratch>/mr.diff
+glab mr diff <iid> --repo <host>/<project_path> --color=never > <scratch>/mr.diff
 ```
 
-- `diff_refs` in `mr.json` holds `base_sha`, `head_sha` and `start_sha`. Save that object to `<scratch>/refs.json`; `draft-payload` reads it.
+- `diff_refs` in `mr.json` holds `base_sha`, `head_sha` and `start_sha`. Extract that object to `<scratch>/refs.json`; `draft-payload` reads it:
+
+  ```bash
+  python3 -c 'import json,sys; json.dump(json.load(sys.stdin)["diff_refs"], sys.stdout)' < <scratch>/mr.json > <scratch>/refs.json
+  ```
+
 - Find the new-side line number for a snippet with `python3 <skill-dir>/scripts/mr_glab.py new-line <scratch>/mr.diff <path> <text>`. An empty list means the text is not in the diff. More than one number means the match is ambiguous; pick by context.
 - Check that a line can carry an inline position with `python3 <skill-dir>/scripts/mr_glab.py in-diff <scratch>/mr.diff <path> <line>` (exit 0 = in diff, 1 = not in diff, 2 = usage or IO error).
 
@@ -31,11 +36,13 @@ python3 <skill-dir>/scripts/mr_glab.py draft-payload \
   --out <scratch>/draft.json
 
 glab api --hostname <host> --method POST \
-  projects/:id/merge_requests/:iid/draft_notes \
+  projects/<encoded>/merge_requests/<iid>/draft_notes \
   -H 'Content-Type: application/json' --input <scratch>/draft.json
 ```
 
-Here `:id` is the URL-encoded project path (`<encoded>`) and `:iid` is the MR number. Omit `--refs-file`, `--path` and `--line` for a general note.
+Endpoint reference: `POST projects/:id/merge_requests/:iid/draft_notes`. Never put `:id`-style placeholders in a command: `glab api` substitutes them from the repository in the current directory, which may be a different project. Always use `<encoded>` and `<iid>`.
+
+Omit `--refs-file`, `--path` and `--line` for a general note.
 
 The payload is a JSON object with a `"note"` field and, for an inline comment, a `position` object:
 
@@ -73,16 +80,20 @@ glab api --hostname <host> --method POST \
   projects/<encoded>/merge_requests/<iid>/draft_notes/bulk_publish
 ```
 
-Afterwards list the MR discussions to confirm the notes are visible.
+Afterwards list the MR discussions to confirm the notes are visible:
+
+```bash
+glab api --hostname <host> projects/<encoded>/merge_requests/<iid>/discussions
+```
 
 ## Edit a note
 
-To change a note that is already published, update it by discussion and note id. The body field here is `body`, not `note`.
+To change a note that is already published, update it by discussion and note id. The body field here is `body`, not `note`. Write `{"body": "<new text>"}` to `<scratch>/edit.json` (escape quotes and newlines as JSON), then send it:
 
 ```bash
 glab api --hostname <host> --method PUT \
   projects/<encoded>/merge_requests/<iid>/discussions/<discussion_id>/notes/<note_id> \
-  -f body='<new text>'
+  -H 'Content-Type: application/json' --input <scratch>/edit.json
 ```
 
 Drafts are not edited this way: delete the draft and stage a new one.
