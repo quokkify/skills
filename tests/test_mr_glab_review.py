@@ -204,6 +204,31 @@ class MrGlabTest(unittest.TestCase):
             for match in EMAIL_RE.finditer(text):
                 self.assertEqual(match.group(1), ALLOWED_EMAIL_DOMAIN, f"{rel}: {match.group(0)}")
 
+    def test_references_exist_and_have_sections(self) -> None:
+        expected = {
+            "gitlab-api.md": ["Resolve the MR", "Draft notes", "Publish", "Edit a note", "Errors"],
+            "comment-style.md": ["Structure", "Markers", "Checklist", "Examples"],
+        }
+        for name, headings in expected.items():
+            path = SKILL_DIR / "references" / name
+            self.assertTrue(path.is_file(), f"missing {name}")
+            lines = path.read_text(encoding="utf-8").splitlines()
+            for heading in headings:
+                self.assertIn(f"## {heading}", lines, f"{name} lacks '## {heading}'")
+
+    def test_api_recipes_use_documented_endpoints(self) -> None:
+        text = (SKILL_DIR / "references" / "gitlab-api.md").read_text(encoding="utf-8")
+        for needle in ("merge_requests/:iid/draft_notes", "draft_notes/bulk_publish", '"note"', "glab api"):
+            self.assertIn(needle, text)
+
+    def test_style_examples_count(self) -> None:
+        text = (SKILL_DIR / "references" / "comment-style.md").read_text(encoding="utf-8")
+        parts = re.split(r"^### Example", text, flags=re.M)[1:]
+        self.assertEqual(len(parts), 3)
+        for part in parts:
+            self.assertIn("Before", part)
+            self.assertIn("After", part)
+
 
 if __name__ == "__main__":
     unittest.main()
