@@ -174,12 +174,26 @@ def draft_note_payload(
     return {"note": note, "position": position}
 
 
+def _is_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _items(state: object) -> list[dict]:
+    if not isinstance(state, dict):
+        raise ValueError("state must be a JSON object")
+    items = state.get("items", [])
+    if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
+        raise ValueError("state items must be a list of objects")
+    return items
+
+
 def record_draft(state: dict, item_id: int, response: dict) -> dict:
     """Mark an item drafted with the draft id from a draft-note POST response."""
+    items = _items(state)
     draft_id = response.get("id") if isinstance(response, dict) else None
-    if not isinstance(draft_id, int) or isinstance(draft_id, bool):
+    if not _is_int(draft_id):
         raise ValueError("response has no integer id")
-    for item in state.get("items", []):
+    for item in items:
         if item.get("id") == item_id:
             item["status"] = "drafted"
             item["draft_id"] = draft_id
@@ -189,12 +203,23 @@ def record_draft(state: dict, item_id: int, response: dict) -> dict:
 
 def reconcile(state: dict, drafts: list[dict]) -> dict:
     """Compare drafted items with the API draft list by draft id."""
-    listed = {draft.get("id") for draft in drafts}
-    drafted = [i for i in state.get("items", []) if i.get("status") == "drafted"]
-    referenced = {i.get("draft_id") for i in drafted}
-    missing = [i["id"] for i in drafted if i.get("draft_id") not in listed]
-    foreign = [d.get("id") for d in drafts if d.get("id") not in referenced]
-    return {"missing": missing, "foreign": foreign, "ok": not missing and not foreign}
+    items = _items(state)
+    if not isinstance(drafts, list) or not all(isinstance(d, dict) for d in drafts):
+        raise ValueError("drafts must be a list of objects")
+    listed = {d["id"] for d in drafts if _is_int(d.get("id"))}
+    drafted = [i for i in items if i.get("status") == "drafted"]
+    referenced = {i["draft_id"] for i in drafted if _is_int(i.get("draft_id"))}
+    missing = [i.get("id") for i in drafted
+               if not _is_int(i.get("draft_id")) or i["draft_id"] not in listed]
+    foreign = [d["id"] if _is_int(d.get("id")) else None
+               for d in drafts if not _is_int(d.get("id")) or d["id"] not in referenced]
+    seen: dict[int, list] = {}
+    for i in drafted:
+        if _is_int(i.get("draft_id")):
+            seen.setdefault(i["draft_id"], []).append(i.get("id"))
+    duplicate = [item for ids in seen.values() if len(ids) > 1 for item in ids]
+    return {"missing": missing, "foreign": foreign, "duplicate": duplicate,
+            "ok": not (missing or foreign or duplicate)}
 
 
 def write_json_atomic(path: Path, data: dict) -> None:
@@ -290,8 +315,6 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "reconcile":
             state = json.loads(Path(args.state).read_text(encoding="utf-8"))
             drafts = json.loads(Path(args.drafts).read_text(encoding="utf-8"))
-            if not isinstance(drafts, list):
-                raise ValueError("drafts file must hold a JSON list")
             result = reconcile(state, drafts)
             print(json.dumps(result))
             return 0 if result["ok"] else 1

@@ -23,7 +23,7 @@ The diff must come from `glab mr diff`: the line helpers expect its unified form
   ```
 
 - Compare the number of files in `mr.diff` (`grep -c '^diff --git' <scratch>/mr.diff`) with `changes_count` in `mr.json`, and check its `overflow` flag; a missing `overflow` field means `false`. If files are missing, or `overflow` is `true`, tell the reviewer which files the review cannot see before going on.
-- Get the reviewer's username and the existing discussions, so findings the reviewer already raised are not duplicated. Quote the URL in the shell; add `--paginate` when the MR may have more than 100 discussions:
+- Get the reviewer's username and the existing discussions, so findings the reviewer already raised are not duplicated. Quote the URL in the shell; if exactly 100 entries come back, fetch `&page=2`, `&page=3`, ... and merge the arrays into one JSON list before using it (do not use `--paginate`: its output may be several concatenated arrays):
 
   ```bash
   glab api --hostname <host> user    # "username" is the reviewer
@@ -85,10 +85,10 @@ The payload is a JSON object with a `"note"` field and, for an inline comment, a
 
 `old_line` appears only for an unchanged context line. An inline position is valid only for a line present in the diff. Otherwise stage a general note that names `file:line` in its first line.
 
-List and remove drafts:
+List and remove drafts. If exactly 100 drafts come back, fetch `&page=2`, ... and merge the arrays before passing them on:
 
 ```bash
-glab api --hostname <host> projects/<encoded>/merge_requests/<iid>/draft_notes > <scratch>/drafts.json
+glab api --hostname <host> 'projects/<encoded>/merge_requests/<iid>/draft_notes?per_page=100' > <scratch>/drafts.json
 glab api --hostname <host> --method DELETE \
   projects/<encoded>/merge_requests/<iid>/draft_notes/<draft_note_id>
 ```
@@ -99,10 +99,10 @@ Right before publishing, list the drafts again into `<scratch>/drafts.json` and 
 
 ```bash
 python3 <skill-dir>/scripts/mr_glab.py reconcile --state <state-file> --drafts <scratch>/drafts.json
-# {"missing": [item ids whose draft is gone], "foreign": [draft ids no item references], "ok": true}
+# {"missing": [item ids whose draft is gone], "foreign": [draft ids no item references], "duplicate": [item ids sharing a draft id], "ok": true}
 ```
 
-Exit 0 means `ok`; exit 1 means the sets differ (resolve `missing` and `foreign` first); exit 2 is a usage or IO error. Then publish every staged draft in one batch, only after the reviewer confirms the final list:
+Exit 0 means `ok`; exit 1 means the sets differ (resolve `missing`, `foreign` and `duplicate` first; an id-less draft shows as `null` in `foreign`); exit 2 is a usage or IO error. Then publish every staged draft in one batch, only after the reviewer confirms the final list:
 
 ```bash
 glab api --hostname <host> --method POST \
