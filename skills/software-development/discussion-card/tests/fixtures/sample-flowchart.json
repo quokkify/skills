@@ -1,0 +1,60 @@
+{
+ "nodes": [
+  {
+   "domId": "d1-flowchart-A-0",
+   "label": "Commit",
+   "x": 8,
+   "y": 71,
+   "w": 152,
+   "h": 48,
+   "fontPx": 16
+  },
+  {
+   "domId": "d1-flowchart-B-1",
+   "label": "Checks",
+   "x": 242.9,
+   "y": 71,
+   "w": 152,
+   "h": 48,
+   "fontPx": 16
+  },
+  {
+   "domId": "d1-flowchart-C-3",
+   "label": "Size?",
+   "x": 485.8,
+   "y": 8,
+   "w": 174,
+   "h": 174,
+   "fontPx": 16
+  },
+  {
+   "domId": "d1-flowchart-D-5",
+   "label": "Auto-approve",
+   "x": 746.9,
+   "y": 71,
+   "w": 152,
+   "h": 48,
+   "fontPx": 16
+  }
+ ],
+ "labels": [
+  {
+   "x": 185,
+   "y": 83,
+   "w": 32.9,
+   "h": 24
+  },
+  {
+   "x": 419.9,
+   "y": 83,
+   "w": 40.5,
+   "h": 24
+  },
+  {
+   "x": 684.3,
+   "y": 83,
+   "w": 37.6,
+   "h": 24
+  }
+ ]
+}

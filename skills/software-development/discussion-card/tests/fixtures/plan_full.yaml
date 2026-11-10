@@ -1,0 +1,18 @@
+version: 1
+kind: proposal
+slug: deploy-approval
+blocks: {verdict: true, questions: true, actions: true}
+intro:
+  lead: "Why this matters"
+  cards:
+    - {title: "Problem", text: "Deploys wait for approval."}
+    - {title: "Proposal", text: "Auto-approve small changes.", accent: true}
+chapters:
+  - {from: "How it works", label: "How it works"}
+  - {from: "Report example", fold: true}
+questions:
+  from: "Open questions"
+  options:
+    1: ["Yes", "No"]
+diagrams:
+  3: {split: subgraphs}

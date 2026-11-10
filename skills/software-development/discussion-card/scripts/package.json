@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"test":"node --test ../tests/e2e/"},"dependencies":{"playwright":"1.65.0"}}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src file: 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:"><title>render</title>
+<script src="mermaid.js"></script>
+<script src="jobs.js"></script>
+</head><body><div id="stage"></div>
+<script>
+(async function () {
+  var results = [];
+  var r1 = function (n) { return Math.round(n * 10) / 10; };
+  function box(el, svg) {
+    var b = el.getBBox();
+    var m = svg.getScreenCTM().inverse().multiply(el.getScreenCTM());
+    var pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]
+      .map(function (p) { var q = new DOMPoint(p[0], p[1]).matrixTransform(m); return [q.x, q.y]; });
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var x = Math.min.apply(null, xs), y = Math.min.apply(null, ys);
+    return { x: r1(x), y: r1(y), w: r1(Math.max.apply(null, xs) - x), h: r1(Math.max.apply(null, ys) - y) };
+  }
+  function fontPx(g) {
+    var t = g.querySelector('foreignObject span, foreignObject div, foreignObject p, text, tspan') || g;
+    return r1(parseFloat(getComputedStyle(t).fontSize) || 0);
+  }
+  try {
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default',
+      themeVariables: { fontSize: '16px' } });
+    var stage = document.getElementById('stage');
+    for (var k = 0; k < window.JOBS.length; k++) {
+      var job = window.JOBS[k], res = { key: job.key };
+      try {
+        var out = await mermaid.render('dc-m' + (k + 1), job.source);
+        var holder = document.createElement('div');
+        holder.innerHTML = out.svg;
+        stage.appendChild(holder);
+        var svg = holder.querySelector('svg');
+        svg.style.maxWidth = 'none';
+        var vb = svg.viewBox.baseVal;
+        if (vb && vb.width) svg.setAttribute('width', vb.width);
+        res.svg = out.svg;
+        res.nodes = Array.prototype.map.call(svg.querySelectorAll('g.node'), function (g) {
+          var b = box(g, svg);
+          return { domId: g.id, label: (g.textContent || '').replace(/\s+/g, ' ').trim(),
+                   x: b.x, y: b.y, w: b.w, h: b.h, fontPx: fontPx(g) };
+        });
+        res.labels = Array.prototype.map.call(svg.querySelectorAll('g.edgeLabel'), function (g) {
+          return box(g, svg);
+        }).filter(function (b) { return b.w > 0 && b.h > 0; });
+      } catch (e) {
+        res.error = String((e && e.message) || e);
+      }
+      results.push(res);
+    }
+  } catch (e) {
+    results = [{ key: null, error: String((e && e.message) || e) }];
+  }
+  var s = document.createElement('script');
+  s.id = 'result'; s.type = 'application/json';
+  s.textContent = JSON.stringify(results).replace(/</g, '\\u003c');
+  document.body.appendChild(s);
+  document.title = 'DONE';
+})();
+</script></body></html>

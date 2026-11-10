@@ -1,0 +1,6 @@
+markdown-it-py==4.2.0
+mdit-py-plugins==0.6.1
+linkify-it-py==2.2.0
+mdurl==0.1.2
+Pygments==2.21.0
+PyYAML==6.0.3
