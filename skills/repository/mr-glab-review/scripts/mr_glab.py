@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import quote, urlparse
 
 MR_SEGMENT = "/-/merge_requests/"
-HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+HUNK_RE = re.compile(r"^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 NEW_PATH_PREFIX = "+++ "
 DEV_NULL = "/dev/null"
 REF_KEYS = ("base_sha", "head_sha", "start_sha")
@@ -46,10 +46,33 @@ def new_line_map(diff_text: str) -> dict[str, dict[int, str]]:
     result: dict[str, dict[int, str]] = {}
     current: dict[int, str] | None = None
     new_no = 0
-    in_hunk = False
-    for raw in diff_text.splitlines():
+    old_left = new_left = 0
+    lines = diff_text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    for raw in lines:
+        raw = raw.removesuffix("\r")
+        in_hunk = old_left > 0 or new_left > 0
+        if in_hunk and current is not None:
+            if raw.startswith("\\"):
+                continue
+            if raw.startswith("+"):
+                current[new_no] = raw[1:]
+                new_no += 1
+                new_left -= 1
+                continue
+            if raw.startswith("-"):
+                old_left -= 1
+                continue
+            if raw.startswith(" ") or raw == "":
+                current[new_no] = raw[1:]
+                new_no += 1
+                old_left -= 1
+                new_left -= 1
+                continue
         if raw.startswith("diff --git "):
-            current, in_hunk = None, False
+            current = None
+            old_left = new_left = 0
             continue
         if not in_hunk and raw.startswith(NEW_PATH_PREFIX):
             target = raw[len(NEW_PATH_PREFIX):].split("\t", 1)[0]
@@ -61,18 +84,11 @@ def new_line_map(diff_text: str) -> dict[str, dict[int, str]]:
             continue
         hunk = HUNK_RE.match(raw)
         if hunk:
-            new_no = int(hunk.group(1))
-            in_hunk = current is not None
-            continue
-        if not in_hunk or current is None:
-            continue
-        if raw.startswith("+"):
-            current[new_no] = raw[1:]
-            new_no += 1
-        elif raw.startswith(" ") or raw == "":
-            current[new_no] = raw[1:]
-            new_no += 1
-        # "-" lines and "\ No newline" markers do not advance the new counter
+            old_left = int(hunk.group(1)) if hunk.group(1) is not None else 1
+            new_no = int(hunk.group(2))
+            new_left = int(hunk.group(3)) if hunk.group(3) is not None else 1
+            if current is None:
+                old_left = new_left = 0
     return result
 
 

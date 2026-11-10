@@ -76,6 +76,47 @@ class MrGlabTest(unittest.TestCase):
         self.assertFalse(self.m.in_diff(self.diff, "src/OrderGenerator.java", 1))
         self.assertTrue(self.m.in_diff(self.diff, "src/OrderGenerator.java", 35))
 
+    def test_blank_context_forms_keep_numbering(self) -> None:
+        # Regression guard: both " " (glab) and "" blank context lines must advance the counter.
+        diff = (
+            "diff --git a/A.java b/A.java\n--- a/A.java\n+++ b/A.java\n"
+            "@@ -1,4 +1,4 @@\n one\n \n\n+four\n-x\n"
+        )
+        diff = diff.replace("-x\n", "")
+        diff = diff.replace("@@ -1,4 +1,4 @@", "@@ -1,3 +1,4 @@")
+        lines = self.m.new_line_map(diff)["A.java"]
+        self.assertEqual(lines, {1: "one", 2: "", 3: "", 4: "four"})
+
+    def test_form_feed_and_unicode_separators_do_not_split_lines(self) -> None:
+        # Regression guard: splitlines() split on \x0c, U+2028 etc. and shifted later numbers.
+        diff = (
+            "diff --git a/A.java b/A.java\n--- a/A.java\n+++ b/A.java\n"
+            "@@ -1,2 +1,3 @@\n a\x0cb\n+c\u2028d\n last\n"
+        )
+        lines = self.m.new_line_map(diff)["A.java"]
+        self.assertEqual(lines[2], "c\u2028d")
+        self.assertEqual(lines[3], "last")
+
+    def test_trailing_blank_lines_after_last_hunk_not_mapped(self) -> None:
+        diff = (
+            "diff --git a/A.java b/A.java\n--- a/A.java\n+++ b/A.java\n"
+            "@@ -1 +1 @@\n-old\n+new\n\n\ndiff --git a/B.java b/B.java\n"
+        )
+        self.assertEqual(self.m.new_line_map(diff), {"A.java": {1: "new"}})
+        self.assertFalse(self.m.in_diff(diff, "A.java", 2))
+
+    def test_no_newline_marker_does_not_advance_counters(self) -> None:
+        diff = (
+            "diff --git a/A.java b/A.java\n--- a/A.java\n+++ b/A.java\n"
+            "@@ -1,2 +1,2 @@\n a\n-b\n\\ No newline at end of file\n+c\n"
+            "\\ No newline at end of file\n"
+        )
+        self.assertEqual(self.m.new_line_map(diff)["A.java"], {1: "a", 2: "c"})
+
+    def test_new_file_lines_are_mapped(self) -> None:
+        lines = self.m.new_line_map(self.diff)["src/NewHelper.java"]
+        self.assertEqual(lines[3], "public class NewHelper {}")
+
     def test_general_payload(self) -> None:
         self.assertEqual(self.m.draft_note_payload("hi"), {"note": "hi"})
 

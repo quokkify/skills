@@ -21,7 +21,7 @@ index 1111111..2222222 100644
      }
 
      public Order third() {
-@@ -50,3 +52,4 @@ public class OrderGenerator {
+@@ -50,3 +52,3 @@ public class OrderGenerator {
          .build();
      }
  }
