@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.16.0](https://github.com/quokkify/skills/compare/v0.15.0...v0.16.0) (2026-11-08)
+
+<!-- project-toolkit:release-notes v2 -->
+**At a glance:** 2 new · 6 internal
+
+### ✨ New
+
+- **skills:** add feature-demo skill for recorded MR demos ([#155](https://github.com/quokkify/skills/pull/155))
+- **skills:** adopt what dependency updates bring with renovate-adoption-review — Agents can now load `renovate-adoption-review` to find what a dependency update lets a repository simplify or modernize, not just whether the update is safe. For an open major Renovate PR, the skill applies cited changes in a child PR stacked on the Renovate branch. For a batch of already-merged updates, it files one "Adoption review" issue and, with `--apply`, opens a PR that closes it. ([#156](https://github.com/quokkify/skills/pull/156))
+
+<details><summary>Internal changes (6 PRs)</summary>
+
+**Dependencies**
+
+- playwright 1.64.0 → 1.65.0 ([#159](https://github.com/quokkify/skills/pull/159), [#160](https://github.com/quokkify/skills/pull/160))
+
+**Maintenance**
+
+- **template:** update shared project template ([#157](https://github.com/quokkify/skills/pull/157), [#161](https://github.com/quokkify/skills/pull/161)–[#163](https://github.com/quokkify/skills/pull/163))
+
+</details>
+
 ## [0.15.0](https://github.com/quokkify/skills/compare/v0.14.0...v0.15.0) (2026-11-07)
 
 <!-- project-toolkit:release-notes v2 -->

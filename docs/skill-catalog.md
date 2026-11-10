@@ -35,6 +35,7 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 - [`browser-qa`](../skills/software-development/browser-qa/SKILL.md) — collect safe browser-based release evidence for runtime health, interactions, visual baselines, and accessibility.
 - [`feature-demo`](../skills/software-development/feature-demo/SKILL.md) — record an owner-approved, captioned demo video of a merge-request feature and publish it to a `demos` branch with a `## Demo` block.
 - [`discussion-card`](../skills/software-development/discussion-card/SKILL.md) — turn a Markdown design note into an offline interactive card for screen-shared retros, reviews, and votes, with clickable Mermaid diagrams, marks, comments, and a Markdown summary export.
+- [`md-to-html-page`](../skills/software-development/md-to-html-page/SKILL.md) — render a Markdown file into one offline, genre-aware HTML page with a fidelity gate.
 
 ## devops
 
