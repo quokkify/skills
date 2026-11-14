@@ -1,0 +1,1 @@
+{"id":"49aed6f9afbc4c6cbff927d5799138b4.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_renovate_adoption.RenovateAdoptionBatchTests#test_sweep_warns_when_result_count_hits_the_limit","name":"test_sweep_warns_when_result_count_hits_the_limit","status":"passed","testResultsByEnv":{"default":"ae1649b540443c1957c5b4b25c154e86"}}
