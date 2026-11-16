@@ -2,7 +2,7 @@
 
 | &nbsp;&nbsp;&nbsp;&nbsp; | Scope | Duration | Stats | New | Flaky | Retry |
 | --- | --- | --- | --- | --- | --- | --- |
-| <img src="https://allurecharts.qameta.workers.dev/pie?passed=259&failed=1&broken=0&skipped=0&unknown=0&size=32" width="28px" height="28px" />&nbsp;&nbsp;&nbsp;&nbsp; | All tests | 1m 14s | <img alt="Passed tests" src="https://allurecharts.qameta.workers.dev/dot?type=passed&size=8" width="8" height="8" />&#8288;&nbsp;259<br><img alt="Failed tests" src="https://allurecharts.qameta.workers.dev/dot?type=failed&size=8" width="8" height="8" />&#8288;&nbsp;1 | 260 | 0 | 0 |
+| <img src="https://allurecharts.qameta.workers.dev/pie?passed=259&failed=1&broken=0&skipped=0&unknown=0&size=32" width="28px" height="28px" />&nbsp;&nbsp;&nbsp;&nbsp; | All tests | 1m 14s | <img alt="Passed tests" src="https://allurecharts.qameta.workers.dev/dot?type=passed&size=8" width="8" height="8" />&#8288;&nbsp;259<br><img alt="Failed tests" src="https://allurecharts.qameta.workers.dev/dot?type=failed&size=8" width="8" height="8" />&#8288;&nbsp;1 | 0 | 0 | 0 |
 
 **Reports:** <a href="https://quokkify.github.io/skills/allure/pr-170/allure-report/?run=43571416864">Awesome</a>
 
