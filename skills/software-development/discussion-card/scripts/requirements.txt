@@ -1,5 +1,5 @@
 markdown-it-py==4.2.0
-mdit-py-plugins==0.6.1
+mdit-py-plugins==0.7.0
 linkify-it-py==2.2.0
 mdurl==0.1.2
 Pygments==2.21.0
