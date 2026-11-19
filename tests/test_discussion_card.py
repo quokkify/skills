@@ -16,7 +16,8 @@ LAUNCHER = SKILL_DIR / "scripts" / "discuss.sh"
 VENV_SETUP_FAILED = 3
 SETUP_TIMEOUT_SECONDS = 600
 SUITE_TIMEOUT_SECONDS = 900
-PLAYWRIGHT_PIN = "1.65.0"
+FEATURE_DEMO_PACKAGE = SKILL_DIR.parent / "feature-demo" / "scripts" / "package.json"
+EXACT_VERSION_RE = re.compile(r"\d+\.\d+\.\d+")
 EXCLUDED_DIRS = {"__pycache__", "node_modules"}
 MACHINE_PATHS = ("/Users/", "/home/")
 # Credentials in URLs (`https://user:token@host`) and SSH remotes (`git@host:owner/repo`)
@@ -79,7 +80,11 @@ class DiscussionCardSkillTest(unittest.TestCase):
     def test_node_suite_present(self) -> None:
         self.assertTrue((SKILL_DIR / "tests" / "e2e" / "card.test.mjs").is_file())
         package = json.loads((SKILL_DIR / "scripts" / "package.json").read_text(encoding="utf-8"))
-        self.assertEqual(package["dependencies"]["playwright"], PLAYWRIGHT_PIN)
+        feature_demo = json.loads(FEATURE_DEMO_PACKAGE.read_text(encoding="utf-8"))
+        pin = package["dependencies"]["playwright"]
+        self.assertTrue(EXACT_VERSION_RE.fullmatch(pin), f"playwright must be pinned to an exact version, got {pin!r}")
+        # Regression guard: assert the pin matches feature-demo's, not a literal, so Renovate bumps pass.
+        self.assertEqual(pin, feature_demo["dependencies"]["playwright"])
 
     def test_skill_md_frontmatter(self) -> None:
         skill_md = SKILL_DIR / "SKILL.md"
