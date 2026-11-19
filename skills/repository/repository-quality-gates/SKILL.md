@@ -41,6 +41,17 @@ When moving a consumer repository onto a shared CI toolkit, compare the committe
 
 When the new layout moves hand-edited generated jobs into data (declarations, a plan output, or a matrix), do not require byte equality with the template render, and do not accept the file wholesale. Compare the regenerated parts (triggers, permissions, the shared contract job) structurally against the render. For every job that moves into data, prove effective-input equivalence: the called workflow's declared defaults overlaid with the old `with:` must equal the defaults overlaid with the new entry as the real fill step produces it. Refuse what data cannot reproduce: job keys beyond the call itself (`if`, `needs`, `secrets`, `strategy`), refs other than the pinned release, undeclared inputs, wrongly typed values such as a YAML float version, and `${{ }}` expressions, which matrix data passes as literal strings. Roll back on any mismatch. Derive the old required-check names exactly (`<caller job name> / <called job id>`), not by prefix, and move project-specific steps into a project-owned workflow with its own required check before migrating so protection never weakens in between.
 
+## Diff-scoped CI gates
+
+When a gate checks only the files a merge or pull request changed, a wrong change list reads as a pass. Make every way to get it wrong fall back to the full check or become visible:
+
+- Diff the review range, not `HEAD`: in merged-result or merge-train pipelines `HEAD` is a synthetic merge commit that also carries target-branch changes. Diff the platform's diff base against the source-branch tip (GitLab: `CI_MERGE_REQUEST_DIFF_BASE_SHA` to `CI_MERGE_REQUEST_SOURCE_BRANCH_SHA`, else `CI_COMMIT_SHA`); fetch a missing commit with `--depth=1` in shallow clones.
+- Run `git -c core.quotePath=false diff --name-only ...`: by default non-ASCII paths come back C-quoted and match nothing. Set `core.quotePath true` in the test's temporary repository, because developer machines often disable it globally and the test then passes without the fix.
+- On any failure (missing commit, failed fetch or diff, helper script absent in the job) pass no list, log `full check (<reason>)`, and keep the job green. An empty list must mean only that nothing relevant changed.
+- Pass every changed file of the language and let the checker match against what it analyses; shell path filters such as `src/test/` drop unusual layouts silently. Have the checker log files listed, files matched and items checked, so "listed 5, matched 0" is visible.
+- A step that exports the list through an environment variable is sourced into the job shell, uses `return` instead of `exit`, and runs after any setup step that overwrites that variable.
+- Before changing a shared template, prove it on a canary consumer: one request touching a checked file, one touching none, and the merged-result list compared with `git diff --name-only <base> <source tip>`.
+
 ## Safety requirements
 
 - Pre-commit validation must use the staged snapshot and the validator implementation from that same snapshot.
