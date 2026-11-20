@@ -109,14 +109,14 @@ class AnalyzeTest(unittest.TestCase):
         runs[1]["start_ms"] = runs[0]["start_ms"] + 2000
         runs[1]["stop_ms"] = runs[1]["start_ms"] + 500
         runs += series("cand", "e1", "a", [1, 2], start=5)
-        rows = [{"seq": 5, "variant": "cand", "ci_url": "https://ci.example/2"},
-                {"seq": 1, "variant": "base", "ci_url": "https://ci.example/1"},
+        rows = [{"seq": 5, "variant": "cand", "ci_url": "https://ci.example.com/2"},
+                {"seq": 1, "variant": "base", "ci_url": "https://ci.example.com/1"},
                 {"seq": 6, "variant": "cand", "ci_url": None}]
         r = analyze(runs, "base", "proof", iterations=ITER, retries="off", ledger_rows=rows)
         self.assertEqual(r["selection_wall_ms"]["base"], 2500)
-        self.assertEqual(r["links"], {"base": ["https://ci.example/1"], "cand": ["https://ci.example/2"]})
+        self.assertEqual(r["links"], {"base": ["https://ci.example.com/1"], "cand": ["https://ci.example.com/2"]})
         md = render_markdown(r, "en")
-        self.assertIn("https://ci.example/2", md)
+        self.assertIn("https://ci.example.com/2", md)
         self.assertNotIn("hidden failures", md)
         r2 = analyze(runs, "base", "proof", iterations=ITER, retries="unknown")
         self.assertIn("hidden failures", render_markdown(r2, "en"))
@@ -180,7 +180,7 @@ class AnalyzeTest(unittest.TestCase):
             (d / "runs.jsonl").write_text("\n".join(json.dumps(x) for x in runs) + "\n")
             led = Ledger(d / "ledger.jsonl")
             led.plan([{"seq": 0, "variant": "base", "environment": "e1"}], {"base": "abc"})
-            led.update(0, ci_url="https://ci.example/9")
+            led.update(0, ci_url="https://ci.example.com/9")
             proc = subprocess.run(
                 [sys.executable, str(SKILL / "scripts" / "analyze.py"), "--runs", str(d / "runs.jsonl"),
                  "--ledger", str(d / "ledger.jsonl"), "--baseline", "base", "--mode", "quick",
@@ -188,7 +188,7 @@ class AnalyzeTest(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertEqual(json.loads((d / "out" / "report.json").read_text())["mode"], "quick")
             self.assertIn("ориентировочно", (d / "out" / "report.md").read_text())
-            self.assertIn("https://ci.example/9", (d / "out" / "report.md").read_text())
+            self.assertIn("https://ci.example.com/9", (d / "out" / "report.md").read_text())
 
 
 if __name__ == "__main__":
