@@ -8,7 +8,8 @@ What `scripts/analyze.py` computes, what each number means, and when a verdict i
 - Test identity is `classname#name` (Allure: `testClass#testMethod`, else `fullName`, plus parameters), so equal method names in different classes stay separate.
 - `skipped` executions are left out of N. `failed` and `broken` count as failures.
 - A retried-then-passed execution counts as **failed**: JUnit `flakyFailure`/`flakyError`/`rerunFailure`/`rerunError`, or several Allure results sharing one `historyId` in a run.
-- Runs in state `infra_error`, `no_results` or `invalid` contribute no samples.
+- Any other duplicate `test_id` in one run is not a retry: byte-identical JUnit files are read once, and otherwise the latest result (by stop time, else the last read) is kept with a warning.
+- Runs in state `infra_error`, `no_results` or `invalid` contribute no samples. `excluded_runs` in `report.json` counts them per variant, and "What is not proven" lists every variant with any.
 - **Time** statistics use passed executions only; a failed run often stops early or hangs, which would distort the time.
 
 ## Time
@@ -73,6 +74,10 @@ With N runs and 0 failures, the failure rate is below about 3/N with 95% confide
 
 Fisher is exact for small counts but needs a large gap to reach 0.05. Against a baseline with 0/30, a candidate needs about 6/30 failures (p ≈ 0.024) to be called `more flaky`; 5/30 gives p ≈ 0.052. Turned around: proving that a variant fixed a 10% flake takes more than 30 runs per variant. Say so instead of claiming "less flaky" from a gap the test does not support.
 
+## Multiple comparisons
+
+Every candidate × test pair is tested twice (time and stability), each at α = 0.05, and no correction is applied. With C comparisons whose verdict is not `insufficient data`, about C × 0.05 of them would come out `faster`, `slower`, `less flaky` or `more flaky` by chance alone, even if no variant differed. `report.json` holds C as `comparisons`, and "What is not proven" always states it. With many tests, one or two "proven" lines among many `no measurable difference` lines are weak evidence; a finding that repeats across related tests, or that holds in a second proof run, is stronger.
+
 ## Quick vs proof
 
 | | quick | proof |
@@ -88,5 +93,5 @@ A quick-mode `faster` is a reason to run proof mode, not a result. Even in proof
 
 - Causation beyond the tested selection: other tests, other environments, production.
 - Stability beyond the floor: 0/30 is "below ≈10%", nothing tighter.
-- Anything about runs that are `infra_error`, `no_results` or `invalid`; they are excluded and counted in the ledger.
+- Anything about runs that are `infra_error`, `no_results` or `invalid`; they are excluded, counted per variant in the block, and their links are marked with their state.
 - The impact estimate: it extrapolates measured per-test deltas and is *inferred*.

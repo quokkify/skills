@@ -12,8 +12,9 @@ PENDING_STATES = ("planned", "running", "no_results")
 FINISHED_STATES = ("done", "infra_error")
 FIELDS = (
     "seq", "variant", "environment", "sha", "state", "results_dir",
-    "ci_url", "started_at", "finished_at", "observed_sha",
+    "ci_url", "run_id", "started_at", "finished_at", "observed_sha",
 )
+RESET_FIELDS = ("ci_url", "run_id", "results_dir", "observed_sha", "started_at", "finished_at")
 
 
 class Ledger:
@@ -63,6 +64,8 @@ class Ledger:
         if seq not in current:
             raise KeyError(f"seq {seq} is not planned")
         row = dict(current[seq])
+        if fields.get("state") == "planned":
+            row.update(dict.fromkeys(RESET_FIELDS))
         row.update(fields)
         if row["state"] not in STATES:
             raise ValueError(f"unknown state {row['state']!r}")
@@ -127,7 +130,8 @@ def main(argv=None):
             )
             print()
     except (ValueError, KeyError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        message = exc.args[0] if isinstance(exc, KeyError) and exc.args else exc
+        print(f"error: {message}", file=sys.stderr)
         return 2
     return 0
 

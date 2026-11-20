@@ -76,6 +76,20 @@ class RaceSmokeTest(unittest.TestCase):
                            capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
 
+    def test_lib_verdict_words_match_strings(self):
+        if shutil.which("node") is None:
+            self.skipTest("node not found")
+        from strings import STRINGS
+        script = ("import('" + (RACE / "lib.mjs").as_uri() + "').then((m) => console.log(JSON.stringify("
+                  "{en: m.LABELS.en.verdicts, ru: m.LABELS.ru.verdicts, "
+                  "q: [m.LABELS.en.quickPrefix, m.LABELS.ru.quickPrefix]})))")
+        p = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        got = json.loads(p.stdout)
+        for lang in ("en", "ru"):
+            self.assertEqual(got[lang], STRINGS[lang]["verdicts"])
+        self.assertEqual(got["q"], [STRINGS["en"]["verdict_quick_prefix"], STRINGS["ru"]["verdict_quick_prefix"]])
+
     def test_usage_error(self):
         if shutil.which("node") is None:
             self.skipTest("node not found")

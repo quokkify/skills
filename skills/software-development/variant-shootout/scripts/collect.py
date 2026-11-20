@@ -1,5 +1,6 @@
 """Normalise JUnit and Allure results of finished runs into runs.jsonl."""
 import argparse
+import hashlib
 import json
 import sys
 import xml.etree.ElementTree as ET
@@ -11,6 +12,7 @@ from ledger import Ledger  # noqa: E402
 
 FORMATS = ("junit", "allure", "both")
 RETRY_TAGS = ("flakyFailure", "flakyError", "rerunFailure", "rerunError")
+ALLURE_STATUSES = ("passed", "failed", "broken", "skipped")
 
 
 def _record(test_id, name, status, retried, start_ms, stop_ms, duration_ms,
@@ -29,9 +31,12 @@ def _record(test_id, name, status, retried, start_ms, stop_ms, duration_ms,
     }
 
 
-def _junit_file(path):
+def _junit_file(path, data):
     records = []
-    root = ET.parse(path).getroot()
+    try:
+        root = ET.fromstring(data)
+    except ET.ParseError as exc:
+        raise ET.ParseError(f"{path}: {exc}") from exc
     for suite in root.iter("testsuite"):
         for case in suite.findall("testcase"):
             classname = case.get("classname") or ""
@@ -93,13 +98,17 @@ def _allure_test_id(result):
     return test_id
 
 
-def _reduce_duplicates(records):
-    """Collapse records sharing a test_id: latest stop_ms wins, marked retried and failed."""
+def _reduce_duplicates(records, seq):
+    """Keep one record per test_id: latest stop_ms wins (last read when missing).
+
+    Retries are marked only by retry markers (JUnit flaky*/rerun*, Allure historyId), so a plain
+    duplicate is neither retried nor failed; it is reported on stderr.
+    """
     grouped = {}
     for rec in records:
         grouped.setdefault(rec["test_id"], []).append(rec)
     out = []
-    for group in grouped.values():
+    for test_id, group in grouped.items():
         if len(group) == 1:
             out.append(group[0])
             continue
@@ -109,7 +118,8 @@ def _reduce_duplicates(records):
             best_stop = -1 if best["stop_ms"] is None else best["stop_ms"]
             if stop >= best_stop:
                 best = rec
-        out.append({**best, "retried": True, "status": "failed"})
+        print(f"warning: duplicate test_id {test_id} in seq {seq}; kept one", file=sys.stderr)
+        out.append(best)
     return out
 
 
@@ -127,10 +137,13 @@ def _allure_dir(results_dir, label):
         start, stop = result.get("start"), result.get("stop")
         duration = stop - start if start is not None and stop is not None else 0
         details = result.get("statusDetails") or {}
+        status = result.get("status")
+        if status not in ALLURE_STATUSES:
+            status = "broken"
         records.append(_record(
             _allure_test_id(result),
             result.get("name"),
-            "failed" if retried else result.get("status"),
+            "failed" if retried else status,
             retried, start, stop, duration,
             details.get("message") or None,
             _external_id(result, label),
@@ -139,18 +152,24 @@ def _allure_dir(results_dir, label):
     return records
 
 
-def collect_run(results_dir, fmt, label):
-    """Return one normalised record per test found in results_dir."""
+def collect_run(results_dir, fmt, label, seq=None):
+    """Return one normalised record per test found in results_dir (the results of run seq)."""
     if fmt not in FORMATS:
         raise ValueError(f"unknown format: {fmt}")
     results_dir = Path(results_dir)
     allure = _allure_dir(results_dir, label) if fmt in ("allure", "both") else []
     junit = []
     if fmt in ("junit", "both"):
+        seen_hashes = set()
         for path in sorted(results_dir.rglob("TEST-*.xml")):
-            junit.extend(_junit_file(path))
-    allure = _reduce_duplicates(allure)
-    junit = _reduce_duplicates(junit)
+            data = path.read_bytes()
+            digest = hashlib.sha256(data).hexdigest()
+            if digest in seen_hashes:
+                continue
+            seen_hashes.add(digest)
+            junit.extend(_junit_file(path, data))
+    allure = _reduce_duplicates(allure, seq)
+    junit = _reduce_duplicates(junit, seq)
     seen = {r["test_id"] for r in allure}
     return allure + [r for r in junit if r["test_id"] not in seen]
 
@@ -162,7 +181,7 @@ def collect(ledger_path, fmt, out, label):
         for row in Ledger(Path(ledger_path)).rows():
             if row.get("state") != "done" or not row.get("results_dir"):
                 continue
-            for record in collect_run(Path(row["results_dir"]), fmt, label):
+            for record in collect_run(Path(row["results_dir"]), fmt, label, row["seq"]):
                 full = {"seq": row["seq"], "variant": row["variant"],
                         "environment": row["environment"], "sha": row["sha"], **record}
                 handle.write(json.dumps(full) + "\n")

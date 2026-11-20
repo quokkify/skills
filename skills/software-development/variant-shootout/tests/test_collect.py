@@ -1,5 +1,7 @@
+import io
 import json
 import sys
+from contextlib import redirect_stderr
 import tempfile
 import unittest
 from pathlib import Path
@@ -119,16 +121,63 @@ class CollectLedgerTest(unittest.TestCase):
                 sorted(r["test_id"] for r in recs),
                 ["com.example.CartTest.pays[kind=a]", "com.example.CartTest.pays[kind=b]"])
 
-    def test_regression_junit_same_id_in_two_files_collapses(self):
+    def test_regression_identical_junit_copy_is_read_once(self):
+        """Regression guard: a byte-identical copy of a result file is not a retry."""
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)
-            for n in (1, 2):
-                (d / f"TEST-{n}.xml").write_text(
+            for sub in ("a", "b"):
+                (d / sub).mkdir()
+                (d / sub / "TEST-1.xml").write_text(
                     '<testsuite><testcase classname="c.A" name="m" time="1"/></testsuite>')
-            recs = collect_run(d, "junit", None)
+            err = io.StringIO()
+            with redirect_stderr(err):
+                recs = collect_run(d, "junit", None, seq=4)
             self.assertEqual(len(recs), 1)
-            self.assertTrue(recs[0]["retried"])
-            self.assertEqual(recs[0]["status"], "failed")
+            self.assertFalse(recs[0]["retried"])
+            self.assertEqual(recs[0]["status"], "passed")
+            self.assertEqual(err.getvalue(), "")
+
+    def test_regression_duplicate_id_without_markers_is_not_a_retry(self):
+        """Regression guard: two different files sharing an id keep one record, unretried, with a warning."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "TEST-1.xml").write_text(
+                '<testsuite><testcase classname="c.A" name="m" time="1"/></testsuite>')
+            (d / "TEST-2.xml").write_text(
+                '<testsuite name="other"><testcase classname="c.A" name="m" time="2"/></testsuite>')
+            err = io.StringIO()
+            with redirect_stderr(err):
+                recs = collect_run(d, "junit", None, seq=7)
+            self.assertEqual(len(recs), 1)
+            self.assertFalse(recs[0]["retried"])
+            self.assertEqual(recs[0]["status"], "passed")
+            self.assertEqual(recs[0]["duration_ms"], 2000)
+            self.assertEqual(err.getvalue(), "warning: duplicate test_id c.A#m in seq 7; kept one\n")
+
+    def test_allure_duplicate_id_with_distinct_history_keeps_latest_unretried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for i, (status, stop) in enumerate((("failed", 9), ("passed", 5))):
+                (d / f"{i}-result.json").write_text(json.dumps({
+                    "historyId": f"h{i}", "fullName": "c.A.m", "name": "m",
+                    "status": status, "start": 0, "stop": stop}))
+            err = io.StringIO()
+            with redirect_stderr(err):
+                recs = collect_run(d, "allure", None, seq=2)
+            self.assertEqual(len(recs), 1)
+            self.assertFalse(recs[0]["retried"])
+            self.assertEqual((recs[0]["status"], recs[0]["stop_ms"]), ("failed", 9))
+            self.assertIn("warning: duplicate test_id c.A.m in seq 2; kept one", err.getvalue())
+
+    def test_allure_unknown_or_missing_status_maps_to_broken(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "0-result.json").write_text(json.dumps({
+                "historyId": "h0", "fullName": "c.A.u", "name": "u", "status": "unknown", "start": 0, "stop": 1}))
+            (d / "1-result.json").write_text(json.dumps({
+                "historyId": "h1", "fullName": "c.A.v", "name": "v", "start": 0, "stop": 1}))
+            recs = collect_run(d, "allure", None)
+            self.assertEqual({r["name"]: r["status"] for r in recs}, {"u": "broken", "v": "broken"})
 
 
     def test_nested_modules_are_found_recursively(self):

@@ -1,7 +1,7 @@
 import io
 import json
 import sys
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 import tempfile
 import unittest
 from pathlib import Path
@@ -68,6 +68,41 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         rows = [json.loads(line) for line in buf.getvalue().splitlines()]
         self.assertEqual([(r["seq"], r["state"]) for r in rows], [(2, "no_results"), (4, "planned")])
+
+
+    def test_run_id_round_trip_via_cli(self):
+        path = Path(self.tmp.name) / "ledger.jsonl"
+        self.ledger.plan(make_items(1), {"base": "y"})
+        rc = main([str(path), "update", "--seq", "1", "--state", "running",
+                   "--run-id", "4711", "--ci-url", "https://ci.example.com/4711"])
+        self.assertEqual(rc, 0)
+        row = self.ledger.rows()[0]
+        self.assertEqual((row["run_id"], row["ci_url"]), ("4711", "https://ci.example.com/4711"))
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            main([str(path), "pending"])
+        self.assertEqual(json.loads(buf.getvalue())["run_id"], "4711")
+
+    def test_reset_to_planned_clears_run_fields(self):
+        self.ledger.plan(make_items(1), {"base": "y"})
+        self.ledger.update(1, state="running", run_id="4711", ci_url="https://ci.example.com/4711",
+                           results_dir="/abs/runs/1", started_at="t0")
+        self.ledger.update(1, state="done", observed_sha="x", finished_at="t1")
+        self.assertEqual(self.ledger.rows()[0]["state"], "invalid")
+        row = self.ledger.update(1, state="planned")
+        self.assertEqual(row["state"], "planned")
+        for field in ("ci_url", "run_id", "results_dir", "observed_sha", "started_at", "finished_at"):
+            self.assertIsNone(row[field], field)
+        self.assertEqual(row["sha"], "y")
+
+    def test_cli_unknown_seq_error_has_no_quotes(self):
+        path = Path(self.tmp.name) / "ledger.jsonl"
+        self.ledger.plan(make_items(1), {"base": "y"})
+        err = io.StringIO()
+        with redirect_stderr(err):
+            rc = main([str(path), "update", "--seq", "9", "--state", "done"])
+        self.assertEqual(rc, 2)
+        self.assertEqual(err.getvalue(), "error: seq 9 is not planned\n")
 
 
 if __name__ == "__main__":

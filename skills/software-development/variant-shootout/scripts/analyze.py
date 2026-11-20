@@ -21,9 +21,12 @@ from strings import STRINGS  # noqa: E402
 
 ALPHA = 0.05
 MIN_FLOOR_N = 3
+TOP_REASONS = 3
+REASON_CHARS = 120
 MODES = ("quick", "proof")
 RETRIES = ("off", "unknown")
 DEFAULT_ITERATIONS = 10000
+EXCLUDED_STATES = ("infra_error", "invalid", "no_results")
 NMD = "no measurable difference"
 INSUFFICIENT = "insufficient data"
 
@@ -90,7 +93,7 @@ def _entry(test_id, variant, recs, base_recs, is_base, iterations):
     n = len(live)
     entry = {
         "test_id": test_id, "variant": variant, "n": n,
-        "passed": len(passed), "failed": len(failed), "infra": 0,
+        "passed": len(passed), "failed": len(failed),
         "median_ms": median(durs) if durs else None,
         "mean_ms": sum(durs) / len(durs) if durs else None,
         "min_ms": min(durs) if durs else None,
@@ -118,6 +121,17 @@ def _entry(test_id, variant, recs, base_recs, is_base, iterations):
                     "less flaky" if len(failed) / n < bk / bn else "more flaky"
                 )
     return entry
+
+
+def _failure_reasons(test_id, variant, recs):
+    counts = {}
+    for r in _counts(recs)[2]:
+        msg = (r.get("failure") or "").strip()
+        key = msg.splitlines()[0][:REASON_CHARS] if msg else None
+        counts[key] = counts.get(key, 0) + 1
+    top = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0] or ""))[:TOP_REASONS]
+    return {"test_id": test_id, "variant": variant,
+            "reasons": [{"message": m, "count": c} for m, c in top]}
 
 
 def _selection_wall(runs, variant):
@@ -149,7 +163,7 @@ def analyze(runs, baseline, mode, iterations=DEFAULT_ITERATIONS, retries="unknow
     for r in runs:
         grouped.setdefault(r["test_id"], {}).setdefault(r["variant"], []).append(r)
 
-    tests, missing, disagreement = [], [], []
+    tests, missing, disagreement, reasons = [], [], [], []
     for test_id in sorted(grouped):
         per_variant = grouped[test_id]
         absent = [v for v in variants if v not in per_variant]
@@ -162,6 +176,8 @@ def analyze(runs, baseline, mode, iterations=DEFAULT_ITERATIONS, retries="unknow
                 continue
             e = _entry(test_id, v, per_variant[v], base_recs, v == baseline, iterations)
             tests.append(e)
+            if e["failed"]:
+                reasons.append(_failure_reasons(test_id, v, per_variant[v]))
             for env in e["per_environment"].values():
                 d = env["delta_ms"]
                 if d is not None and d != 0:
@@ -172,19 +188,36 @@ def analyze(runs, baseline, mode, iterations=DEFAULT_ITERATIONS, retries="unknow
                 break
 
     links = {v: [] for v in variants}
+    link_states = {}
+    excluded = {v: dict.fromkeys(EXCLUDED_STATES, 0) for v in variants}
     for row in sorted(ledger_rows or [], key=lambda x: x["seq"]):
+        state = row.get("state")
+        if state in EXCLUDED_STATES:
+            excluded.setdefault(row["variant"], dict.fromkeys(EXCLUDED_STATES, 0))[state] += 1
         if row.get("ci_url") and row["variant"] in links:
             links[row["variant"]].append(row["ci_url"])
+            if state not in (None, "done"):
+                link_states[row["ci_url"]] = state
+
+    comparisons = sum(
+        verdict not in (None, INSUFFICIENT)
+        for t in tests if t["variant"] != baseline
+        for verdict in (t["time_verdict"], t["stability_verdict"])
+    )
 
     return {
         "baseline": baseline, "mode": mode, "lang": lang, "retries": retries,
         "variants": variants,
         "environments": sorted({r["environment"] for r in runs}),
         "runs_per_variant": {v: len({r["seq"] for r in runs if r["variant"] == v}) for v in variants},
-        "tests": tests, "missing": missing,
+        "tests": tests, "missing": missing, "failure_reasons": reasons,
         "selection_wall_ms": {v: _selection_wall(runs, v) for v in variants},
         "environment_disagreement": disagreement,
         "links": links,
+        "link_states": link_states,
+        "excluded_runs": excluded,
+        "alpha": ALPHA,
+        "comparisons": comparisons,
     }
 
 
@@ -198,6 +231,10 @@ def _signed(ms):
 
 def _pct(x):
     return f"{x * 100:.0f}"
+
+
+def _row(cells):
+    return "| " + " | ".join(c.replace("|", "\\|") for c in cells) + " |"
 
 
 def render_markdown(report, lang="en"):
@@ -216,7 +253,7 @@ def render_markdown(report, lang="en"):
 
     out += ["", f"## {s['results']}", ""]
     cols = ["col_test", "col_variant", "col_n", "col_median", "col_delta", "col_time", "col_failures", "col_stability"]
-    out.append("| " + " | ".join(s[c] for c in cols) + " |")
+    out.append(_row([s[c] for c in cols]))
     out.append("|" + "---|" * len(cols))
     cand_entries = [t for t in report["tests"] if t["variant"] != base]
     for t in cand_entries:
@@ -230,7 +267,31 @@ def render_markdown(report, lang="en"):
             fails += f" ({_pct(ci[0])}%-{_pct(ci[1])}%)"
         row = [t["test_id"], t["variant"], str(t["n"]), _sec(t["median_ms"]), delta,
                vt[t["time_verdict"]], fails, vt[t["stability_verdict"]]]
-        out.append("| " + " | ".join(c.replace("|", "\\|") for c in row) + " |")
+        out.append(_row(row))
+    out.append("")
+    for v in report["variants"]:
+        wall = report["selection_wall_ms"].get(v)
+        line = s["wall_none"] if wall is None else s["wall_line"]
+        out.append(f"- {line.format(variant=v, wall=_sec(wall))}")
+
+    if len(report["environments"]) > 1:
+        out += ["", f"### {s['per_env']}", ""]
+        env_cols = ["col_test", "col_variant", "col_env", "col_n", "col_failed", "col_median", "col_env_delta"]
+        out.append(_row([s[c] for c in env_cols]))
+        out.append("|" + "---|" * len(env_cols))
+        for t in report["tests"]:
+            for env, e in t["per_environment"].items():
+                out.append(_row([t["test_id"], t["variant"], env, str(e["n"]), str(e["failed"]),
+                                 _sec(e["median_ms"]), _signed(e["delta_ms"])]))
+
+    if report["failure_reasons"]:
+        out += ["", f"## {s['failures']}", ""]
+        for item in report["failure_reasons"]:
+            parts = "; ".join(
+                f"{x['count']}× " + (s["no_message"] if x["message"] is None
+                                     else "`" + x["message"].replace("`", "'") + "`")
+                for x in item["reasons"])
+            out.append(f"- {s['failure_line'].format(variant=item['variant'], test=item['test_id'], reasons=parts)}")
 
     proven, unproven = [], []
     for t in cand_entries:
@@ -274,12 +335,24 @@ def render_markdown(report, lang="en"):
         items = ", ".join(s["missing_item"].format(
             test=m["test_id"], variants=", ".join(m["absent_in"])) for m in report["missing"])
         extra.append(s["missing"].format(items=items))
+    for v, counts in report["excluded_runs"].items():
+        if any(counts.values()):
+            extra.append(s["excluded_line"].format(
+                variant=v, infra=counts["infra_error"], invalid=counts["invalid"],
+                no_results=counts["no_results"]))
+    c, alpha = report["comparisons"], report["alpha"]
+    extra.append(s["comparisons_line"].format(c=c, alpha=f"{alpha:g}", x=f"{c * alpha:.2f}"))
     out += ["", f"## {s['not_proven']}", ""]
     items = extra + unproven + floors
     out += [f"- {x}" for x in items] if items else [s["not_proven_none"]]
 
     out += ["", f"## {s['links']}", ""]
-    link_lines = [s["link_line"].format(variant=v, urls=", ".join(u))
+    states = report["link_states"]
+
+    def _link(url):
+        return f"{url} ({states[url]})" if url in states else url
+
+    link_lines = [s["link_line"].format(variant=v, urls=", ".join(_link(x) for x in u))
                   for v, u in report["links"].items() if u]
     out += [f"- {x}" for x in link_lines] if link_lines else [s["links_none"]]
     return "\n".join(out) + "\n"

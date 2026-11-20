@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pickRuns, buildLane, buildTable, buildHeadlines, tableHoldMs, MAX_ROWS } from '../scripts/race/lib.mjs';
+import { pickRuns, buildLane, buildTable, buildHeadlines, tableHoldMs, LABELS, MAX_ROWS } from '../scripts/race/lib.mjs';
 
 const rec = (seq, variant, start, stop, extra = {}) => ({
   seq, variant, test_id: 't', name: 't', status: 'passed', start_ms: start, stop_ms: stop, steps: [], ...extra,
@@ -51,4 +51,40 @@ test('buildTable lists candidate rows and caps at MAX_ROWS', () => {
 test('tableHoldMs is at least 4000 and scales with rows', () => {
   assert.equal(tableHoldMs(1), 4000);
   assert.equal(tableHoldMs(10), 12000);
+});
+
+test('buildHeadlines in quick mode carries the indicative label first', () => {
+  const report = { baseline: 'base', variants: ['base', 'A'], mode: 'quick', lang: 'en', tests: [entry('t1', 'A')] };
+  assert.deepEqual(buildHeadlines(report), [
+    'Indicative only (quick mode, not proof):',
+    'A vs base: faster, Δ median −30.2 s',
+  ]);
+  const proof = { ...report, mode: 'proof' };
+  assert.deepEqual(buildHeadlines(proof), ['A vs base: faster, Δ median −30.2 s']);
+});
+
+test('buildHeadlines translates verdict words via report.lang', () => {
+  const report = {
+    baseline: 'base', variants: ['base', 'A', 'B'], mode: 'quick', lang: 'ru',
+    tests: [entry('t1', 'A'), entry('t1', 'B', { time_verdict: 'no measurable difference' })],
+  };
+  assert.deepEqual(buildHeadlines(report), [
+    'Только ориентировочно (быстрый режим, не доказательство):',
+    'A против base: быстрее, Δ медианы −30.2 s',
+    'B против base: измеримой разницы нет, Δ медианы −30.2 s',
+  ]);
+});
+
+test('buildTable translates verdict words via report.lang', () => {
+  const t = buildTable({ baseline: 'base', lang: 'ru', tests: [entry('t1', 'A')] });
+  assert.equal(t.rows[0].time_verdict, 'быстрее');
+  assert.equal(t.rows[0].stability_verdict, 'измеримой разницы нет');
+});
+
+test('LABELS verdict tables match strings.py keys', () => {
+  for (const lang of ['en', 'ru']) {
+    assert.deepEqual(Object.keys(LABELS[lang].verdicts).sort(), [
+      'baseline', 'faster', 'insufficient data', 'less flaky', 'more flaky', 'no measurable difference', 'slower',
+    ]);
+  }
 });

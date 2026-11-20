@@ -87,7 +87,7 @@ async function main() {
   const lanes = variants.map((v) => buildLane(runs, v, picked[v]));
   const span = Math.max(1, ...lanes.map((l) => l.span));
   const lang = LABELS[report.lang] ? report.lang : 'en';
-  const table = buildTable(report);
+  const table = buildTable(report, LABELS[lang]);
   const data = {
     labels: LABELS[lang], lanes, span, speed: opts.speed, table,
     headlines: buildHeadlines(report, LABELS[lang]), headlineHoldMs: HEADLINE_HOLD_MS, tableHoldMs: tableHoldMs(table.rows.length),
