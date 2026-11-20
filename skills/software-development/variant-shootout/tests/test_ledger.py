@@ -125,6 +125,39 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(self.ledger.rows()[0]["overlap_risk"], "yes")
         self.assertEqual(self.ledger.update(1, state="planned")["overlap_risk"], "yes")
 
+    def test_regression_next_attempt_never_reuses_an_attempt_after_reset(self):
+        """Regression guard: a late-creating runner may still write into a reset attempt."""
+        path = Path(self.tmp.name) / "ledger.jsonl"
+        self.ledger.plan(make_items(1), {"base": "y"})
+        first = self.ledger.next_attempt(1)
+        self.assertEqual(first, path.resolve().parent / "runs" / "1" / "attempt-1")
+        self.assertEqual(self.ledger.rows()[0]["results_dir"], str(first))
+        self.ledger.update(1, state="running")
+        self.ledger.update(1, state="planned")
+        self.assertIsNone(self.ledger.rows()[0]["results_dir"])
+        self.assertEqual(list(first.iterdir()), [])
+        second = self.ledger.next_attempt(1)
+        self.assertEqual(second.name, "attempt-2")
+
+    def test_next_attempt_skips_directories_on_disk_and_never_returns_existing(self):
+        path = Path(self.tmp.name) / "ledger.jsonl"
+        self.ledger.plan(make_items(1), {"base": "y"})
+        (path.resolve().parent / "runs" / "1" / "attempt-5").mkdir(parents=True)
+        seen = set()
+        for _ in range(3):
+            target = self.ledger.next_attempt(1)
+            self.assertNotIn(target, seen)
+            seen.add(target)
+        self.assertEqual(sorted(p.name for p in seen), ["attempt-6", "attempt-7", "attempt-8"])
+
+    def test_next_attempt_cli_prints_path(self):
+        path = Path(self.tmp.name) / "ledger.jsonl"
+        self.ledger.plan(make_items(1), {"base": "y"})
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.assertEqual(main([str(path), "next-attempt", "--seq", "1"]), 0)
+        self.assertEqual(buf.getvalue().strip(), str(path.resolve().parent / "runs" / "1" / "attempt-1"))
+
     def test_cli_unknown_seq_error_has_no_quotes(self):
         path = Path(self.tmp.name) / "ledger.jsonl"
         self.ledger.plan(make_items(1), {"base": "y"})

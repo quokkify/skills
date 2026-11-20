@@ -2,6 +2,7 @@
 """Append-only JSONL ledger of planned and executed runs; the last row per seq wins."""
 import argparse
 import json
+import re
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -83,6 +84,32 @@ class Ledger:
         self._append(row)
         return row
 
+    def next_attempt(self, seq):
+        """Reserve <state>/runs/<seq>/attempt-<k>, k above every attempt ever seen for seq."""
+        if seq not in self._read():
+            raise KeyError(f"seq {seq} is not planned")
+        pattern = re.compile(r"[/\\]attempt-(\d+)/?$")
+        highest = 0
+        if self.path.exists():
+            with self.path.open(encoding="utf-8") as fh:
+                for line in fh:
+                    if not line.strip():
+                        continue
+                    row = json.loads(line)
+                    match = pattern.search(row.get("results_dir") or "")
+                    if row.get("seq") == seq and match:
+                        highest = max(highest, int(match.group(1)))
+        runs = self.path.resolve().parent / "runs" / str(seq)
+        if runs.is_dir():
+            for entry in runs.iterdir():
+                match = re.fullmatch(r"attempt-(\d+)", entry.name)
+                if match:
+                    highest = max(highest, int(match.group(1)))
+        target = runs / f"attempt-{highest + 1}"
+        target.mkdir(parents=True, exist_ok=False)
+        self.update(seq, results_dir=str(target))
+        return target
+
     def rows(self):
         return [row for _, row in sorted(self._read().items())]
 
@@ -112,6 +139,8 @@ def main(argv=None):
     for field in FIELDS:
         if field != "seq":
             p_upd.add_argument(f"--{field.replace('_', '-')}", dest=field)
+    p_next = sub.add_parser("next-attempt", help="reserve a fresh results directory for one seq and print it")
+    p_next.add_argument("--seq", required=True, type=int)
     sub.add_parser("status", help="print counts per state and infra_ratio")
     sub.add_parser("pending", help="print pending rows (planned, running, no_results) as JSON lines")
     args = parser.parse_args(argv)
@@ -128,6 +157,8 @@ def main(argv=None):
             if fields.get("state") in FINISHED_STATES and "finished_at" not in fields:
                 fields["finished_at"] = _now()
             ledger.update(args.seq, **fields)
+        elif args.command == "next-attempt":
+            print(ledger.next_attempt(args.seq))
         elif args.command == "pending":
             for row in ledger.pending():
                 print(json.dumps(row, sort_keys=True))
@@ -138,7 +169,7 @@ def main(argv=None):
                 sys.stdout, indent=2,
             )
             print()
-    except (ValueError, KeyError) as exc:
+    except (ValueError, KeyError, OSError) as exc:
         message = exc.args[0] if isinstance(exc, KeyError) and exc.args else exc
         print(f"error: {message}", file=sys.stderr)
         return 2
