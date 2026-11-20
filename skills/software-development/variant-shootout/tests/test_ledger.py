@@ -41,6 +41,17 @@ class LedgerTest(unittest.TestCase):
             self.ledger.update(s, state="done")
         self.assertEqual(self.ledger.infra_ratio(), 0.25)
 
+    def test_infra_ratio_excludes_invalid_and_no_results(self):
+        """Regression guard: invalid and no_results runs are not finished."""
+        self.ledger.plan(make_items(6), {"base": "y"})
+        self.ledger.update(1, state="infra_error")
+        for s in (2, 3, 4):
+            self.ledger.update(s, state="done")
+        self.ledger.update(5, state="done", observed_sha="x")
+        self.ledger.update(6, state="no_results")
+        self.assertEqual(self.ledger.rows()[4]["state"], "invalid")
+        self.assertEqual(self.ledger.infra_ratio(), 0.25)
+
 
 if __name__ == "__main__":
     unittest.main()

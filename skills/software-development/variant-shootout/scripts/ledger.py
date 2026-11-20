@@ -9,7 +9,7 @@ from pathlib import Path
 
 STATES = ("planned", "running", "done", "infra_error", "no_results", "invalid")
 PENDING_STATES = ("planned", "running", "no_results")
-FINISHED_STATES = ("done", "infra_error", "no_results", "invalid")
+FINISHED_STATES = ("done", "infra_error")
 FIELDS = (
     "seq", "variant", "environment", "sha", "state", "results_dir",
     "ci_url", "started_at", "finished_at", "observed_sha",
