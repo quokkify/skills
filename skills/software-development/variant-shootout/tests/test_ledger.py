@@ -118,6 +118,13 @@ class LedgerTest(unittest.TestCase):
             self.assertIsNone(row[field], field)
         self.assertEqual(row["sha"], "y")
 
+    def test_overlap_risk_survives_reset_and_is_cli_settable(self):
+        self.ledger.plan(make_items(1), {"base": "y"})
+        self.ledger.update(1, state="planned")
+        main([str(Path(self.tmp.name) / "ledger.jsonl"), "update", "--seq", "1", "--overlap-risk", "yes"])
+        self.assertEqual(self.ledger.rows()[0]["overlap_risk"], "yes")
+        self.assertEqual(self.ledger.update(1, state="planned")["overlap_risk"], "yes")
+
     def test_cli_unknown_seq_error_has_no_quotes(self):
         path = Path(self.tmp.name) / "ledger.jsonl"
         self.ledger.plan(make_items(1), {"base": "y"})

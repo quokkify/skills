@@ -236,6 +236,17 @@ class ExcludedRunsTest(unittest.TestCase):
         self.assertIn("`cand` excluded: 1 infra_error, 1 invalid, 0 without results", md)
         self.assertIn("`cand`: 0", md)
 
+    def test_overlap_risk_row_is_reported_in_both_languages(self):
+        rows = [{"seq": 0, "variant": "base", "state": "done", "ci_url": None},
+                {"seq": 3, "variant": "cand", "state": "done", "ci_url": None, "overlap_risk": "yes"}]
+        r = analyze(faster_runs(), "base", "proof", iterations=ITER, ledger_rows=rows)
+        self.assertEqual(r["overlap_risk_seqs"], [3])
+        en = render_markdown(r, "en").split("## What is not proven")[1].split("## Links")[0]
+        self.assertIn("Run seq 3 may have overlapped an orphaned run", en)
+        self.assertIn("Прогон seq 3 мог пересечься с осиротевшим", render_markdown(r, "ru"))
+        clean = analyze(faster_runs(), "base", "proof", iterations=ITER, ledger_rows=rows[:1])
+        self.assertNotIn("overlapped", render_markdown(clean, "en"))
+
     def test_baseline_with_only_ledger_rows_still_raises(self):
         rows = [{"seq": 0, "variant": "base", "state": "infra_error", "ci_url": None}]
         with self.assertRaisesRegex(ValueError, "baseline"):

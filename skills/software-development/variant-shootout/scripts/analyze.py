@@ -200,6 +200,9 @@ def analyze(runs, baseline, mode, iterations=DEFAULT_ITERATIONS, retries="unknow
             if state not in (None, "done"):
                 link_states[row["ci_url"]] = state
 
+    overlap_risk = [r["seq"] for r in sorted(ledger_rows or [], key=lambda x: x["seq"])
+                    if r.get("overlap_risk")]
+
     comparisons = sum(
         verdict not in (None, INSUFFICIENT)
         for t in tests if t["variant"] != baseline
@@ -217,6 +220,7 @@ def analyze(runs, baseline, mode, iterations=DEFAULT_ITERATIONS, retries="unknow
         "links": links,
         "link_states": link_states,
         "excluded_runs": excluded,
+        "overlap_risk_seqs": overlap_risk,
         "alpha": ALPHA,
         "comparisons": comparisons,
     }
@@ -341,6 +345,8 @@ def render_markdown(report, lang="en"):
             extra.append(s["excluded_line"].format(
                 variant=v, infra=counts["infra_error"], invalid=counts["invalid"],
                 no_results=counts["no_results"]))
+    for seq in report.get("overlap_risk_seqs", []):
+        extra.append(s["overlap_line"].format(seq=seq))
     c, alpha = report["comparisons"], report["alpha"]
     extra.append(s["comparisons_line"].format(c=c, alpha=f"{alpha:g}", x=f"{c * alpha:.2f}"))
     out += ["", f"## {s['not_proven']}", ""]

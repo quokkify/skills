@@ -1,5 +1,6 @@
 import io
 import json
+import shutil
 import sys
 from contextlib import redirect_stderr
 import tempfile
@@ -90,6 +91,26 @@ class CollectLedgerTest(unittest.TestCase):
             self.assertTrue(
                 all(r["seq"] == 1 and r["variant"] == "base" and r["sha"] == "abc" for r in lines)
             )
+
+    def test_regression_collect_reads_only_current_row_attempt_dir(self):
+        """Regression guard: a sibling attempt dir (orphaned run) is never read."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            runs = tmp / "runs" / "1"
+            shutil.copytree(FIX / "junit" / "basic", runs / "attempt-2")
+            (runs / "attempt-1").mkdir()
+            (runs / "attempt-1" / "TEST-orphan.xml").write_text(
+                '<testsuite name="o"><testcase classname="o.O" name="stale" time="1"/></testsuite>')
+            ledger = Ledger(tmp / "ledger.jsonl")
+            ledger.plan([{"seq": 1, "variant": "base", "environment": "e1"}], {"base": "abc"})
+            ledger.update(1, state="running", results_dir=str(runs / "attempt-1"))
+            ledger.update(1, state="planned")
+            ledger.update(1, state="done", results_dir=str(runs / "attempt-2"))
+            out = tmp / "runs.jsonl"
+            collect(tmp / "ledger.jsonl", "junit", out, None)
+            names = {json.loads(x)["test_id"] for x in out.read_text().splitlines()}
+            self.assertFalse(any("stale" in n for n in names))
+            self.assertTrue(names)
 
     def test_both_prefers_allure(self):
         with tempfile.TemporaryDirectory() as tmp:

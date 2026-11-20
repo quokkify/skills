@@ -12,7 +12,7 @@ PENDING_STATES = ("planned", "running", "no_results")
 FINISHED_STATES = ("done", "infra_error")
 FIELDS = (
     "seq", "variant", "environment", "sha", "state", "results_dir",
-    "ci_url", "run_id", "started_at", "finished_at", "observed_sha",
+    "ci_url", "run_id", "started_at", "finished_at", "observed_sha", "overlap_risk",
 )
 RESET_FIELDS = ("ci_url", "run_id", "results_dir", "observed_sha", "started_at", "finished_at")
 
