@@ -20,6 +20,7 @@ from stats import (  # noqa: E402
 from strings import STRINGS  # noqa: E402
 
 ALPHA = 0.05
+MIN_FLOOR_N = 3
 MODES = ("quick", "proof")
 RETRIES = ("off", "unknown")
 DEFAULT_ITERATIONS = 10000
@@ -64,14 +65,12 @@ def _per_environment(cand_recs, base_recs, is_base):
 
 
 def _time_comparison(base_recs, cand_recs, iterations):
-    bpass = _counts(base_recs)[1]
-    cpass = _counts(cand_recs)[1]
-    if len(bpass) < 2 or len(cpass) < 2:
-        return None, None, INSUFFICIENT
     benv = {e: _durations(_counts(r)[1]) for e, r in _by_env(base_recs).items()}
     cenv = {e: _durations(_counts(r)[1]) for e, r in _by_env(cand_recs).items()}
     shared = [e for e in benv if benv[e] and cenv.get(e)]
     if not shared:
+        return None, None, INSUFFICIENT
+    if sum(len(benv[e]) for e in shared) < 2 or sum(len(cenv[e]) for e in shared) < 2:
         return None, None, INSUFFICIENT
     delta, lo, hi = bootstrap_median_delta(
         {e: benv[e] for e in shared}, {e: cenv[e] for e in shared}, iterations=iterations
@@ -99,7 +98,7 @@ def _entry(test_id, variant, recs, base_recs, is_base, iterations):
         "iqr_ms": (iqr(durs)[1] - iqr(durs)[0]) if durs else None,
         "delta_ms": None, "ci_ms": None, "time_verdict": None,
         "fail_rate_ci": list(wilson(len(failed), n)) if n else None,
-        "fail_rate_floor": rule_of_three(n) if n and not failed else None,
+        "fail_rate_floor": rule_of_three(n) if n >= MIN_FLOOR_N and not failed else None,
         "fisher_p": None,
         "stability_verdict": "baseline" if is_base else NMD,
         "per_environment": _per_environment(recs, base_recs, is_base),
@@ -108,7 +107,9 @@ def _entry(test_id, variant, recs, base_recs, is_base, iterations):
         delta, ci, verdict = _time_comparison(base_recs, recs, iterations)
         entry["delta_ms"], entry["ci_ms"], entry["time_verdict"] = delta, ci, verdict
         bn = len(_counts(base_recs)[0])
-        if n and bn:
+        if not (n and bn):
+            entry["stability_verdict"] = INSUFFICIENT
+        else:
             bk = len(_counts(base_recs)[2])
             p = fisher_two_sided(bk, bn, len(failed), n)
             entry["fisher_p"] = p
@@ -248,9 +249,17 @@ def render_markdown(report, lang="en"):
                 k=t["failed"], n=t["n"], pct=_pct(t["fail_rate_floor"]),
                 variant=t["variant"], test=t["test_id"]))
 
+    quick = report["mode"] == "quick"
+    verdicts = [v for t in cand_entries for v in (t["time_verdict"], t["stability_verdict"])]
     out += ["", f"## {s['verdict']}", ""]
-    out += [f"- {x}" for x in proven] if proven else [s["verdict_none"]]
-    out += ["", f"## {s['proven']}", ""]
+    if proven:
+        summary = [f"- {x}" for x in proven]
+        out += ([s["verdict_quick_prefix"], ""] if quick else []) + summary
+    elif NMD in verdicts:
+        out.append(s["verdict_none"])
+    else:
+        out.append(s["verdict_insufficient"])
+    out += ["", f"## {s['proven_quick'] if quick else s['proven']}", ""]
     out += [f"- {x}" for x in proven] if proven else [s["proven_none"]]
 
     extra = []

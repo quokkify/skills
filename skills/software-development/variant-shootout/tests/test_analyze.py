@@ -129,6 +129,50 @@ class AnalyzeTest(unittest.TestCase):
         self.assertIn("faster", proven)
         self.assertNotIn("no measurable difference", proven)
 
+    def test_regression_guard_passes_counted_over_shared_environments_only(self):
+        runs = (series("base", "e1", "t", [1000] * 5) + [rec(10, "base", "e2", "t", dur=1000)]
+                + series("cand", "e1", "t", [0] * 5, start=20, status="failed")
+                + [rec(30, "cand", "e2", "t", dur=500), rec(31, "cand", "e3", "t", dur=500)])
+        e = entry(analyze(runs, "base", "proof", iterations=ITER), "t", "cand")
+        self.assertEqual(e["time_verdict"], "insufficient data")
+        self.assertIsNone(e["delta_ms"])
+
+    def test_ru_findings_keep_dimension(self):
+        runs = (series("base", "e1", "t", [1000 + i for i in range(20)])
+                + series("cand", "e1", "t", [500 + i for i in range(20)], start=100))
+        md = render_markdown(analyze(runs, "base", "proof", iterations=ITER), "ru")
+        self.assertIn("время", md)
+        self.assertIn("стабильность", md)
+
+    def test_quick_mode_does_not_title_findings_as_proven(self):
+        runs = (series("base", "e1", "t", [1000 + i for i in range(20)])
+                + series("cand", "e1", "t", [500 + i for i in range(20)], start=100))
+        md = render_markdown(analyze(runs, "base", "quick", iterations=ITER), "en")
+        self.assertNotIn("What is proven", md)
+        self.assertIn("Indicative findings (not proof)", md)
+        ru = render_markdown(analyze(runs, "base", "quick", iterations=ITER), "ru")
+        self.assertIn("Предварительные выводы (не доказательство)", ru)
+
+    def test_absent_baseline_or_empty_n_is_insufficient_stability(self):
+        runs = series("base", "e1", "other", [1, 2, 3]) + series("cand", "e1", "t", [1, 2, 3], start=10)
+        runs += series("cand", "e1", "other", [1, 2, 3], start=20)
+        e = entry(analyze(runs, "base", "quick", iterations=ITER), "t", "cand")
+        self.assertEqual(e["stability_verdict"], "insufficient data")
+
+    def test_floor_needs_three_executions(self):
+        runs = series("base", "e1", "t", [1, 2]) + series("cand", "e1", "t", [1, 2], start=10)
+        e = entry(analyze(runs, "base", "quick", iterations=ITER), "t", "cand")
+        self.assertIsNone(e["fail_rate_floor"])
+
+    def test_all_insufficient_has_no_no_difference_verdict(self):
+        runs = [rec(0, "base", "e1", "other"), rec(1, "cand", "e1", "other", status="skipped"),
+                rec(2, "cand", "e1", "t")]
+        from strings import STRINGS
+        for lang in ("en", "ru"):
+            md = render_markdown(analyze(runs, "base", "proof", iterations=ITER), lang)
+            self.assertNotIn(STRINGS[lang]["verdict_none"], md)
+            self.assertIn(STRINGS[lang]["verdict_insufficient"], md)
+
     def test_cli_writes_outputs(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
