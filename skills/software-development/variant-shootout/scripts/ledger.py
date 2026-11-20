@@ -101,6 +101,7 @@ def main(argv=None):
         if field != "seq":
             p_upd.add_argument(f"--{field.replace('_', '-')}", dest=field)
     sub.add_parser("status", help="print counts per state and infra_ratio")
+    sub.add_parser("pending", help="print pending rows (planned, running, no_results) as JSON lines")
     args = parser.parse_args(argv)
     ledger = Ledger(args.path)
     try:
@@ -115,6 +116,9 @@ def main(argv=None):
             if fields.get("state") in FINISHED_STATES and "finished_at" not in fields:
                 fields["finished_at"] = _now()
             ledger.update(args.seq, **fields)
+        elif args.command == "pending":
+            for row in ledger.pending():
+                print(json.dumps(row, sort_keys=True))
         else:
             counts = Counter(r["state"] for r in ledger.rows())
             json.dump(

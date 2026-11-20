@@ -1,11 +1,14 @@
+import io
+import json
 import sys
+from contextlib import redirect_stdout
 import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from ledger import Ledger  # noqa: E402
+from ledger import Ledger, main  # noqa: E402
 
 
 def make_items(n):
@@ -51,6 +54,20 @@ class LedgerTest(unittest.TestCase):
         self.ledger.update(6, state="no_results")
         self.assertEqual(self.ledger.rows()[4]["state"], "invalid")
         self.assertEqual(self.ledger.infra_ratio(), 0.25)
+
+
+    def test_pending_cli_prints_json_lines(self):
+        path = Path(self.tmp.name) / "ledger.jsonl"
+        self.ledger.plan(make_items(4), {"base": "y"})
+        self.ledger.update(1, state="done")
+        self.ledger.update(2, state="no_results")
+        self.ledger.update(3, state="infra_error")
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main([str(path), "pending"])
+        self.assertEqual(rc, 0)
+        rows = [json.loads(line) for line in buf.getvalue().splitlines()]
+        self.assertEqual([(r["seq"], r["state"]) for r in rows], [(2, "no_results"), (4, "planned")])
 
 
 if __name__ == "__main__":

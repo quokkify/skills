@@ -115,7 +115,7 @@ def _reduce_duplicates(records):
 
 def _allure_dir(results_dir, label):
     by_history = {}
-    for path in sorted(results_dir.glob("*-result.json")):
+    for path in sorted(results_dir.rglob("*-result.json")):
         result = json.loads(path.read_text())
         key = result.get("historyId") or result.get("fullName") or result.get("uuid") or path.name
         by_history.setdefault(key, []).append(result)
@@ -147,7 +147,7 @@ def collect_run(results_dir, fmt, label):
     allure = _allure_dir(results_dir, label) if fmt in ("allure", "both") else []
     junit = []
     if fmt in ("junit", "both"):
-        for path in sorted(results_dir.glob("*.xml")):
+        for path in sorted(results_dir.rglob("TEST-*.xml")):
             junit.extend(_junit_file(path))
     allure = _reduce_duplicates(allure)
     junit = _reduce_duplicates(junit)

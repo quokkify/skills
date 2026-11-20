@@ -131,5 +131,26 @@ class CollectLedgerTest(unittest.TestCase):
             self.assertEqual(recs[0]["status"], "failed")
 
 
+    def test_nested_modules_are_found_recursively(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for module, cls in (("orders", "c.OrderTest"), ("payments", "c.PaymentTest")):
+                reports = d / module / "target" / "surefire-reports"
+                reports.mkdir(parents=True)
+                (reports / "TEST-suite.xml").write_text(
+                    f'<testsuite><testcase classname="{cls}" name="m" time="1"/></testsuite>')
+            allure = d / "orders" / "target" / "allure-results"
+            allure.mkdir(parents=True)
+            (allure / "a-result.json").write_text(json.dumps({
+                "historyId": "h", "fullName": "c.OrderTest.n", "name": "n",
+                "status": "passed", "start": 0, "stop": 2}))
+            junit = collect_run(d, "junit", None)
+            self.assertEqual(sorted(r["test_id"] for r in junit), ["c.OrderTest#m", "c.PaymentTest#m"])
+            self.assertTrue(all(r["status"] == "passed" and not r["retried"] for r in junit))
+            both = collect_run(d, "both", None)
+            self.assertEqual(sorted(r["test_id"] for r in both),
+                             ["c.OrderTest#m", "c.OrderTest.n", "c.PaymentTest#m"])
+
+
 if __name__ == "__main__":
     unittest.main()
