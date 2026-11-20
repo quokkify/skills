@@ -158,7 +158,10 @@ class BootstrapInstallerTest(unittest.TestCase):
 
     def test_agent_definitions_are_installed(self):
         self.run_bootstrap("--provider", "codex")
-        self.assertEqual(3, len(list(pathlib.Path(self.env["CODEX_HOME"], "agents").glob("*.toml"))))
+        self.assertEqual(
+            {"explorer.toml", "reviewer.toml", "docs-researcher.toml", "project-toolkit-migration.toml"},
+            {p.name for p in pathlib.Path(self.env["CODEX_HOME"], "agents").glob("*.toml")},
+        )
 
     def test_hooks_keep_executable_mode(self):
         self.run_bootstrap("--provider", "claude")

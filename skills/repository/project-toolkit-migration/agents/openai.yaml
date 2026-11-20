@@ -1,0 +1,6 @@
+interface:
+  display_name: "Project Toolkit Migration"
+  short_description: "Diagnose and migrate Copier-managed projects"
+  default_prompt: "Use $project-toolkit-migration to diagnose this project's template readiness, plan its migration, and retain verified lessons."
+policy:
+  allow_implicit_invocation: true

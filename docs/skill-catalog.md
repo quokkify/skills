@@ -21,6 +21,8 @@ Every entry below is stored once at `skills/<category>/<name>/SKILL.md` and can 
 
 ## repository
 
+- [`project-toolkit-migration`](../skills/repository/project-toolkit-migration/SKILL.md) — experimental assisted adoption and migration of Copier templates, local diagnosis, and durable verified lessons.
+
 - [`repository-quality-gates`](../skills/repository/repository-quality-gates/SKILL.md) — design exact-artifact validators, Git hooks, and CI gates.
 - [`renovate-adoption-review`](../skills/repository/renovate-adoption-review/SKILL.md) — adopt what a dependency update brings, with cited changes in a child PR or issue.
 - [`mr-glab-review`](../skills/repository/mr-glab-review/SKILL.md) — review a GitLab MR with the reviewer item by item and publish approved, friendly comments in one batch.
