@@ -94,7 +94,9 @@ class CollectLedgerTest(unittest.TestCase):
             d = Path(tmp)
             (d / "x-result.json").write_text(json.dumps({
                 "historyId": "h", "testCaseId": "t",
-                "fullName": "com.example.CartTest#addsItem",
+                "fullName": "com.example.CartTest.addsItem",
+                "labels": [{"name": "testClass", "value": "com.example.CartTest"},
+                           {"name": "testMethod", "value": "addsItem"}],
                 "name": "addsItem", "status": "failed", "start": 0, "stop": 5}))
             (d / "TEST-x.xml").write_text(
                 '<testsuite><testcase classname="com.example.CartTest" name="addsItem" time="1"/>'
@@ -102,6 +104,31 @@ class CollectLedgerTest(unittest.TestCase):
             recs = collect_run(d, "both", None)
             self.assertEqual(len(recs), 2)
             self.assertEqual(by_name(recs, "addsItem")[0]["status"], "failed")
+            self.assertEqual(by_name(recs, "addsItem")[0]["duration_ms"], 5)
+
+    def test_regression_parameterised_results_stay_distinct(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for i, value in enumerate(("a", "b")):
+                (d / f"{i}-result.json").write_text(json.dumps({
+                    "historyId": f"h{i}", "fullName": "com.example.CartTest.pays",
+                    "name": "pays", "status": "passed", "start": 0, "stop": 1,
+                    "parameters": [{"name": "kind", "value": value}]}))
+            recs = collect_run(d, "allure", None)
+            self.assertEqual(
+                sorted(r["test_id"] for r in recs),
+                ["com.example.CartTest.pays[kind=a]", "com.example.CartTest.pays[kind=b]"])
+
+    def test_regression_junit_same_id_in_two_files_collapses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for n in (1, 2):
+                (d / f"TEST-{n}.xml").write_text(
+                    '<testsuite><testcase classname="c.A" name="m" time="1"/></testsuite>')
+            recs = collect_run(d, "junit", None)
+            self.assertEqual(len(recs), 1)
+            self.assertTrue(recs[0]["retried"])
+            self.assertEqual(recs[0]["status"], "failed")
 
 
 if __name__ == "__main__":

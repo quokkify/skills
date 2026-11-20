@@ -81,6 +81,38 @@ def _external_id(result, label):
     return None
 
 
+def _allure_test_id(result):
+    labels = {item.get("name"): item.get("value") for item in result.get("labels") or []}
+    if labels.get("testClass") and labels.get("testMethod"):
+        test_id = f"{labels['testClass']}#{labels['testMethod']}"
+    else:
+        test_id = result.get("fullName") or result.get("testCaseId")
+    params = result.get("parameters") or []
+    if params:
+        test_id += "[" + ",".join(f"{p.get('name')}={p.get('value')}" for p in params) + "]"
+    return test_id
+
+
+def _reduce_duplicates(records):
+    """Collapse records sharing a test_id: latest stop_ms wins, marked retried and failed."""
+    grouped = {}
+    for rec in records:
+        grouped.setdefault(rec["test_id"], []).append(rec)
+    out = []
+    for group in grouped.values():
+        if len(group) == 1:
+            out.append(group[0])
+            continue
+        best = group[0]
+        for rec in group[1:]:
+            stop = -1 if rec["stop_ms"] is None else rec["stop_ms"]
+            best_stop = -1 if best["stop_ms"] is None else best["stop_ms"]
+            if stop >= best_stop:
+                best = rec
+        out.append({**best, "retried": True, "status": "failed"})
+    return out
+
+
 def _allure_dir(results_dir, label):
     by_history = {}
     for path in sorted(results_dir.glob("*-result.json")):
@@ -96,7 +128,7 @@ def _allure_dir(results_dir, label):
         duration = stop - start if start is not None and stop is not None else 0
         details = result.get("statusDetails") or {}
         records.append(_record(
-            result.get("fullName") or result.get("testCaseId"),
+            _allure_test_id(result),
             result.get("name"),
             "failed" if retried else result.get("status"),
             retried, start, stop, duration,
@@ -117,6 +149,8 @@ def collect_run(results_dir, fmt, label):
     if fmt in ("junit", "both"):
         for path in sorted(results_dir.glob("*.xml")):
             junit.extend(_junit_file(path))
+    allure = _reduce_duplicates(allure)
+    junit = _reduce_duplicates(junit)
     seen = {r["test_id"] for r in allure}
     return allure + [r for r in junit if r["test_id"] not in seen]
 
