@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>variant-shootout race</title>
+<style>
+  :root { --bg:#0f1419; --fg:#e6e6e6; --muted:#8a94a0; --lane:#1b222b; --ok:#3fb950; --bad:#f85149; --skip:#8a94a0; --step:#58a6ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; width:1280px; height:720px; background:var(--bg); color:var(--fg); font:16px/1.3 system-ui, sans-serif; overflow:hidden; }
+  #clock { position:absolute; top:16px; right:24px; font:700 40px ui-monospace, monospace; }
+  #title { position:absolute; top:22px; left:24px; font-size:22px; color:var(--muted); }
+  #lanes { position:absolute; top:84px; left:24px; right:24px; }
+  .lane { background:var(--lane); border-radius:8px; margin-bottom:12px; padding:8px 12px; }
+  .lane h2 { margin:0 0 6px; font-size:16px; }
+  .track { position:relative; height:22px; margin-bottom:4px; background:#141a21; border-radius:4px; overflow:hidden; }
+  .bar { position:absolute; top:0; bottom:0; border-radius:3px; }
+  .bar.passed { background:var(--ok); } .bar.failed, .bar.broken { background:var(--bad); }
+  .bar.skipped, .bar.unknown { background:var(--skip); } .bar.step { background:var(--step); opacity:.85; border-right:1px solid var(--bg); }
+  .nodata { color:var(--muted); font-style:italic; padding:8px 0; }
+  #results { display:none; position:absolute; inset:0; background:var(--bg); padding:24px; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { text-align:left; padding:6px 10px; border-bottom:1px solid #2a323c; }
+  th { color:var(--muted); font-weight:600; }
+  #headline { display:none; position:absolute; inset:0; background:var(--bg); padding:200px 48px; font-size:30px; line-height:1.6; }
+  .cap { color:var(--muted); font-size:12px; text-transform:uppercase; margin:0 0 2px; }
+  .live { font-size:14px; color:var(--muted); min-height:18px; margin-top:4px; }
+  .live b { color:var(--fg); font-weight:600; }
+  #more { color:var(--muted); margin-top:8px; }
+  #rqual { color:var(--muted); font-size:18px; font-weight:400; margin-left:12px; }
+</style>
+</head>
+<body>
+<div id="title"></div><div id="clock">0.0s</div>
+<div id="lanes"></div>
+<div id="headline"></div>
+<div id="results"><h1><span id="rtitle"></span><span id="rqual"></span></h1><table><thead id="thead"></thead><tbody id="tbody"></tbody></table><div id="more"></div></div>
+<script>
+(function () {
+  const D = window.__RACE__;
+  const L = D.labels;
+  const el = (tag, cls, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; };
+  const fmtS = (ms) => (ms / 1000).toFixed(1) + "s";
+  const sign = (ms) => ms == null ? "n/a" : (ms >= 0 ? "+" : "") + (ms / 1000).toFixed(1) + "s";
+  document.getElementById("title").textContent = L.title;
+
+  const laneBars = [], lives = [];
+  const lanesEl = document.getElementById("lanes");
+  for (const lane of D.lanes) {
+    const box = el("div", "lane", lanesEl);
+    el("h2", "", box).textContent = lane.variant + (lane.seq == null ? "" : " (#" + lane.seq + ")");
+    if (!lane.tests.length) { el("div", "nodata", box).textContent = L.noData; continue; }
+    el("div", "cap", box).textContent = L.tests;
+    const t1 = el("div", "track", box);
+    el("div", "cap", box).textContent = L.steps;
+    const t2 = el("div", "track", box);
+    const live = el("div", "live", box);
+    lives.push({ lane, live });
+    const place = (track, items, cls) => items.map((it) => {
+      const b = el("div", "bar " + (cls || it.status), track);
+      b.title = it.name;
+      b.style.left = (it.start / D.span * 100) + "%";
+      b.style.width = "0%";
+      return { b, it };
+    });
+    laneBars.push(...place(t1, lane.tests), ...place(t2, lane.steps, "step"));
+  }
+
+  function active(items, t) { return items.find((i) => t >= i.start && t < i.end); }
+  function draw(simMs) {
+    for (const { lane, live } of lives) {
+      if (simMs >= lane.span) { live.innerHTML = ""; el("b", "", live).textContent = L.done + " " + fmtS(lane.span); continue; }
+      const cur = active(lane.steps, simMs) || active(lane.tests, simMs);
+      live.textContent = cur ? cur.name : "";
+    }
+    document.getElementById("clock").textContent = fmtS(Math.min(simMs, D.span));
+    for (const { b, it } of laneBars) {
+      const w = Math.max(0, Math.min(simMs, it.end) - it.start);
+      b.style.width = (w / D.span * 100) + "%";
+    }
+  }
+
+  function showResults() {
+    document.getElementById("headline").style.display = "none";
+    document.getElementById("results").style.display = "block";
+    document.getElementById("rtitle").textContent = D.resultsTitle.title;
+    if (D.resultsTitle.qualifier) document.getElementById("rqual").textContent = D.resultsTitle.qualifier;
+    const hr = el("tr", "", document.getElementById("thead"));
+    for (const h of L.columns) el("th", "", hr).textContent = h;
+    for (const r of D.table.rows) {
+      const tr = el("tr", "", document.getElementById("tbody"));
+      [r.test, r.variant, r.median_ms == null ? "n/a" : fmtS(r.median_ms), sign(r.delta_ms),
+        r.time_verdict || "", r.stability_verdict || ""].forEach((v) => { el("td", "", tr).textContent = v; });
+    }
+    if (D.table.more > 0) document.getElementById("more").textContent = "+" + D.table.more + " " + L.more;
+  }
+
+  window.__raceStart = function () {
+    const t0 = performance.now();
+    const raceMs = D.span / D.speed;
+    function frame(now) {
+      const real = now - t0;
+      if (real < raceMs) { draw(real * D.speed); requestAnimationFrame(frame); return; }
+      draw(D.span);
+      const hl = document.getElementById("headline");
+      D.headlines.forEach((h) => { el("div", "", hl).textContent = h; });
+      if (D.headlines.length) hl.style.display = "block";
+      setTimeout(() => {
+        showResults();
+        setTimeout(() => { window.__raceDone = true; }, D.tableHoldMs);
+      }, D.headlines.length ? D.headlineHoldMs : 0);
+    }
+    requestAnimationFrame(frame);
+  };
+})();
+</script>
+</body>
+</html>

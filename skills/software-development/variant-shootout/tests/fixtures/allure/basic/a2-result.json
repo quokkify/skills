@@ -1,0 +1,3 @@
+{"uuid":"a2","historyId":"h-ref","testCaseId":"tc-ref","fullName":"com.example.PayTest.refunds","name":"refunds","status":"failed","start":2000,"stop":2300,
+ "statusDetails":{"message":"refund rejected"},
+ "steps":[{"name":"refund","status":"failed"}]}
