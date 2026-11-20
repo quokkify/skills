@@ -76,6 +76,7 @@ runner:
     cd {worktree} && mvn -q -B test -Dtest='{tests}' -Dsurefire.rerunFailingTestsCount=0
     ; mkdir -p {results_dir}
     && tar cf - */target/surefire-reports */target/allure-results | tar xf - -C {results_dir}
+  local_clean: rm -rf */target/surefire-reports */target/allure-results
   force_env:
     ALLURE_UPLOAD: "false"
     CHAT_NOTIFY: "false"
@@ -120,6 +121,7 @@ upload: "attach race.mp4 to the merge request description after the user's yes"
 
 Notes:
 
+- `local_clean` runs in the shared per-variant worktree before every local attempt, so reports left by an earlier session or a stopped runner never get copied into the new attempt directory; it is safe only after the previous runner is confirmed stopped.
 - `RERUNS=0`, `ALLURE_UPLOAD=false` and `CHAT_NOTIFY=false` travel as pipeline variables in the trigger; `force_env` only reaches local Maven runs, where `-Dsurefire.rerunFailingTestsCount=0` turns retries off.
 - `fetch` downloads the artifacts of this pipeline's `tests` job, not the latest artifacts of the branch, because many pipelines run on one variant branch. The archive keeps its module folders; `collect.py` searches `results_dir` recursively, so two modules' `TEST-*.xml` files with the same name do not collide.
 - `cancel` frees the slot of a timed-out pipeline. There is no `find`: the trigger's response carries the id at once, so a `running` row without `run_id` only happens when the session died between the trigger and the ledger update; the skill then warns about a possible orphan and pauses that environment for `timeout_minutes`.
