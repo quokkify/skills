@@ -69,6 +69,13 @@ class RaceSmokeTest(unittest.TestCase):
                 capture_output=True, text=True)
             self.assertGreater(float(probe.stdout.strip()), 0)
 
+    def test_lib_node_tests(self):
+        if shutil.which("node") is None:
+            self.skipTest("node not found")
+        p = subprocess.run(["node", "--test", str(SKILL / "tests" / "race_lib.test.mjs")],
+                           capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+
     def test_usage_error(self):
         if shutil.which("node") is None:
             self.skipTest("node not found")

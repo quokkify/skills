@@ -21,12 +21,17 @@
   table { border-collapse:collapse; width:100%; }
   th, td { text-align:left; padding:6px 10px; border-bottom:1px solid #2a323c; }
   th { color:var(--muted); font-weight:600; }
+  #headline { display:none; position:absolute; inset:0; background:var(--bg); padding:200px 48px; font-size:30px; line-height:1.6; }
+  .cap { color:var(--muted); font-size:12px; text-transform:uppercase; margin:0 0 2px; }
+  .live { font-size:14px; color:var(--muted); min-height:18px; margin-top:4px; }
+  .live b { color:var(--fg); font-weight:600; }
   #more { color:var(--muted); margin-top:8px; }
 </style>
 </head>
 <body>
 <div id="title"></div><div id="clock">0.0s</div>
 <div id="lanes"></div>
+<div id="headline"></div>
 <div id="results"><h1 id="rtitle"></h1><table><thead id="thead"></thead><tbody id="tbody"></tbody></table><div id="more"></div></div>
 <script>
 (function () {
@@ -37,13 +42,18 @@
   const sign = (ms) => ms == null ? "n/a" : (ms >= 0 ? "+" : "") + (ms / 1000).toFixed(1) + "s";
   document.getElementById("title").textContent = L.title;
 
-  const laneBars = [];
+  const laneBars = [], lives = [];
   const lanesEl = document.getElementById("lanes");
   for (const lane of D.lanes) {
     const box = el("div", "lane", lanesEl);
     el("h2", "", box).textContent = lane.variant + (lane.seq == null ? "" : " (#" + lane.seq + ")");
     if (!lane.tests.length) { el("div", "nodata", box).textContent = L.noData; continue; }
-    const t1 = el("div", "track", box), t2 = el("div", "track", box);
+    el("div", "cap", box).textContent = L.tests;
+    const t1 = el("div", "track", box);
+    el("div", "cap", box).textContent = L.steps;
+    const t2 = el("div", "track", box);
+    const live = el("div", "live", box);
+    lives.push({ lane, live });
     const place = (track, items, cls) => items.map((it) => {
       const b = el("div", "bar " + (cls || it.status), track);
       b.title = it.name;
@@ -54,7 +64,13 @@
     laneBars.push(...place(t1, lane.tests), ...place(t2, lane.steps, "step"));
   }
 
+  function active(items, t) { return items.find((i) => t >= i.start && t < i.end); }
   function draw(simMs) {
+    for (const { lane, live } of lives) {
+      if (simMs >= lane.span) { live.innerHTML = ""; el("b", "", live).textContent = L.done + " " + fmtS(lane.span); continue; }
+      const cur = active(lane.steps, simMs) || active(lane.tests, simMs);
+      live.textContent = cur ? cur.name : "";
+    }
     document.getElementById("clock").textContent = fmtS(Math.min(simMs, D.span));
     for (const { b, it } of laneBars) {
       const w = Math.max(0, Math.min(simMs, it.end) - it.start);
@@ -63,6 +79,7 @@
   }
 
   function showResults() {
+    document.getElementById("headline").style.display = "none";
     document.getElementById("results").style.display = "block";
     document.getElementById("rtitle").textContent = L.results;
     const hr = el("tr", "", document.getElementById("thead"));
@@ -77,14 +94,18 @@
 
   window.__raceStart = function () {
     const t0 = performance.now();
-    const holdMs = D.holdMs;
     const raceMs = D.span / D.speed;
     function frame(now) {
       const real = now - t0;
       if (real < raceMs) { draw(real * D.speed); requestAnimationFrame(frame); return; }
       draw(D.span);
-      showResults();
-      setTimeout(() => { window.__raceDone = true; }, holdMs);
+      const hl = document.getElementById("headline");
+      D.headlines.forEach((h) => { el("div", "", hl).textContent = h; });
+      if (D.headlines.length) hl.style.display = "block";
+      setTimeout(() => {
+        showResults();
+        setTimeout(() => { window.__raceDone = true; }, D.tableHoldMs);
+      }, D.headlines.length ? D.headlineHoldMs : 0);
     }
     requestAnimationFrame(frame);
   };
