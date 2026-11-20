@@ -1,0 +1,4 @@
+{"uuid":"a1","historyId":"h-pay","testCaseId":"tc-pay","fullName":"com.example.PayTest.pays","name":"pays","status":"passed","start":1000,"stop":1400,
+ "labels":[{"name":"suite","value":"PayTest"}],
+ "links":[{"name":"C123","type":"tms","url":"https://tms.example/C123"}],
+ "steps":[{"name":"open","status":"passed","start":1000,"stop":1100,"steps":[{"name":"inner","status":"passed","start":1010,"stop":1050}]},{"name":"submit","status":"passed","start":1100,"stop":1400}]}

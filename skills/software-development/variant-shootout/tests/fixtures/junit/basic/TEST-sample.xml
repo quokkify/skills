@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.CartTest" tests="3" failures="1" errors="0" skipped="0" time="1.5">
+  <testcase classname="com.example.CartTest" name="addsItem" time="0.25"/>
+  <testcase classname="com.example.CartTest" name="removesItem" time="0.5">
+    <failure message="expected 0 but was 1" type="java.lang.AssertionError">stack</failure>
+  </testcase>
+  <testcase classname="com.example.CartTest" name="appliesCoupon" time="0.75">
+    <flakyFailure message="timeout" type="java.lang.AssertionError">stack</flakyFailure>
+  </testcase>
+</testsuite>

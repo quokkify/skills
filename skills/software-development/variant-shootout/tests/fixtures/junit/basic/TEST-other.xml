@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.OrderTest" tests="1" time="0.1">
+  <testcase classname="com.example.OrderTest" name="addsItem" time="0.1"/>
+</testsuite>
