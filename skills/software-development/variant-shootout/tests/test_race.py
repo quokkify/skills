@@ -90,6 +90,19 @@ class RaceSmokeTest(unittest.TestCase):
             self.assertEqual(got[lang], STRINGS[lang]["verdicts"])
         self.assertEqual(got["q"], [STRINGS["en"]["verdict_quick_prefix"], STRINGS["ru"]["verdict_quick_prefix"]])
 
+    def test_broken_bars_share_the_failed_colour(self):
+        """Regression guard: a broken test must not render as an invisible bar."""
+        import re
+        css = (RACE / "template.html").read_text()
+        rules = {sel.strip(): body for sels, body in re.findall(r"([^{}]+)\{([^}]*)\}", css)
+                 for sel in sels.split(",")}
+        self.assertIn(".bar.broken", rules)
+        self.assertEqual(rules[".bar.broken"], rules[".bar.failed"])
+
+    def test_results_screen_shows_quick_qualifier(self):
+        html = (RACE / "template.html").read_text()
+        self.assertIn("D.resultsTitle.qualifier", html)
+
     def test_usage_error(self):
         if shutil.which("node") is None:
             self.skipTest("node not found")

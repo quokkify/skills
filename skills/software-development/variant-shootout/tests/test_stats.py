@@ -83,6 +83,20 @@ class BootstrapTest(unittest.TestCase):
             bootstrap_median_delta(base, cand, iterations=500, seed=7),
         )
 
+    def test_regression_environment_mix_does_not_manufacture_difference(self):
+        """Regression guard: different per-environment compositions must not create a delta."""
+        base = {"e1": [1000.0] * 20, "e2": [10000.0] * 2}
+        cand = {"e1": [1000.0] * 2, "e2": [10000.0] * 20}
+        self.assertEqual(bootstrap_median_delta(base, cand, iterations=500), (0.0, 0.0, 0.0))
+
+    def test_weighted_by_shared_sample_sizes(self):
+        base = {"e1": [100.0] * 3, "e2": [200.0] * 1}
+        cand = {"e1": [90.0] * 1, "e2": [230.0] * 3}
+        delta, lo, hi = bootstrap_median_delta(base, cand, iterations=200)
+        self.assertAlmostEqual(delta, 0.5 * -10 + 0.5 * 30)
+        self.assertAlmostEqual(lo, delta)
+        self.assertAlmostEqual(hi, delta)
+
     def test_one_sided_stratum_raises(self):
         with self.assertRaisesRegex(ValueError, "b"):
             bootstrap_median_delta({"a": [1.0], "b": [2.0]}, {"a": [1.0]})

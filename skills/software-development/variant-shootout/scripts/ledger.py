@@ -44,11 +44,20 @@ class Ledger:
     def plan(self, items, shas):
         existing = self._read()
         for item in items:
-            if item["seq"] in existing:
-                continue
             variant = item["variant"]
             if variant not in shas:
                 raise ValueError(f"no sha provided for variant {variant!r}")
+            row = existing.get(item["seq"])
+            wanted = (variant, item["environment"], shas[variant])
+            if row is not None and (row["variant"], row["environment"], row["sha"]) != wanted:
+                raise ValueError(
+                    f"seq {item['seq']} is already planned as "
+                    f"{row['variant']}/{row['environment']}@{row['sha']}, not "
+                    f"{wanted[0]}/{wanted[1]}@{wanted[2]}")
+        for item in items:
+            if item["seq"] in existing:
+                continue
+            variant = item["variant"]
             row = {f: None for f in FIELDS}
             row.update(
                 seq=item["seq"], variant=variant, environment=item["environment"],

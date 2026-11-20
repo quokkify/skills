@@ -14,7 +14,7 @@
   .lane h2 { margin:0 0 6px; font-size:16px; }
   .track { position:relative; height:22px; margin-bottom:4px; background:#141a21; border-radius:4px; overflow:hidden; }
   .bar { position:absolute; top:0; bottom:0; border-radius:3px; }
-  .bar.passed { background:var(--ok); } .bar.failed { background:var(--bad); }
+  .bar.passed { background:var(--ok); } .bar.failed, .bar.broken { background:var(--bad); }
   .bar.skipped, .bar.unknown { background:var(--skip); } .bar.step { background:var(--step); opacity:.85; border-right:1px solid var(--bg); }
   .nodata { color:var(--muted); font-style:italic; padding:8px 0; }
   #results { display:none; position:absolute; inset:0; background:var(--bg); padding:24px; }
@@ -26,13 +26,14 @@
   .live { font-size:14px; color:var(--muted); min-height:18px; margin-top:4px; }
   .live b { color:var(--fg); font-weight:600; }
   #more { color:var(--muted); margin-top:8px; }
+  #rqual { color:var(--muted); font-size:18px; font-weight:400; margin-left:12px; }
 </style>
 </head>
 <body>
 <div id="title"></div><div id="clock">0.0s</div>
 <div id="lanes"></div>
 <div id="headline"></div>
-<div id="results"><h1 id="rtitle"></h1><table><thead id="thead"></thead><tbody id="tbody"></tbody></table><div id="more"></div></div>
+<div id="results"><h1><span id="rtitle"></span><span id="rqual"></span></h1><table><thead id="thead"></thead><tbody id="tbody"></tbody></table><div id="more"></div></div>
 <script>
 (function () {
   const D = window.__RACE__;
@@ -81,7 +82,8 @@
   function showResults() {
     document.getElementById("headline").style.display = "none";
     document.getElementById("results").style.display = "block";
-    document.getElementById("rtitle").textContent = L.results;
+    document.getElementById("rtitle").textContent = D.resultsTitle.title;
+    if (D.resultsTitle.qualifier) document.getElementById("rqual").textContent = D.resultsTitle.qualifier;
     const hr = el("tr", "", document.getElementById("thead"));
     for (const h of L.columns) el("th", "", hr).textContent = h;
     for (const r of D.table.rows) {

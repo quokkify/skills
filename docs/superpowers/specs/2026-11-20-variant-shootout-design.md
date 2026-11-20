@@ -137,7 +137,7 @@ Every field has a neutral default; the profile overrides it.
   - Profile field `environments`: the list of environments a proof run may use. Default: one.
   - **Balanced design.** Every environment runs every variant the same number of times, interleaved. Environments run in parallel, `max_parallel` per environment. Example: 30 runs per variant across 3 environments are 10 + 10 + 10.
   - **Analysis is stratified by environment.**
-    - The time delta is computed within each environment, then pooled with a stratified bootstrap that resamples inside each environment.
+    - The time delta is the environment-weighted median difference: Δ median within each environment, weighted by that environment's share of executions (baseline + candidate) over the shared environments, so a different environment mix on the two sides cannot manufacture a difference. Its CI comes from a stratified bootstrap that resamples inside each environment and reuses the same weights.
     - Flakes are pooled across environments; per-environment K/N is shown too.
     - The report shows a per-environment breakdown. When environments disagree on the direction of the delta, it flags this.
   - Wall time drops roughly by the number of environments.

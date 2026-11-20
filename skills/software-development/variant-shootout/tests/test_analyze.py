@@ -219,6 +219,28 @@ class ExcludedRunsTest(unittest.TestCase):
         ru = render_markdown(r, "ru")
         self.assertIn("`cand` исключено: 2 infra_error, 1 invalid, 1 без результатов", ru)
 
+    def test_regression_candidate_with_only_excluded_runs_is_still_reported(self):
+        """Regression guard: a candidate whose every run was excluded keeps its counts and links."""
+        runs = series("base", "e1", "t", [1000, 1010, 990])
+        rows = [{"seq": 0, "variant": "base", "state": "done", "ci_url": "https://ci.example.com/0"},
+                {"seq": 1, "variant": "cand", "state": "infra_error", "ci_url": "https://ci.example.com/1"},
+                {"seq": 2, "variant": "cand", "state": "invalid", "ci_url": None}]
+        r = analyze(runs, "base", "proof", iterations=ITER, ledger_rows=rows)
+        self.assertEqual(r["variants"], ["base", "cand"])
+        self.assertEqual(r["runs_per_variant"], {"base": 3, "cand": 0})
+        self.assertEqual(r["excluded_runs"]["cand"], {"infra_error": 1, "invalid": 1, "no_results": 0})
+        self.assertEqual(r["links"]["cand"], ["https://ci.example.com/1"])
+        self.assertEqual(r["missing"], [{"test_id": "t", "absent_in": ["cand"]}])
+        md = render_markdown(r, "en")
+        self.assertIn("https://ci.example.com/1 (infra_error)", md)
+        self.assertIn("`cand` excluded: 1 infra_error, 1 invalid, 0 without results", md)
+        self.assertIn("`cand`: 0", md)
+
+    def test_baseline_with_only_ledger_rows_still_raises(self):
+        rows = [{"seq": 0, "variant": "base", "state": "infra_error", "ci_url": None}]
+        with self.assertRaisesRegex(ValueError, "baseline"):
+            analyze(series("cand", "e1", "t", [1, 2]), "base", "proof", iterations=ITER, ledger_rows=rows)
+
     def test_cli_reads_excluded_counts_from_ledger(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)

@@ -32,6 +32,29 @@ class LedgerTest(unittest.TestCase):
         self.ledger.plan(make_items(2), {"base": "y"})
         self.assertEqual([r["state"] for r in self.ledger.rows()], ["done", "planned"])
 
+    def test_replan_conflict_raises(self):
+        self.ledger.plan(make_items(1), {"base": "y"})
+        for item, shas in (
+            ({"seq": 1, "variant": "cand", "environment": "e1"}, {"cand": "y"}),
+            ({"seq": 1, "variant": "base", "environment": "e2"}, {"base": "y"}),
+            ({"seq": 1, "variant": "base", "environment": "e1"}, {"base": "z"}),
+        ):
+            with self.assertRaisesRegex(ValueError, "seq 1"):
+                self.ledger.plan([item], shas)
+        self.assertEqual(len(self.ledger.path.read_text().splitlines()), 1)
+
+    def test_replan_conflict_cli_exit_2(self):
+        path = Path(self.tmp.name) / "ledger.jsonl"
+        self.ledger.plan(make_items(1), {"base": "y"})
+        sched = Path(self.tmp.name) / "s.json"
+        sched.write_text(json.dumps(make_items(1)))
+        err = io.StringIO()
+        with redirect_stderr(err):
+            rc = main([str(path), "plan", "--schedule", str(sched), "--shas", "base=z"])
+        self.assertEqual(rc, 2)
+        self.assertTrue(err.getvalue().startswith("error: "), err.getvalue())
+        self.assertEqual(main([str(path), "plan", "--schedule", str(sched), "--shas", "base=y"]), 0)
+
     def test_sha_mismatch_invalid(self):
         self.ledger.plan(make_items(1), {"base": "y"})
         self.ledger.update(1, state="done", observed_sha="x")

@@ -5,9 +5,9 @@ What `scripts/analyze.py` computes, what each number means, and when a verdict i
 ## Sample unit
 
 - A **sample** is one execution of one test in one run. Verdicts are computed per test and per variant against the baseline.
-- Test identity is `classname#name` (Allure: `testClass#testMethod`, else `fullName`, plus parameters), so equal method names in different classes stay separate.
+- Test identity is `classname#name` (Allure: `testClass#testMethod`, else `fullName`, plus parameters), so equal method names in different classes stay separate. With `--format both`, an Allure `a.b.C.m` and a JUnit `a.b.C#m` are the same test (the last `#` compared as `.`); Allure wins and keeps its id.
 - `skipped` executions are left out of N. `failed` and `broken` count as failures.
-- A retried-then-passed execution counts as **failed**: JUnit `flakyFailure`/`flakyError`/`rerunFailure`/`rerunError`, or several Allure results sharing one `historyId` in a run.
+- A retried-then-passed execution counts as **failed**: JUnit `flakyFailure`/`flakyError`/`rerunFailure`/`rerunError`, or several Allure results with distinct `uuid`s sharing one `historyId` in a run. Copies of one result (same `uuid`) are one attempt, and a result without `historyId` is never grouped with another.
 - Any other duplicate `test_id` in one run is not a retry: byte-identical JUnit files are read once, and otherwise the latest result (by stop time, else the last read) is kept with a warning.
 - Runs in state `infra_error`, `no_results` or `invalid` contribute no samples. `excluded_runs` in `report.json` counts them per variant, and "What is not proven" lists every variant with any.
 - **Time** statistics use passed executions only; a failed run often stops early or hangs, which would distort the time.
@@ -20,15 +20,15 @@ What `scripts/analyze.py` computes, what each number means, and when a verdict i
 | `mean_ms` | average passed duration; diverges from the median when there are outliers |
 | `min_ms`–`max_ms` | range of passed durations |
 | `iqr_ms` | width of the middle half (inclusive quartiles); the typical spread |
-| `delta_ms` | pooled median(candidate) − pooled median(baseline); negative is faster |
+| `delta_ms` | environment-weighted median difference Σₑ wₑ · (median(candidateₑ) − median(baselineₑ)); negative is faster |
 | `ci_ms` | 95% confidence interval of `delta_ms` from the bootstrap |
 
 ### Stratified bootstrap
 
 - 10000 iterations, fixed seed 1234, so a rerun of `analyze.py` on the same data gives the same CI.
-- Each iteration resamples executions with replacement **inside each environment**, separately for baseline and candidate, pools the environments, and takes the difference of the pooled medians. The 2.5th and 97.5th percentiles of those differences are the CI.
-- Only environments where both baseline and candidate have passed executions take part.
-- Stratifying keeps a fast environment from posing as a fast variant: each environment contributes the same mix in every resample.
+- The weight of environment e is wₑ = (n_baselineₑ + n_candidateₑ) / Σ (n_baseline + n_candidate), counting passed executions over the shared environments. Both sides use the same weights, so a variant that happened to run more often in a slow environment is not called slower: with baseline 20 × 1 s in e1 and 2 × 10 s in e2, and candidate 2 × 1 s in e1 and 20 × 10 s in e2, Δ is 0, while pooled medians would differ by 9 s.
+- Each iteration resamples executions with replacement **inside each environment**, separately for baseline and candidate, and recomputes the weighted difference with the original weights. The 2.5th and 97.5th percentiles of those differences are the CI.
+- Only environments where both baseline and candidate have passed executions take part. With one environment, Δ is the plain median difference.
 
 ### Time verdicts
 

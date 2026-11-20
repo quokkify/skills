@@ -127,10 +127,24 @@ def _allure_dir(results_dir, label):
     by_history = {}
     for path in sorted(results_dir.rglob("*-result.json")):
         result = json.loads(path.read_text())
-        key = result.get("historyId") or result.get("fullName") or result.get("uuid") or path.name
+        if result.get("historyId"):
+            key = ("history", result["historyId"])
+        elif result.get("uuid"):
+            key = ("uuid", result["uuid"])
+        else:
+            key = ("path", str(path))
         by_history.setdefault(key, []).append(result)
     records = []
-    for group in by_history.values():
+    for attempts in by_history.values():
+        by_uuid = {}
+        group = []
+        for result in attempts:
+            uuid = result.get("uuid")
+            if uuid is None:
+                group.append(result)
+            elif uuid not in by_uuid:
+                by_uuid[uuid] = result
+                group.append(result)
         group.sort(key=lambda r: r.get("stop") or 0)
         result = group[-1]
         retried = len(group) > 1
@@ -170,8 +184,14 @@ def collect_run(results_dir, fmt, label, seq=None):
             junit.extend(_junit_file(path, data))
     allure = _reduce_duplicates(allure, seq)
     junit = _reduce_duplicates(junit, seq)
-    seen = {r["test_id"] for r in allure}
-    return allure + [r for r in junit if r["test_id"] not in seen]
+    seen = {_merge_key(r["test_id"]) for r in allure}
+    return allure + [r for r in junit if _merge_key(r["test_id"]) not in seen]
+
+
+def _merge_key(test_id):
+    """Allure without class/method labels yields a.b.C.m where JUnit yields a.b.C#m."""
+    head, sep, tail = test_id.rpartition("#")
+    return f"{head}.{tail}" if sep else test_id
 
 
 def collect(ledger_path, fmt, out, label):

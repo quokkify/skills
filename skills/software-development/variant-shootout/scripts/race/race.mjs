@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
-  HEADLINE_HOLD_MS, LABELS, buildHeadlines, buildLane, buildTable, pickRuns, tableHoldMs,
+  HEADLINE_HOLD_MS, LABELS, buildHeadlines, buildLane, buildResultsTitle, buildTable, pickRuns, tableHoldMs,
 } from './lib.mjs';
 
 class ExitError extends Error {
@@ -89,7 +89,7 @@ async function main() {
   const lang = LABELS[report.lang] ? report.lang : 'en';
   const table = buildTable(report, LABELS[lang]);
   const data = {
-    labels: LABELS[lang], lanes, span, speed: opts.speed, table,
+    labels: LABELS[lang], lanes, span, speed: opts.speed, table, resultsTitle: buildResultsTitle(report, LABELS[lang]),
     headlines: buildHeadlines(report, LABELS[lang]), headlineHoldMs: HEADLINE_HOLD_MS, tableHoldMs: tableHoldMs(table.rows.length),
   };
 

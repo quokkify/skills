@@ -36,6 +36,8 @@ The skill runs with neutral defaults. A caller (usually a private wrapper skill 
 | `runner.ci.run_id` | how to extract `<run_id>` and `<run_url>` from the trigger's output (a JSON field, a regex, a follow-up command) | none: required with `trigger` |
 | `runner.ci.status` | command template for `<run_id>` that prints exactly one of `running`, `success`, `failed`, `canceled`; the profile maps the CI's native states onto these | none: required with `trigger` |
 | `runner.ci.fetch` | command template that downloads the result artifacts of `<run_id>` into `{results_dir}` | none: required with `trigger` |
+| `runner.ci.cancel` | command template for `<run_id>` that cancels the pipeline, used when a run times out | none: a timed-out run pauses its environment until it stops |
+| `runner.ci.find` | command template with `{ref}`, `{seq}`, `{environment}` that prints the run id of this seq's pipeline (found by its run tag or branch), or nothing | none: a `running` row without `run_id` pauses its environment |
 | `runner.ci.poll_seconds` | interval between `status` calls | `60` |
 | `runner.ci.timeout_minutes` | a run still `running` after this is given up | 3 × the expected run time |
 | `results.format` | `junit`, `allure` or `both`; `collect.py` finds `TEST-*.xml` and `*-result.json` anywhere under `results_dir` | `junit` |
@@ -86,7 +88,7 @@ python3 <skill-dir>/scripts/schedule.py --variants baseline,a,b --environments e
 python3 <skill-dir>/scripts/ledger.py <state>/ledger.jsonl plan --schedule <state>/schedule.json --shas baseline=<sha>,a=<sha>,b=<sha>
 ```
 
-   `--variants`: comma list, the first is the baseline. `--runs`: runs per variant. Each item has `seq`, `variant`, `environment`; the `seq` order is the trigger order. Planning is idempotent: already planned `seq`s are kept. Local quick runs use one environment, e.g. `local`.
+   `--variants`: comma list, the first is the baseline. `--runs`: runs per variant. Each item has `seq`, `variant`, `environment`; the `seq` order is the trigger order. Planning is idempotent: already planned `seq`s are kept. Re-planning a `seq` with a different variant, environment or SHA is refused with `error: seq N is already planned as ...` (exit 2): start a new `<state>` instead. Local quick runs use one environment, e.g. `local`.
 3. CI mode only: show the batch (see Honesty rules) with the branch names from `variant_branch_pattern`, get a yes, then push exactly each pinned SHA (`git push origin <sha>:refs/heads/<branch>`). A refused push stops the session.
 
 ### 2. Run
@@ -97,6 +99,7 @@ Walk the ledger in `seq` order. Environments run in parallel; inside one environ
 2. Start it:
    - **local**: render `runner.local` with `{worktree}`, `{results_dir}`, `{tests}` and run it with every `force_env` variable exported into its environment;
    - **CI**: render `runner.ci.trigger` with `{ref}` = the variant branch, `{environment}`, `{tests}` and `{seq}` (within the confirmed batch), run it, extract `<run_id>` and `<run_url>` as `runner.ci.run_id` says, and record both at once: `update --seq N --ci-url <run_url> --run-id <run_id>`. Then call `runner.ci.status` every `poll_seconds` (default 60) until it prints `success`, `failed` or `canceled`, or until `timeout_minutes` (default 3 × the expected run time) passes. When it ended `success` or `failed`, run `runner.ci.fetch` into `{results_dir}`.
+   - **CI timeout**: a timed-out pipeline still holds its slot in the environment. With `runner.ci.cancel`, run it for `<run_id>`, then keep polling `status` until it prints `canceled`, `failed` or `success`; only then record `infra_error` and free the slot. Without `runner.ci.cancel`, record nothing yet: pause that environment (start nothing new there) and keep polling until the status leaves `running`, then record `infra_error`.
 3. Record the outcome (sets `finished_at`). "Results" means at least one `TEST-*.xml` or `*-result.json` anywhere under `results_dir`.
 
 | What happened | State |
@@ -110,7 +113,7 @@ Walk the ledger in `seq` order. Environments run in parallel; inside one environ
    With `done`, also pass `--observed-sha <sha the run reports>` when the runner or CI reports one; a mismatch with the pin turns the row `invalid` automatically (not counted, offered for re-run). `infra_error` runs are kept out of the flake rate.
 4. Check `status`; stop above `infra_ratio` 0.10.
 
-**Resume** after a crash or compaction: `python3 <skill-dir>/scripts/ledger.py <state>/ledger.jsonl pending` prints the rows still to run (`planned`, `running`, `no_results`) as JSON lines, in `seq` order. A `running` row with a `run_id` is polled with `runner.ci.status` for that `run_id`, not re-triggered. Before re-running any row, reset it with `update --seq N --state planned` and delete `<state>/runs/<N>`: the reset clears `ci_url`, `run_id`, `results_dir`, `observed_sha`, `started_at` and `finished_at`, so the re-run never polls the old pipeline and stale results cannot mix in. Re-runs of `no_results` or `invalid` rows are outside the confirmed batch and need a new yes.
+**Resume** after a crash or compaction: `python3 <skill-dir>/scripts/ledger.py <state>/ledger.jsonl pending` prints the rows still to run (`planned`, `running`, `no_results`) as JSON lines, in `seq` order. A `running` row with a `run_id` is polled with `runner.ci.status` for that `run_id`, not re-triggered. A CI `running` row without `run_id` may still have a live pipeline (the session died between trigger and record): run `runner.ci.find` first; when it prints an id, record it with `update --seq N --run-id <id>` and treat the row as above, including the timeout rule. When it prints nothing or the profile has no `find`, tell the user an orphan pipeline may be running and pause that environment for `runner.ci.timeout_minutes` before re-running the row. Local runs need none of this: the runner command runs in the foreground of the session and does not outlive it. Before re-running any row, reset it with `update --seq N --state planned` and delete `<state>/runs/<N>`: the reset clears `ci_url`, `run_id`, `results_dir`, `observed_sha`, `started_at` and `finished_at`, so the re-run never polls the old pipeline and stale results cannot mix in. Re-runs of `no_results` or `invalid` rows are outside the confirmed batch and need a new yes.
 
 ### 3. Collect
 
@@ -118,7 +121,7 @@ Walk the ledger in `seq` order. Environments run in parallel; inside one environ
 python3 <skill-dir>/scripts/collect.py --ledger <state>/ledger.jsonl --format junit|allure|both --out <state>/runs.jsonl [--label <results_label>]
 ```
 
-Searches each `done` run's `results_dir` recursively for `TEST-*.xml` (JUnit) and `*-result.json` (Allure), so multi-module layouts work as fetched. Writes one line per test execution with variant, environment, status, retried flag, duration, failure message, and steps with timestamps when Allure has them. Test identity is `classname#name` (Allure: `testClass#testMethod`, else `fullName`, plus parameters). Only retry markers make a retry (JUnit `flaky*`/`rerun*` elements, Allure results sharing a `historyId`); byte-identical JUnit files in one run are read once, and any other duplicate `test_id` in one run keeps the latest result with `warning: duplicate test_id <id> in seq <n>; kept one` on stderr: mention such warnings in the hand-off. It prints the number of executions; zero means the results are not where the runner put them or not named `TEST-*.xml`. A parse error ends in a traceback and a non-zero exit: report the file it names.
+Searches each `done` run's `results_dir` recursively for `TEST-*.xml` (JUnit) and `*-result.json` (Allure), so multi-module layouts work as fetched. Writes one line per test execution with variant, environment, status, retried flag, duration, failure message, and steps with timestamps when Allure has them. Test identity is `classname#name` (Allure: `testClass#testMethod`, else `fullName`, plus parameters); with `both`, an Allure `a.b.C.m` matches a JUnit `a.b.C#m` and Allure wins. Only retry markers make a retry (JUnit `flaky*`/`rerun*` elements, Allure results with distinct `uuid`s sharing a `historyId`; copies with the same `uuid` are one attempt, and results without `historyId` are never grouped); byte-identical JUnit files in one run are read once, and any other duplicate `test_id` in one run keeps the latest result with `warning: duplicate test_id <id> in seq <n>; kept one` on stderr: mention such warnings in the hand-off. It prints the number of executions; zero means the results are not where the runner put them or not named `TEST-*.xml`. A parse error ends in a traceback and a non-zero exit: report the file it names.
 
 ### 4. Analyze
 
@@ -126,7 +129,7 @@ Searches each `done` run's `results_dir` recursively for `TEST-*.xml` (JUnit) an
 python3 <skill-dir>/scripts/analyze.py --runs <state>/runs.jsonl --ledger <state>/ledger.jsonl --baseline <first variant name> --mode quick|proof --retries off|unknown --lang en|ru --out <state>/report
 ```
 
-`--lang`: the profile `language` or the conversation language mapped to `en` or `ru`; any other language becomes `en`. `--retries` defaults to `unknown`. Writes `<state>/report/report.json` and `<state>/report/report.md`. Per test and variant: median, mean, min–max, IQR, Δ median vs baseline with a stratified bootstrap 95% CI, K/N failures with a Wilson interval, Fisher exact test vs baseline, the rule-of-three floor, a per-environment breakdown (a table in `report.md` when there is more than one environment), the top 3 failure messages per variant and test, the selection wall time per variant as a secondary line, tests missing from some variants, runs excluded per variant (`infra_error`, `invalid`, `no_results`, from the ledger), the number of comparisons tested at α = 0.05, and CI links (excluded runs marked with their state). Read [`references/statistics.md`](references/statistics.md) before explaining any number.
+`--lang`: the profile `language` or the conversation language mapped to `en` or `ru`; any other language becomes `en`. `--retries` defaults to `unknown`. Writes `<state>/report/report.json` and `<state>/report/report.md`. Per test and variant: median, mean, min–max, IQR, Δ median vs baseline (environment-weighted median difference) with a stratified bootstrap 95% CI, K/N failures with a Wilson interval, Fisher exact test vs baseline, the rule-of-three floor, a per-environment breakdown (a table in `report.md` when there is more than one environment), the top 3 failure messages per variant and test, the selection wall time per variant as a secondary line, tests missing from some variants, runs excluded per variant (`infra_error`, `invalid`, `no_results`, from the ledger), the number of comparisons tested at α = 0.05, and CI links (excluded runs marked with their state). Read [`references/statistics.md`](references/statistics.md) before explaining any number.
 
 ### 5. Extras (optional)
 
@@ -155,7 +158,7 @@ node <skill-dir>/scripts/race/race.mjs --runs <state>/runs.jsonl --report <state
 | `schedule.py` | 0 | schedule JSON on stdout | plan it |
 | | 2 | `error: ...`: no variants or environments, `--runs` < 1, or not divisible by the number of environments; or bad arguments | fix N or the lists |
 | `ledger.py` | 0 | done; `status` prints `counts` per state and `infra_ratio`; `pending` prints JSON lines | continue |
-| | 2 | `error: ...`: missing SHA for a variant, unknown `seq`, field or state, corrupt ledger line; or bad arguments | fix the call; never hand-edit past rows |
+| | 2 | `error: ...`: missing SHA for a variant, a re-plan that conflicts with a planned `seq`, unknown `seq`, field or state, corrupt ledger line; or bad arguments | fix the call; never hand-edit past rows |
 | `collect.py` | 0 | prints the execution count; `warning: duplicate test_id ...` lines on stderr | check it is not 0; report the warnings |
 | | non-zero | traceback on an unreadable result file; 2 on bad arguments | report the file |
 | `analyze.py` | 0 | `report.json` and `report.md` written | hand-off |

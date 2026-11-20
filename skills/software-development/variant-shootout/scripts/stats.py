@@ -23,10 +23,17 @@ def _percentile(sorted_xs, p):
     return sorted_xs[idx]
 
 
-def bootstrap_median_delta(base, cand, iterations=10000, seed=1234):
-    """Return (delta, lo, hi): pooled median(cand) - median(base) with a 95% CI.
+def _weighted_delta(base, cand, strata, weights):
+    return sum(weights[s] * (median(cand[s]) - median(base[s])) for s in strata)
 
-    Resamples within each stratum (key) independently per side, then pools.
+
+def bootstrap_median_delta(base, cand, iterations=10000, seed=1234):
+    """Return (delta, lo, hi): environment-weighted median difference with a 95% CI.
+
+    delta = sum over strata of w_s * (median(cand_s) - median(base_s)), where
+    w_s = (n_base_s + n_cand_s) / total, so a different per-stratum mix on the two
+    sides cannot manufacture a difference. The bootstrap resamples within each
+    stratum independently per side and reuses the original weights.
     """
     if not base and not cand:
         raise ValueError("empty input")
@@ -38,17 +45,15 @@ def bootstrap_median_delta(base, cand, iterations=10000, seed=1234):
             if not vals:
                 raise ValueError(f"stratum {name!r} has no {side_name} values")
     strata = sorted(base)
-    delta = median([v for s in strata for v in cand[s]]) - median(
-        [v for s in strata for v in base[s]]
-    )
+    total = sum(len(base[s]) + len(cand[s]) for s in strata)
+    weights = {s: (len(base[s]) + len(cand[s])) / total for s in strata}
+    delta = _weighted_delta(base, cand, strata, weights)
     rng = random.Random(seed)
     deltas = []
     for _ in range(iterations):
-        b_pool, c_pool = [], []
-        for s in strata:
-            b_pool.extend(rng.choices(base[s], k=len(base[s])))
-            c_pool.extend(rng.choices(cand[s], k=len(cand[s])))
-        deltas.append(median(c_pool) - median(b_pool))
+        b_res = {s: rng.choices(base[s], k=len(base[s])) for s in strata}
+        c_res = {s: rng.choices(cand[s], k=len(cand[s])) for s in strata}
+        deltas.append(_weighted_delta(b_res, c_res, strata, weights))
     deltas.sort()
     return (delta, _percentile(deltas, 2.5), _percentile(deltas, 97.5))
 

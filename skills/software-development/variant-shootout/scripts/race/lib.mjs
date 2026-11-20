@@ -92,7 +92,7 @@ export function formatDelta(ms) {
   return `${ms < 0 ? '−' : '+'}${s} s`;
 }
 
-// One line per candidate: its first test entry (sorted by test_id), values copied from the report.
+// One line per candidate: its first test entry (sorted by test_id) named in the line, values copied from the report.
 // Quick mode leads with the indicative label, as report.md does.
 export function buildHeadlines(report, labels = labelsFor(report)) {
   const lines = [];
@@ -101,12 +101,18 @@ export function buildHeadlines(report, labels = labelsFor(report)) {
       .sort((a, b) => (a.test_id < b.test_id ? -1 : a.test_id > b.test_id ? 1 : 0));
     if (!entries.length) continue;
     const e = entries[0];
-    let line = `${v} ${labels.vs} ${report.baseline}: ${verdictWord(labels, e.time_verdict) ?? 'n/a'}, ${labels.deltaMedian} ${formatDelta(e.delta_ms)}`;
+    let line = `${v} ${labels.vs} ${report.baseline} · ${e.test_id}: ${verdictWord(labels, e.time_verdict) ?? 'n/a'}, ${labels.deltaMedian} ${formatDelta(e.delta_ms)}`;
     if (entries.length > 1) line += ` (+${entries.length - 1} ${labels.moreTests})`;
     lines.push(line);
   }
   if (lines.length && report.mode === 'quick') lines.unshift(labels.quickPrefix);
   return lines;
+}
+
+// Quick mode qualifies the results screen as report.md does; proof mode shows the plain title.
+export function buildResultsTitle(report, labels = labelsFor(report)) {
+  const qualifier = report.mode === 'quick' ? labels.quickPrefix.replace(/:\s*$/, '') : null;
+  return { title: labels.results, qualifier };
 }
 
 export function tableHoldMs(rowCount) {

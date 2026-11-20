@@ -180,6 +180,60 @@ class CollectLedgerTest(unittest.TestCase):
             self.assertEqual({r["name"]: r["status"] for r in recs}, {"u": "broken", "v": "broken"})
 
 
+    def test_regression_allure_without_history_id_is_not_grouped_by_full_name(self):
+        """Regression guard: parameterised results without historyId are separate tests, not retries."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for i, value in enumerate(("a", "b")):
+                (d / f"{i}-result.json").write_text(json.dumps({
+                    "uuid": f"u{i}", "fullName": "com.example.CartTest.pays",
+                    "name": "pays", "status": "passed", "start": 0, "stop": 1,
+                    "parameters": [{"name": "kind", "value": value}]}))
+            recs = collect_run(d, "allure", None)
+            self.assertEqual(len(recs), 2)
+            self.assertFalse(any(r["retried"] for r in recs))
+            self.assertEqual({r["status"] for r in recs}, {"passed"})
+
+    def test_regression_allure_copy_with_same_uuid_is_one_attempt(self):
+        """Regression guard: a copied result file (same uuid) is not a retry."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            result = {"uuid": "u1", "historyId": "h", "fullName": "c.A.m", "name": "m",
+                      "status": "passed", "start": 0, "stop": 4}
+            for sub in ("a", "b"):
+                (d / sub).mkdir()
+                (d / sub / "u1-result.json").write_text(json.dumps(result))
+            recs = collect_run(d, "allure", None)
+            self.assertEqual(len(recs), 1)
+            self.assertFalse(recs[0]["retried"])
+            self.assertEqual(recs[0]["status"], "passed")
+
+    def test_allure_distinct_uuids_in_history_group_are_a_retry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for i, (status, stop) in enumerate((("failed", 3), ("passed", 6))):
+                (d / f"{i}-result.json").write_text(json.dumps({
+                    "uuid": f"u{i}", "historyId": "h", "fullName": "c.A.m", "name": "m",
+                    "status": status, "start": 0, "stop": stop}))
+            recs = collect_run(d, "allure", None)
+            self.assertEqual(len(recs), 1)
+            self.assertTrue(recs[0]["retried"])
+            self.assertEqual(recs[0]["status"], "failed")
+
+    def test_regression_both_mode_matches_dotted_allure_id_to_junit(self):
+        """Regression guard: Allure without class/method labels and JUnit for one test give one record."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "x-result.json").write_text(json.dumps({
+                "uuid": "u", "historyId": "h", "fullName": "com.example.PayTest.pays",
+                "name": "pays", "status": "failed", "start": 0, "stop": 5}))
+            (d / "TEST-x.xml").write_text(
+                '<testsuite><testcase classname="com.example.PayTest" name="pays" time="1"/></testsuite>')
+            recs = collect_run(d, "both", None)
+            self.assertEqual(len(recs), 1)
+            self.assertEqual(recs[0]["test_id"], "com.example.PayTest.pays")
+            self.assertEqual((recs[0]["status"], recs[0]["duration_ms"]), ("failed", 5))
+
     def test_nested_modules_are_found_recursively(self):
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)

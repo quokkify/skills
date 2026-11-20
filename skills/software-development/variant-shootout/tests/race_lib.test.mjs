@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pickRuns, buildLane, buildTable, buildHeadlines, tableHoldMs, LABELS, MAX_ROWS } from '../scripts/race/lib.mjs';
+import { pickRuns, buildLane, buildTable, buildHeadlines, buildResultsTitle, tableHoldMs, LABELS, MAX_ROWS } from '../scripts/race/lib.mjs';
 
 const rec = (seq, variant, start, stop, extra = {}) => ({
   seq, variant, test_id: 't', name: 't', status: 'passed', start_ms: start, stop_ms: stop, steps: [], ...extra,
@@ -37,7 +37,7 @@ test('buildHeadlines uses first test by id, appends extra count, copies values',
     baseline: 'base', variants: ['base', 'A'],
     tests: [entry('t2', 'A', { delta_ms: 5 }), entry('t1', 'A'), entry('t1', 'base', { delta_ms: null })],
   };
-  assert.deepEqual(buildHeadlines(report), ['A vs base: faster, Δ median −30.2 s (+1 more tests)']);
+  assert.deepEqual(buildHeadlines(report), ['A vs base · t1: faster, Δ median −30.2 s (+1 more tests)']);
 });
 
 test('buildTable lists candidate rows and caps at MAX_ROWS', () => {
@@ -57,10 +57,10 @@ test('buildHeadlines in quick mode carries the indicative label first', () => {
   const report = { baseline: 'base', variants: ['base', 'A'], mode: 'quick', lang: 'en', tests: [entry('t1', 'A')] };
   assert.deepEqual(buildHeadlines(report), [
     'Indicative only (quick mode, not proof):',
-    'A vs base: faster, Δ median −30.2 s',
+    'A vs base · t1: faster, Δ median −30.2 s',
   ]);
   const proof = { ...report, mode: 'proof' };
-  assert.deepEqual(buildHeadlines(proof), ['A vs base: faster, Δ median −30.2 s']);
+  assert.deepEqual(buildHeadlines(proof), ['A vs base · t1: faster, Δ median −30.2 s']);
 });
 
 test('buildHeadlines translates verdict words via report.lang', () => {
@@ -70,8 +70,8 @@ test('buildHeadlines translates verdict words via report.lang', () => {
   };
   assert.deepEqual(buildHeadlines(report), [
     'Только ориентировочно (быстрый режим, не доказательство):',
-    'A против base: быстрее, Δ медианы −30.2 s',
-    'B против base: измеримой разницы нет, Δ медианы −30.2 s',
+    'A против base · t1: быстрее, Δ медианы −30.2 s',
+    'B против base · t1: измеримой разницы нет, Δ медианы −30.2 s',
   ]);
 });
 
@@ -87,4 +87,12 @@ test('LABELS verdict tables match strings.py keys', () => {
       'baseline', 'faster', 'insufficient data', 'less flaky', 'more flaky', 'no measurable difference', 'slower',
     ]);
   }
+});
+
+test('buildResultsTitle qualifies quick mode and leaves proof mode unchanged', () => {
+  assert.deepEqual(buildResultsTitle({ mode: 'quick', lang: 'en' }),
+    { title: 'Results', qualifier: 'Indicative only (quick mode, not proof)' });
+  assert.deepEqual(buildResultsTitle({ mode: 'quick', lang: 'ru' }),
+    { title: 'Результаты', qualifier: 'Только ориентировочно (быстрый режим, не доказательство)' });
+  assert.deepEqual(buildResultsTitle({ mode: 'proof', lang: 'en' }), { title: 'Results', qualifier: null });
 });

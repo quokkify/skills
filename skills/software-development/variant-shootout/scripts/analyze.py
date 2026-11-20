@@ -154,9 +154,10 @@ def analyze(runs, baseline, mode, iterations=DEFAULT_ITERATIONS, retries="unknow
         raise ValueError(f"mode must be one of {MODES}")
     if retries not in RETRIES:
         raise ValueError(f"retries must be one of {RETRIES}")
-    variants_seen = {r["variant"] for r in runs}
-    if baseline not in variants_seen:
+    executed = {r["variant"] for r in runs}
+    if baseline not in executed:
         raise ValueError(f"baseline {baseline!r} has no executions")
+    variants_seen = executed | {row["variant"] for row in ledger_rows or []}
     variants = [baseline] + sorted(variants_seen - {baseline})
 
     grouped = {}

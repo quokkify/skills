@@ -39,6 +39,12 @@ runner:
     fetch: >-
       GH_HOST=github.example.com gh run download <run_id> -R example-org/example-app
       -n results -D {results_dir}
+    cancel: >-
+      GH_HOST=github.example.com gh run cancel <run_id> -R example-org/example-app
+    find: >-
+      GH_HOST=github.example.com gh run list -R example-org/example-app
+      --workflow shootout.yml --branch {ref} --limit 20 --json databaseId,displayTitle
+      --jq '.[] | select(.displayTitle | contains("shootout-{seq}")) | .databaseId'
     poll_seconds: 60
     timeout_minutes: 40
 results:
@@ -55,6 +61,7 @@ Notes:
 - Retries off reaches CI only through the trigger (`-f reruns=0 -f notify=false`); `force_env` covers local runs. Both are present, so proof mode may start and `analyze.py` gets `--retries off`.
 - `gh workflow run` prints no run id. The unique `run_tag` lets `run_id` find this dispatch even when `max_parallel: 2` puts two runs on one branch at once.
 - `gh run view ... --json headSha` gives the run's `observed_sha`.
+- `find` locates the dispatch by its `run_tag` when the session died before recording `run_id`; `cancel` stops a run that timed out.
 - `max_parallel: 2` is safe only because each workflow run uses its own database container; with a shared test database it would be `1`.
 
 ## GitLab CI + Maven
@@ -90,8 +97,11 @@ runner:
     fetch: >-
       job=$(glab api --hostname gitlab.example.org projects/123/pipelines/<run_id>/jobs
       | python3 -c 'import json,sys; print(next(j["id"] for j in json.load(sys.stdin) if j["name"] == "tests"))')
+      && mkdir -p {results_dir}
       && glab api --hostname gitlab.example.org projects/123/jobs/$job/artifacts > {results_dir}/artifacts.zip
       && unzip -o {results_dir}/artifacts.zip -d {results_dir}
+    cancel: >-
+      glab api --hostname gitlab.example.org -X POST projects/123/pipelines/<run_id>/cancel
     poll_seconds: 60
     timeout_minutes: 75
 results:
@@ -112,6 +122,7 @@ Notes:
 
 - `RERUNS=0`, `ALLURE_UPLOAD=false` and `CHAT_NOTIFY=false` travel as pipeline variables in the trigger; `force_env` only reaches local Maven runs, where `-Dsurefire.rerunFailingTestsCount=0` turns retries off.
 - `fetch` downloads the artifacts of this pipeline's `tests` job, not the latest artifacts of the branch, because many pipelines run on one variant branch. The archive keeps its module folders; `collect.py` searches `results_dir` recursively, so two modules' `TEST-*.xml` files with the same name do not collide.
+- `cancel` frees the slot of a timed-out pipeline. There is no `find`: the trigger's response carries the id at once, so a `running` row without `run_id` only happens when the session died between the trigger and the ledger update; the skill then warns about a possible orphan and pauses that environment for `timeout_minutes`.
 - `status` maps GitLab's `created`, `pending`, `running` and similar to `running`, and `skipped` to `canceled`. A pipeline that failed in its build stage has no test results and becomes `infra_error`.
 - 30 runs per variant over three environments are 10 + 10 + 10; with `max_parallel: 1` each environment waits for its pipeline before triggering the next.
 - `results_label: tms` keeps the Allure TMS link per test, which the `impact` hook uses. Its output is an *inferred* extrapolation and the block says so.
