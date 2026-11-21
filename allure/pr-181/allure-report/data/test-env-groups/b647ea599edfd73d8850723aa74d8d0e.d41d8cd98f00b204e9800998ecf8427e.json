@@ -1,0 +1,1 @@
+{"id":"b647ea599edfd73d8850723aa74d8d0e.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_install_skills_runs_pinned_cli_against_the_local_checkout","name":"test_install_skills_runs_pinned_cli_against_the_local_checkout","status":"passed","testResultsByEnv":{"default":"20c092b884ab7be808747915fbf10f7f"}}
