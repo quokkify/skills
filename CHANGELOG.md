@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.18.0](https://github.com/quokkify/skills/compare/v0.17.0...v0.18.0) (2026-11-21)
+
+<!-- project-toolkit:release-notes v2 -->
+**At a glance:** 2 new · 2 fixed · 9 internal
+
+### ✨ New
+
+- **skills:** add mr-glab-review ([#167](https://github.com/quokkify/skills/pull/167))
+- **skills:** add variant-shootout — New `variant-shootout` skill settles "is this change faster or less flaky than what we have?" with numbers. It runs variants against the baseline in interleaved repeated runs (locally or in CI, across environments), then writes an evidence block for a pull request that never presents unsupported findings as proof. ([#175](https://github.com/quokkify/skills/pull/175))
+
+### 🐛 Fixed
+
+- **bootstrap:** keep repository git hooks running and pin the skills CLI — Installing the shared git hooks no longer silences a repository's own `.git/hooks`: the shared `pre-commit` and `pre-push` now run them after their own checks. `--install-skills` installs the validated local checkout with a pinned `skills` CLI instead of the remote default branch. ([#177](https://github.com/quokkify/skills/pull/177))
+- **skills:** guard against injected text and keep code out of the queue — Skills that read release notes, comments, MR descriptions, CI logs or page text now treat that text as data: no quoted commands, only cited edits, and a stop on requests outside the task. The skill-promotion queue now refuses `scripts/`, `adapters/` and `.github/` changes. ([#178](https://github.com/quokkify/skills/pull/178))
+
+<details><summary>Internal changes (9 PRs)</summary>
+
+**Dependencies**
+
+- markdown-it-py → v4.3.0 ([#169](https://github.com/quokkify/skills/pull/169))
+- mdit-py-plugins → v0.7.0 ([#171](https://github.com/quokkify/skills/pull/171))
+- playwright 1.65.0 → 1.65.1 ([#170](https://github.com/quokkify/skills/pull/170), [#176](https://github.com/quokkify/skills/pull/176))
+
+**Maintenance**
+
+- **renovate:** adopt the supply-chain hardening and stack grouping presets ([#180](https://github.com/quokkify/skills/pull/180))
+- **repository-quality-gates:** add diff-scoped CI gate guidance ([#172](https://github.com/quokkify/skills/pull/172))
+- **template:** update shared project template ([#174](https://github.com/quokkify/skills/pull/174), [#181](https://github.com/quokkify/skills/pull/181))
+- compare discussion-card playwright pin with feature-demo — Not user-facing. ([#173](https://github.com/quokkify/skills/pull/173))
+
+</details>
+
 ## [0.17.0](https://github.com/quokkify/skills/compare/v0.16.0...v0.17.0) (2026-11-10)
 
 <!-- project-toolkit:release-notes v2 -->
