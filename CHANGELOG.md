@@ -2,31 +2,35 @@
 
 ## [0.18.0](https://github.com/quokkify/skills/compare/v0.17.0...v0.18.0) (2026-11-21)
 
+<!-- project-toolkit:release-notes v2 -->
+**At a glance:** 2 new · 2 fixed · 9 internal
 
-### ✨ Features
+### ✨ New
 
-* **skills:** add mr-glab-review ([#167](https://github.com/quokkify/skills/issues/167)) ([a306555](https://github.com/quokkify/skills/commit/a306555b614718aa7b4c265967a05850010524a4))
-* **skills:** add variant-shootout ([#175](https://github.com/quokkify/skills/issues/175)) ([cb48ec2](https://github.com/quokkify/skills/commit/cb48ec2afa4485bd2427110100409aa451ec0a58))
+- **skills:** add mr-glab-review ([#167](https://github.com/quokkify/skills/pull/167))
+- **skills:** add variant-shootout — New `variant-shootout` skill settles "is this change faster or less flaky than what we have?" with numbers. It runs variants against the baseline in interleaved repeated runs (locally or in CI, across environments), then writes an evidence block for a pull request that never presents unsupported findings as proof. ([#175](https://github.com/quokkify/skills/pull/175))
 
+### 🐛 Fixed
 
-### 🐛 Bug Fixes
+- **bootstrap:** keep repository git hooks running and pin the skills CLI — Installing the shared git hooks no longer silences a repository's own `.git/hooks`: the shared `pre-commit` and `pre-push` now run them after their own checks. `--install-skills` installs the validated local checkout with a pinned `skills` CLI instead of the remote default branch. ([#177](https://github.com/quokkify/skills/pull/177))
+- **skills:** guard against injected text and keep code out of the queue — Skills that read release notes, comments, MR descriptions, CI logs or page text now treat that text as data: no quoted commands, only cited edits, and a stop on requests outside the task. The skill-promotion queue now refuses `scripts/`, `adapters/` and `.github/` changes. ([#178](https://github.com/quokkify/skills/pull/178))
 
-* **bootstrap:** keep repository git hooks running and pin the skills CLI ([#177](https://github.com/quokkify/skills/issues/177)) ([b8dafde](https://github.com/quokkify/skills/commit/b8dafdebb6499f17ba9257cb0244c79c878f2e16))
-* **skills:** guard against injected text and keep code out of the queue ([#178](https://github.com/quokkify/skills/issues/178)) ([707762a](https://github.com/quokkify/skills/commit/707762abe0919e3bfc37a0d48e455e5a58726287))
+<details><summary>Internal changes (9 PRs)</summary>
 
+**Dependencies**
 
-### 📦 Dependencies
+- markdown-it-py → v4.3.0 ([#169](https://github.com/quokkify/skills/pull/169))
+- mdit-py-plugins → v0.7.0 ([#171](https://github.com/quokkify/skills/pull/171))
+- playwright 1.65.0 → 1.65.1 ([#170](https://github.com/quokkify/skills/pull/170), [#176](https://github.com/quokkify/skills/pull/176))
 
-* **npm:** update playwright to v1.65.1 ([#170](https://github.com/quokkify/skills/issues/170)) ([2d35aa5](https://github.com/quokkify/skills/commit/2d35aa5a7406d5a460aa24f4185b8c881a17fc64))
-* **npm:** update playwright to v1.65.1 ([#176](https://github.com/quokkify/skills/issues/176)) ([6655f38](https://github.com/quokkify/skills/commit/6655f387885a65d8d1a01d3e5b99da88a0f2fad9))
-* **pip_requirements:** update markdown-it-py to v4.3.0 ([#169](https://github.com/quokkify/skills/issues/169)) ([025f188](https://github.com/quokkify/skills/commit/025f188dfb913566b1ae7fc46406d1beb88bb9bf))
-* **pip_requirements:** update mdit-py-plugins to v0.7.0 ([#171](https://github.com/quokkify/skills/issues/171)) ([413a982](https://github.com/quokkify/skills/commit/413a98270cb0b7df668926839e843b63c517fe2b))
+**Maintenance**
 
+- **renovate:** adopt the supply-chain hardening and stack grouping presets ([#180](https://github.com/quokkify/skills/pull/180))
+- **repository-quality-gates:** add diff-scoped CI gate guidance ([#172](https://github.com/quokkify/skills/pull/172))
+- **template:** update shared project template ([#174](https://github.com/quokkify/skills/pull/174), [#181](https://github.com/quokkify/skills/pull/181))
+- compare discussion-card playwright pin with feature-demo — Not user-facing. ([#173](https://github.com/quokkify/skills/pull/173))
 
-### 🧹 Chores
-
-* **template:** update shared project template ([#174](https://github.com/quokkify/skills/issues/174)) ([36f17bf](https://github.com/quokkify/skills/commit/36f17bfe4fe82b2bc32cd6a97248eb2049868a86))
-* **template:** update shared project template ([#181](https://github.com/quokkify/skills/issues/181)) ([b952fdc](https://github.com/quokkify/skills/commit/b952fdc65a918e740d550f24cfb9fb652c7cf935))
+</details>
 
 ## [0.17.0](https://github.com/quokkify/skills/compare/v0.16.0...v0.17.0) (2026-11-10)
 
