@@ -33,6 +33,8 @@ A repository owner may pre-authorize completed, public-safe improvements to accu
 
 This opt-in replaces repeated publication prompts only. It does not authorize direct pushes to the default branch, force-push, automatic merge, or publication of private runtime state. The agent must still perform the privacy and portability audit, deterministic validation, and configured secret scanning. Independent review may be deferred until the owner handles the batch.
 
+The queue carries skill content only: `skills/`, `docs/`, `tests/`, and the root `README.md`, `SECURITY.md`, and `THIRD_PARTY_NOTICES.md`. Installers, hooks, and workflows (`scripts/`, `adapters/`, `.github/`) run on developer machines or with repository privileges, so the queue helper refuses them; change them through a reviewed pull request.
+
 ## Decisions
 
 Every review ends with one of three decisions:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -29,8 +30,6 @@ class SkillPromotionQueueTests(unittest.TestCase):
             "skills/repository/example/scripts/check.py",
             "docs/skill-catalog.md",
             "tests/test_example.py",
-            "scripts/validate_repo.py",
-            "adapters/codex/AGENTS.md",
             "README.md",
             "SECURITY.md",
             "THIRD_PARTY_NOTICES.md",
@@ -55,6 +54,56 @@ class SkillPromotionQueueTests(unittest.TestCase):
         for path in rejected:
             with self.subTest(path=path):
                 self.assertFalse(publish_queue.path_is_allowed(path))
+
+    def test_rejects_installer_hook_and_ci_paths(self) -> None:
+        # Regression guard: scripts/ and adapters/ run on developer machines and .github/ runs
+        # with repository privileges; they must never ride the no-per-change-review queue.
+        for path in (
+            "scripts/validate_repo.py",
+            "scripts/bootstrap.sh",
+            "adapters/codex/AGENTS.md",
+            "adapters/shared/git-hooks/pre-push",
+            ".github/workflows/validate.yml",
+            "Scripts/bootstrap.sh",
+            "ADAPTERS/shared/hooks/hook-lib.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertFalse(publish_queue.path_is_allowed(path))
+
+    def test_installer_hook_and_ci_paths_fail_with_a_review_message(self) -> None:
+        with self.assertRaisesRegex(publish_queue.QueueError, r"reviewed pull request.*scripts/bootstrap\.sh") as raised:
+            publish_queue.ensure_public_paths(["skills/example/SKILL.md", "scripts/bootstrap.sh", "adapters/shared/hooks/hook-lib.sh"])
+        self.assertIn("adapters/shared/hooks/hook-lib.sh", str(raised.exception))
+        self.assertNotIn("skills/example/SKILL.md", str(raised.exception))
+
+    def test_deleted_and_renamed_away_paths_count_as_changed(self) -> None:
+        # Regression guard: deletions and the source side of a rename used to be left out of
+        # the lane diff, so removing scripts/ or moving a workflow passed the boundary.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            def git(*arguments: str) -> None:
+                subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
+            git("init", "-q", "-b", "main")
+            git("config", "user.email", "queue@example.test")
+            git("config", "user.name", "Queue Tests")
+            git("config", "core.hooksPath", str(root / ".git" / "no-hooks"))
+            (root / "scripts").mkdir()
+            (root / "scripts" / "tool.sh").write_text("echo tool\n", encoding="utf-8")
+            (root / ".github" / "workflows").mkdir(parents=True)
+            (root / ".github" / "workflows" / "ci.yml").write_text("name: ci\n", encoding="utf-8")
+            git("add", "-A")
+            git("commit", "-qm", "base")
+            git("switch", "-qc", "lane")
+            git("rm", "-q", "scripts/tool.sh")
+            (root / "docs").mkdir()
+            git("mv", ".github/workflows/ci.yml", "docs/ci.yml")
+            git("commit", "-qm", "lane")
+            paths = publish_queue.changed_paths(root, "main")
+            self.assertIn("scripts/tool.sh", paths)
+            self.assertIn(".github/workflows/ci.yml", paths)
+            self.assertIn("docs/ci.yml", paths)
+            with self.assertRaisesRegex(publish_queue.QueueError, "reviewed pull request"):
+                publish_queue.ensure_public_paths(paths)
 
     def test_lane_is_bounded_and_branch_is_deterministic(self) -> None:
         self.assertEqual(

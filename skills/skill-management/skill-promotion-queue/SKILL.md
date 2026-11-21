@@ -23,13 +23,14 @@ The opt-in authorizes branch push and draft-PR creation or update. It does **not
 - automatic merge or conversion from draft to ready;
 - force-push, history replacement, or conflict guessing;
 - publication of local skills merely because they changed;
+- changes to installers, hooks, or workflows (`scripts/`, `adapters/`, `.github/`): they run on developer machines or with repository privileges, so they need a reviewed pull request, and the helper refuses them;
 - bypassing privacy, portability, repository validation, or secret scanning.
 
 ## Trigger
 
 Queue an improvement at the end of a task when all of these are true:
 
-1. A reusable skill, support file, adapter, validation rule, or associated documentation was actually improved.
+1. A reusable skill, its support files and tests, or associated documentation was actually improved.
 2. The implementation and deterministic checks succeeded.
 3. The repository owner has a durable opt-in for this repository and lane, with no task-level opt-out such as “local only” or “do not publish.”
 4. The diff is appropriate for the public repository after a privacy and portability audit.
@@ -73,7 +74,7 @@ python3 skills/skill-management/skill-promotion-queue/scripts/publish_queue.py \
   --title "feat(skills): queue reusable skill improvements"
 ```
 
-The helper fails closed unless the current branch matches the lane, the tree is clean, the branch is ahead of the fetched default branch, changed paths stay inside the public skill-library boundary, validation succeeds against an unchanged `HEAD`, and any existing remote lane is an ancestor. It never force-pushes or merges.
+The helper fails closed unless the current branch matches the lane, the tree is clean, the branch is ahead of the fetched default branch, changed paths stay inside the skill-content boundary (`skills/`, `docs/`, `tests/`, and the root `README.md`, `SECURITY.md`, and `THIRD_PARTY_NOTICES.md`; anything under `scripts/`, `adapters/`, or `.github/` fails with a message to open a reviewed pull request instead), validation succeeds against an unchanged `HEAD`, and any existing remote lane is an ancestor. It never force-pushes or merges.
 
 If a draft PR for the lane exists, the helper updates it. Otherwise it creates one. Do not wait for or perform independent review unless the user requests it; report the draft PR URL and current CI state.
 
