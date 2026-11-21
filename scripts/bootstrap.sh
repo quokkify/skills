@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The program below arrives on stdin, so the caller's stdin is handed over as fd 3: the skills
+# CLI needs it to ask the user for confirmation when bootstrap runs on a terminal.
+{ exec 3<&0; } 2>/dev/null || exec 3</dev/null
 SKILLS_HUB_ROOT="$ROOT" exec python3 - "$@" <<'PY'
 import argparse
 import copy
@@ -23,6 +26,9 @@ START = "<!-- SKILLS-HUB:START -->"
 END = "<!-- SKILLS-HUB:END -->"
 OMC_START = "# BEGIN OMC MANAGED MCP REGISTRY"
 OMC_END = "# END OMC MANAGED MCP REGISTRY"
+# Exact third-party CLI version used by --install-skills; bump it deliberately after review.
+SKILLS_CLI = "skills@1.7.6"
+CALLER_STDIN_FD = 3
 
 
 class BootstrapError(Exception):
@@ -333,7 +339,11 @@ def build_plan(args):
     except OSError as exc:
         raise BootstrapError(f"cannot run git: {exc}") from exc
     if current_hooks and not hooks_path_matches(current_hooks, git_dir):
-        raise BootstrapError(f"refusing to replace foreign global core.hooksPath '{current_hooks}'")
+        raise BootstrapError(
+            f"refusing to replace foreign global core.hooksPath '{current_hooks}'; it was left unchanged and "
+            "nothing was installed. Review the hooks in that directory, then either unset it "
+            "(git config --global --unset core.hooksPath) and re-run, or keep it and skip the shared git hooks."
+        )
     for source in sorted(item for item in git_hooks.iterdir() if item.is_file()):
         add(plans, changes, git_dir / source.name, source.read_bytes(), source.stat().st_mode & 0o777)
     return plans, changes, git_dir, current_hooks, args, root
@@ -345,6 +355,18 @@ def show_plan(plans, dry_run):
         print(f"  {'would update' if dry_run else 'update'} {item}")
     if dry_run:
         print("Dry run: no files, symlinks, or git configuration were changed.")
+
+
+def announce_hooks_path(git_dir, old_hooks, dry_run):
+    if hooks_path_matches(old_hooks, git_dir):
+        print(f"Global core.hooksPath already points to {git_dir}.")
+        return
+    verb = "would set" if dry_run else "Setting"
+    print(f"Notice: {verb} global core.hooksPath to {git_dir}.")
+    print("  Git then runs these shared hooks instead of each repository's .git/hooks, in every repository")
+    print("  without its own core.hooksPath. Each shared hook chains to the repository's own hook of the")
+    print("  same name when it is executable, so existing pre-commit and pre-push hooks keep running.")
+    print("  Undo with: git config --global --unset core.hooksPath")
 
 
 def hooks_path_matches(current, expected):
@@ -438,20 +460,44 @@ def apply(plans, changes, git_dir, old_hooks, args):
             shutil.rmtree(stage_dir, ignore_errors=True)
 
 
-def install_skills(args):
+def validate_checkout(args, root):
+    # --install-skills copies skills from this checkout into the runtimes, so it must pass the
+    # same repository validator that sync-shared-skills.sh applies before anything changes.
+    if not args.install_skills:
+        return
+    result = subprocess.run(
+        [sys.executable, str(root / "scripts/validate_repo.py"), str(root)], text=True, capture_output=True
+    )
+    if result.returncode != 0:
+        raise BootstrapError(
+            f"checkout failed validation; refusing --install-skills before any change:\n{result.stderr.strip()}"
+        )
+
+
+def caller_stdin():
+    try:
+        os.fstat(CALLER_STDIN_FD)
+    except OSError:
+        return subprocess.DEVNULL
+    return CALLER_STDIN_FD
+
+
+def install_skills(args, root):
     if not args.install_skills:
         return
     npx = shutil.which("npx")
     if npx is None:
         print("Warning: npx is not available; skipped official skills installation.", file=sys.stderr)
         return
+    stdin = caller_stdin()
+    # On a terminal the user confirms the CLI's prompts; -y is only for runs nobody can answer.
+    interactive = stdin != subprocess.DEVNULL and os.isatty(stdin)
     providers = ("claude-code", "codex") if args.provider == "all" else (("claude-code",) if args.provider == "claude" else ("codex",))
     for provider in providers:
-        subprocess.run(
-            [npx, "skills", "add", "quokkify/skills", "--skill", "*", "-g", "-a", provider, "-y"],
-            check=True,
-            timeout=600,
-        )
+        command = [npx, "--yes", SKILLS_CLI, "add", str(root), "--skill", "*", "-g", "-a", provider]
+        if not interactive:
+            command.append("-y")
+        subprocess.run(command, check=True, timeout=600, stdin=stdin)
 
 
 def warn_missing_companions(args, root):
@@ -474,13 +520,15 @@ def warn_missing_companions(args, root):
 def main():
     args = parse_args()
     plans, changes, git_dir, old_hooks, args, root = build_plan(args)
+    validate_checkout(args, root)
+    announce_hooks_path(git_dir, old_hooks, args.dry_run)
     show_plan(plans, args.dry_run)
     if args.dry_run:
         warn_missing_companions(args, root)
         return 0
     apply(plans, changes, git_dir, old_hooks, args)
     try:
-        install_skills(args)
+        install_skills(args, root)
     except subprocess.SubprocessError as exc:
         print(f"Warning: official skills installation failed: {exc}", file=sys.stderr)
     if args.provider in ("codex", "all"):

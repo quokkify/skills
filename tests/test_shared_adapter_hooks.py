@@ -398,6 +398,187 @@ class SharedAdapterHookTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
 
+    def test_bash_guard_reads_the_branch_of_the_tool_call_working_directory(self) -> None:
+        # Regression guard: the implicit-refspec branch used to be read from the hook process's
+        # cwd instead of the payload's cwd, so the decision followed the wrong repository.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            protected = root / "protected"
+            feature = root / "feature"
+            for repository, branch in ((protected, "main"), (feature, "feature/work")):
+                repository.mkdir()
+                self.initialize_repository(repository)
+                subprocess.run(["git", "checkout", "-qB", branch], cwd=repository, check=True)
+            for tool_cwd, hook_cwd, denied in ((protected, feature, True), (feature, protected, False), (protected, root, True)):
+                with self.subTest(tool_cwd=tool_cwd.name, hook_cwd=hook_cwd.name):
+                    payload = {
+                        "hook_event_name": "PreToolUse",
+                        "tool_name": "Bash",
+                        "cwd": str(tool_cwd),
+                        "tool_input": {"command": "git push --force origin"},
+                    }
+                    result = subprocess.run(
+                        ["/bin/bash", str(BASH_GUARD)],
+                        input=json.dumps(payload),
+                        cwd=hook_cwd,
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertEqual(result.returncode, 0)
+                    if denied:
+                        self.assertEqual(json.loads(result.stdout)["hookSpecificOutput"]["permissionDecision"], "deny")
+                    else:
+                        self.assertEqual(result.stdout, "")
+
+    def write_repository_hook(self, hooks_directory: Path, name: str, record: Path, status: int) -> None:
+        hooks_directory.mkdir(parents=True, exist_ok=True)
+        hook = hooks_directory / name
+        hook.write_text(
+            "#!/usr/bin/env bash\n"
+            f'{{ printf "args:%s\\n" "$*"; printf "cwd:%s\\n" "$PWD"; printf "stdin:"; cat; }} > {shlex.quote(str(record))}\n'
+            f"exit {status}\n",
+            encoding="utf-8",
+        )
+        hook.chmod(0o755)
+
+    def hook_environment(self, global_config: Path | None = None) -> dict[str, str]:
+        environment = os.environ | {"GIT_CONFIG_NOSYSTEM": "1"}
+        environment.pop("SKILLS_HUB_DISABLE_GIT_HOOKS", None)
+        environment.pop("SKILLS_HUB_DISABLE_HOOKS", None)
+        if global_config is not None:
+            environment["GIT_CONFIG_GLOBAL"] = str(global_config)
+        return environment
+
+    def test_shared_git_hooks_chain_to_the_repository_hook(self) -> None:
+        # Regression guard: a global core.hooksPath used to silently replace every repository's
+        # own .git/hooks; the shared hooks now run them after their own checks.
+        push_input = "refs/heads/topic HEAD refs/heads/topic 0000000000000000000000000000000000000000\n"
+        for hook, arguments, hook_input in ((PRE_COMMIT, [], ""), (PRE_PUSH, ["origin", "https://example.test/repo.git"], push_input)):
+            for status in (0, 3):
+                with self.subTest(hook=hook.name, status=status), tempfile.TemporaryDirectory() as temporary:
+                    repository = Path(temporary) / "repository"
+                    repository.mkdir()
+                    self.initialize_repository(repository)
+                    if hook is PRE_PUSH:
+                        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repository, check=True, capture_output=True, text=True).stdout.strip()
+                        hook_input = f"refs/heads/topic {head} refs/heads/topic {head}\n"
+                    record = Path(temporary) / "record"
+                    self.write_repository_hook(repository / ".git" / "hooks", hook.name, record, status)
+                    result = subprocess.run(
+                        ["bash", str(hook), *arguments],
+                        cwd=repository,
+                        input=hook_input,
+                        capture_output=True,
+                        text=True,
+                        env=self.hook_environment(),
+                    )
+                    self.assertEqual(result.returncode, status, result.stderr)
+                    recorded = record.read_text(encoding="utf-8")
+                    self.assertIn(f"args:{' '.join(arguments)}\n", recorded)
+                    self.assertIn(f"stdin:{hook_input}", recorded)
+
+    def test_shared_git_hooks_run_their_own_checks_before_the_repository_hook(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "repository"
+            repository.mkdir()
+            self.initialize_repository(repository)
+            record = Path(temporary) / "record"
+            self.write_repository_hook(repository / ".git" / "hooks", "pre-commit", record, 0)
+            (repository / "trailing.txt").write_text("trailing space \n", encoding="utf-8")
+            subprocess.run(["git", "add", "trailing.txt"], cwd=repository, check=True)
+
+            failed = subprocess.run(
+                ["bash", str(PRE_COMMIT)], cwd=repository, input="", capture_output=True, text=True, env=self.hook_environment()
+            )
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertFalse(record.exists())
+
+            opted_out = subprocess.run(
+                ["bash", str(PRE_COMMIT)],
+                cwd=repository,
+                input="",
+                capture_output=True,
+                text=True,
+                env=self.hook_environment() | {"SKILLS_HUB_DISABLE_GIT_HOOKS": "1"},
+            )
+            self.assertEqual(opted_out.returncode, 0, opted_out.stderr)
+            self.assertTrue(record.exists(), "opting out of the shared checks must not skip the repository's own hook")
+
+    def test_shared_git_hooks_find_the_repository_hook_in_other_layouts(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            main = root / "main"
+            main.mkdir()
+            self.initialize_repository(main)
+            worktree = root / "linked"
+            subprocess.run(["git", "worktree", "add", "-q", str(worktree)], cwd=main, check=True)
+            separate = root / "separate"
+            separate_git = root / "separate.git"
+            subprocess.run(["git", "init", "-q", f"--separate-git-dir={separate_git}", str(separate)], check=True)
+            (main / "nested").mkdir()
+            bare = root / "bare.git"
+            subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True)
+
+            cases = (
+                ("linked worktree", PRE_COMMIT, worktree, main / ".git" / "hooks", {}),
+                ("separate git dir", PRE_COMMIT, separate, separate_git / "hooks", {}),
+                ("subdirectory", PRE_COMMIT, main / "nested", main / ".git" / "hooks", {}),
+                ("bare repository", PRE_PUSH, bare, bare / "hooks", {"GIT_DIR": "."}),
+            )
+            for name, hook, cwd, hooks_directory, extra in cases:
+                with self.subTest(layout=name):
+                    record = root / f"record-{name.replace(' ', '-')}"
+                    self.write_repository_hook(hooks_directory, hook.name, record, 0)
+                    result = subprocess.run(
+                        ["bash", str(hook), "origin", "https://example.test/repo.git"],
+                        cwd=cwd,
+                        input="",
+                        capture_output=True,
+                        text=True,
+                        env=self.hook_environment() | extra,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(record.exists(), f"{name}: repository hook did not run")
+                    (hooks_directory / hook.name).unlink()
+
+    def test_shared_git_hook_does_not_chain_to_itself(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "repository"
+            repository.mkdir()
+            self.initialize_repository(repository)
+            hooks_directory = repository / ".git" / "hooks"
+            hooks_directory.mkdir(exist_ok=True)
+            (hooks_directory / "pre-commit").symlink_to(PRE_COMMIT)
+            result = subprocess.run(
+                ["bash", str(PRE_COMMIT)], cwd=repository, input="", capture_output=True, text=True, timeout=30, env=self.hook_environment()
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_global_hooks_path_still_runs_repository_hooks_through_git(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            shared = root / "shared-hooks"
+            shared.mkdir()
+            for hook in (PRE_COMMIT, PRE_PUSH):
+                (shared / hook.name).write_bytes(hook.read_bytes())
+                (shared / hook.name).chmod(0o755)
+            global_config = root / "gitconfig"
+            global_config.write_text(f"[core]\n\thooksPath = {shared}\n", encoding="utf-8")
+            environment = self.hook_environment(global_config)
+            repository = root / "repository"
+            repository.mkdir()
+            self.initialize_repository(repository)
+            subprocess.run(["git", "config", "--unset", "core.hooksPath"], cwd=repository, check=True)
+            record = root / "record"
+            self.write_repository_hook(repository / ".git" / "hooks", "pre-commit", record, 1)
+            (repository / "change.txt").write_text("change\n", encoding="utf-8")
+            subprocess.run(["git", "add", "change.txt"], cwd=repository, check=True, env=environment)
+            commit = subprocess.run(
+                ["git", "commit", "-qm", "change"], cwd=repository, input="", capture_output=True, text=True, timeout=60, env=environment
+            )
+            self.assertNotEqual(commit.returncode, 0, "the repository's failing pre-commit hook must block the commit")
+            self.assertTrue(record.exists())
+
     def test_wiring_references_only_existing_shared_scripts(self) -> None:
         for template in (
             REPOSITORY_ROOT / "adapters" / "claude" / "settings.template.json",
