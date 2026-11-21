@@ -1,4 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>quokkify/renovate-presets//presets/github-actions/default"]
+  "extends": [
+    "github>quokkify/renovate-presets//presets/github-actions/default",
+    "github>quokkify/renovate-presets//presets/hardening/supply-chain",
+    "github>quokkify/renovate-presets//presets/grouping/coupled-stacks"
+  ]
 }
