@@ -111,7 +111,9 @@ def path_is_allowed(raw_path: str) -> bool:
 
 def changed_paths(root: Path, base_ref: str) -> list[str]:
     """Return the lane diff from its merge base with the current default branch."""
-    output = git(root, "diff", "--name-only", "--diff-filter=ACMRTUXB", f"{base_ref}...HEAD")
+    # --no-renames and no filter list deletions and both sides of a rename, so removing or
+    # moving a path out of a review-only directory is checked like adding one.
+    output = git(root, "diff", "--name-only", "--no-renames", f"{base_ref}...HEAD")
     return [line for line in output.splitlines() if line]
 
 
