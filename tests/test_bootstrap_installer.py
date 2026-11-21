@@ -240,6 +240,100 @@ class BootstrapInstallerTest(unittest.TestCase):
         self.assertTrue(pathlib.Path(self.env["CLAUDE_CONFIG_DIR"]).exists())
         self.assertTrue(pathlib.Path(self.env["XDG_CONFIG_HOME"], "git").exists())
 
+    def recording_npx_env(self):
+        bin_dir = pathlib.Path(self.temp.name, "bin")
+        bin_dir.mkdir(exist_ok=True)
+        log = pathlib.Path(self.temp.name, "npx-args.log")
+        npx = bin_dir / "npx"
+        npx.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" >> "{log}"\nprintf -- "--\\n" >> "{log}"\n')
+        npx.chmod(0o755)
+        env = self.env.copy()
+        env["PATH"] = self.hermetic_path_without_npx(extra_dir=str(bin_dir))
+        return env, log
+
+    def recorded_npx_calls(self, log):
+        if not log.exists():
+            return []
+        return [call.strip("\n").split("\n") for call in log.read_text().split("--\n") if call.strip()]
+
+    def test_install_skills_runs_pinned_cli_against_the_local_checkout(self):
+        # Regression guard: skills used to come from an unpinned `npx skills` resolving the
+        # repository's default-branch HEAD, bypassing the checkout the installer validates.
+        env, log = self.recording_npx_env()
+        result = subprocess.run(
+            [str(BOOTSTRAP), "--install-skills"], env=env, text=True, capture_output=True, stdin=subprocess.DEVNULL
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = self.recorded_npx_calls(log)
+        self.assertEqual(2, len(calls), calls)
+        for call, agent in zip(calls, ("claude-code", "codex")):
+            self.assertEqual("--yes", call[0])
+            self.assertRegex(call[1], r"^skills@\d+\.\d+\.\d+$")
+            self.assertEqual("add", call[2])
+            self.assertEqual(os.path.realpath(ROOT), os.path.realpath(call[3]))
+            self.assertNotIn("quokkify/skills", call)
+            self.assertEqual(["--skill", "*", "-g", "-a", agent], call[4:9])
+            # Without a terminal nobody can answer a prompt, so -y is passed only then.
+            self.assertEqual(["-y"], call[9:])
+
+    def test_install_skills_leaves_confirmation_to_the_user_on_a_terminal(self):
+        # Regression guard: -y used to auto-accept the third-party CLI's prompts unconditionally.
+        import pty
+
+        env, log = self.recording_npx_env()
+        controller, terminal = pty.openpty()
+        try:
+            result = subprocess.run(
+                [str(BOOTSTRAP), "--provider", "claude", "--install-skills"],
+                env=env, text=True, capture_output=True, stdin=terminal,
+            )
+        finally:
+            os.close(controller)
+            os.close(terminal)
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = self.recorded_npx_calls(log)
+        self.assertEqual(1, len(calls), calls)
+        self.assertNotIn("-y", calls[0])
+        self.assertEqual("claude-code", calls[0][-1])
+
+    def test_install_skills_refuses_a_checkout_that_fails_validation(self):
+        # Regression guard: the skills step must not install content that the repository
+        # validator rejects, and must refuse before any adapter file changes.
+        checkout = pathlib.Path(self.temp.name, "checkout")
+        shutil.copytree(ROOT, checkout, ignore=shutil.ignore_patterns(".git", "site", "__pycache__", ".cache"))
+        broken = next(checkout.glob("skills/*/*/SKILL.md"))
+        broken.write_text(broken.read_text().replace("\nname:", "\nname: Not-Kebab-Case\nformer-name:", 1))
+        env, log = self.recording_npx_env()
+        result = subprocess.run(
+            [str(checkout / "scripts" / "bootstrap.sh"), "--provider", "claude", "--install-skills"],
+            env=env, text=True, capture_output=True, stdin=subprocess.DEVNULL,
+        )
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("failed validation", result.stderr)
+        self.assertEqual([], self.recorded_npx_calls(log))
+        self.assertFalse(pathlib.Path(self.env["CLAUDE_CONFIG_DIR"]).exists())
+
+    def test_global_hooks_path_change_is_announced(self):
+        result = self.run_bootstrap("--provider", "claude")
+        hooks_dir = str(pathlib.Path(self.env["XDG_CONFIG_HOME"], "git/skills-hub-hooks"))
+        self.assertIn(f"global core.hooksPath to {hooks_dir}", result.stdout)
+        self.assertIn("git config --global --unset core.hooksPath", result.stdout)
+        self.assertIn("commit-msg", result.stdout)
+        repeat = self.run_bootstrap("--provider", "claude")
+        self.assertIn("already", repeat.stdout)
+
+    def test_dry_run_announces_the_global_hooks_path_change(self):
+        result = self.run_bootstrap("--dry-run")
+        self.assertIn("would set global core.hooksPath", result.stdout)
+
+    def test_foreign_global_hooks_path_refusal_explains_how_to_proceed(self):
+        subprocess.run(["git", "config", "--global", "core.hooksPath", "/private/hooks"], env=self.env, check=True)
+        result = self.run_bootstrap("--provider", "claude", expect=1)
+        self.assertIn("/private/hooks", result.stderr)
+        self.assertIn("left unchanged", result.stderr)
+        value = subprocess.check_output(["git", "config", "--global", "--get", "core.hooksPath"], env=self.env, text=True).strip()
+        self.assertEqual("/private/hooks", value)
+
     def test_missing_companions_are_reported_as_nonfatal_warnings(self):
         env = self.env.copy()
         env["PATH"] = self.hermetic_path_without_npx()

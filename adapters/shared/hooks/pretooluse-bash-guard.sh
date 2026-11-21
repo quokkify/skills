@@ -79,7 +79,7 @@ if matches "${GIT_SUBCOMMAND_PREFIX}push([[:space:]]|\$)" && matches "$FORCE_FLA
     fi
   else
     # No explicit refspec, so we are pushing the current branch
-    CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    CURRENT_BRANCH="$(git -C "$WORKDIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
     if [ -n "$CURRENT_BRANCH" ] && [[ "$CURRENT_BRANCH" == main || "$CURRENT_BRANCH" == master || "$CURRENT_BRANCH" == develop || "$CURRENT_BRANCH" == trunk || "$CURRENT_BRANCH" == production || "$CURRENT_BRANCH" == release ]]; then
       hook_deny "Refused: forced push targeting a protected branch ($CURRENT_BRANCH). Push to a feature branch, or use --force-with-lease on a branch you own."
     fi

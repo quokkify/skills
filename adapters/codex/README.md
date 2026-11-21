@@ -17,7 +17,7 @@ Verified against Codex CLI **0.146.0**. Everything here is a template: no machin
 
 `$CODEX_HOME` defaults to `~/.codex`.
 
-Use `./scripts/bootstrap.sh --provider codex` to install these files with backups, additive JSON/TOML merges, and a symlinked global `AGENTS.md`. Adapter-file and Git configuration changes roll back on failure; `--install-skills` runs `npx skills add` before that transaction starts, so its effects are not part of the rollback. Add `--overlay DIR` for a private layer or `--dry-run` to inspect operations without changing the system. The separate `scripts/install-codex-agents.sh` helper still copies project-level `AGENTS.md` files.
+Use `./scripts/bootstrap.sh --provider codex` to install these files with backups, additive JSON/TOML merges, and a symlinked global `AGENTS.md`. Adapter-file and Git configuration changes roll back on failure; `--install-skills` validates the checkout first and, after that transaction, installs the skills from the validated local checkout with a pinned `skills` CLI version; its effects are not part of the rollback. Add `--overlay DIR` for a private layer or `--dry-run` to inspect operations without changing the system. The separate `scripts/install-codex-agents.sh` helper still copies project-level `AGENTS.md` files.
 
 ### Legacy/unknown keys in TOML merge
 

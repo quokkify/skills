@@ -89,7 +89,8 @@ identifier for Claude Code in the `npx skills` CLI is `claude-code`:
 ./scripts/bootstrap.sh --provider claude --install-skills
 ```
 
-The CLI writes the skills into Claude Code's supported personal skill directory. For project-only
+Bootstrap validates the checkout first, then runs the pinned `skills` CLI version against this local checkout
+(not the remote default branch). The CLI writes the skills into Claude Code's supported personal skill directory. For project-only
 use, Claude Code also discovers skills under `.claude/skills/`.
 
 Do not copy skill content into this adapter — see [`../README.md`](../README.md).

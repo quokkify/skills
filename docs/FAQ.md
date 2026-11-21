@@ -43,11 +43,11 @@ A same-named local Hermes skill can take precedence over the shared version.
 
 ## What does bootstrap do?
 
-`./scripts/bootstrap.sh` installs the shared and selected provider adapter files into `$HOME/.claude` and/or `$HOME/.codex` (or environment overrides). It uses staged writes, timestamped backups, and managed-block merges, and rolls back adapter-file and Git configuration changes on failure. `--dry-run` performs no filesystem, symlink, or Git configuration changes. `--install-skills` runs `npx skills add` before that transaction starts, so a later failure does not uninstall skills it already added.
+`./scripts/bootstrap.sh` installs the shared and selected provider adapter files into `$HOME/.claude` and/or `$HOME/.codex` (or environment overrides). It uses staged writes, timestamped backups, and managed-block merges, and rolls back adapter-file and Git configuration changes on failure. `--dry-run` performs no filesystem, symlink, or Git configuration changes. `--install-skills` first validates the checkout with `scripts/validate_repo.py` and refuses before any change if validation fails; after the adapter transaction it installs the skills from that local checkout with the exact `skills` CLI version pinned in `bootstrap.sh`, so the installed skills are the ones that were validated rather than the remote default branch. That step is not part of the rollback. On a terminal the CLI asks for confirmation; only non-interactive runs pass `-y`.
 
 `./scripts/install-codex-agents.sh /path/to/project` remains the separate project-level helper; it copies `adapters/codex/AGENTS.md` into the target project as `AGENTS.md`.
 
-The installer backs up changed files, refuses a foreign global `core.hooksPath`, and preserves managed blocks written by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`.
+The installer backs up changed files, announces the global `core.hooksPath` it sets (the shared Git hooks then chain to each repository's own `.git/hooks` hook of the same name), refuses and leaves unchanged a foreign global `core.hooksPath`, and preserves managed blocks written by other tools, such as `<!-- OMC:START -->…<!-- OMC:END -->`.
 
 ## What is the overlay structure?
 
