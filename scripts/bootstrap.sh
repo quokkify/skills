@@ -365,7 +365,9 @@ def announce_hooks_path(git_dir, old_hooks, dry_run):
     print(f"Notice: {verb} global core.hooksPath to {git_dir}.")
     print("  Git then runs these shared hooks instead of each repository's .git/hooks, in every repository")
     print("  without its own core.hooksPath. Each shared hook chains to the repository's own hook of the")
-    print("  same name when it is executable, so existing pre-commit and pre-push hooks keep running.")
+    print("  same name when it is executable, so existing pre-commit and pre-push hooks keep running,")
+    print("  including ones a previous global hooks path had left dormant. Other repository hooks")
+    print("  (commit-msg, post-checkout, Git LFS hooks) do not run while this path is set.")
     print("  Undo with: git config --global --unset core.hooksPath")
 
 

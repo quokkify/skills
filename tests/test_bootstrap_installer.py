@@ -318,6 +318,7 @@ class BootstrapInstallerTest(unittest.TestCase):
         hooks_dir = str(pathlib.Path(self.env["XDG_CONFIG_HOME"], "git/skills-hub-hooks"))
         self.assertIn(f"global core.hooksPath to {hooks_dir}", result.stdout)
         self.assertIn("git config --global --unset core.hooksPath", result.stdout)
+        self.assertIn("commit-msg", result.stdout)
         repeat = self.run_bootstrap("--provider", "claude")
         self.assertIn("already", repeat.stdout)
 
