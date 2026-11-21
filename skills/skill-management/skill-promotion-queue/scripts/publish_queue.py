@@ -22,7 +22,10 @@ ALLOWED_ROOT_FILES = {
     "SECURITY.md",
     "THIRD_PARTY_NOTICES.md",
 }
-ALLOWED_DIRECTORIES = {"skills", "docs", "tests", "scripts", "adapters"}
+ALLOWED_DIRECTORIES = {"skills", "docs", "tests"}
+# Installers and hooks run on developer machines and workflows run with repository privileges, so
+# changes to them need a reviewed pull request, never the queue's batch without per-change review.
+REVIEW_ONLY_DIRECTORIES = {"scripts", "adapters", ".github"}
 FORBIDDEN_PARTS = {
     ".env",
     ".git",
@@ -116,6 +119,12 @@ def ensure_public_paths(paths: Sequence[str]) -> None:
     """Reject empty or out-of-bound queue diffs."""
     if not paths:
         raise QueueError("the lane has no changed paths relative to the default branch")
+    review_only = [path for path in paths if path.split("/", 1)[0].casefold() in REVIEW_ONLY_DIRECTORIES]
+    if review_only:
+        raise QueueError(
+            "the queue carries skill content only; installer, hook, and workflow changes "
+            "(scripts/, adapters/, .github/) need a reviewed pull request outside the queue: " + ", ".join(review_only)
+        )
     rejected = [path for path in paths if not path_is_allowed(path)]
     if rejected:
         raise QueueError("queue contains disallowed paths: " + ", ".join(rejected))

@@ -29,8 +29,6 @@ class SkillPromotionQueueTests(unittest.TestCase):
             "skills/repository/example/scripts/check.py",
             "docs/skill-catalog.md",
             "tests/test_example.py",
-            "scripts/validate_repo.py",
-            "adapters/codex/AGENTS.md",
             "README.md",
             "SECURITY.md",
             "THIRD_PARTY_NOTICES.md",
@@ -55,6 +53,27 @@ class SkillPromotionQueueTests(unittest.TestCase):
         for path in rejected:
             with self.subTest(path=path):
                 self.assertFalse(publish_queue.path_is_allowed(path))
+
+    def test_rejects_installer_hook_and_ci_paths(self) -> None:
+        # Regression guard: scripts/ and adapters/ run on developer machines and .github/ runs
+        # with repository privileges; they must never ride the no-per-change-review queue.
+        for path in (
+            "scripts/validate_repo.py",
+            "scripts/bootstrap.sh",
+            "adapters/codex/AGENTS.md",
+            "adapters/shared/git-hooks/pre-push",
+            ".github/workflows/validate.yml",
+            "Scripts/bootstrap.sh",
+            "ADAPTERS/shared/hooks/hook-lib.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertFalse(publish_queue.path_is_allowed(path))
+
+    def test_installer_hook_and_ci_paths_fail_with_a_review_message(self) -> None:
+        with self.assertRaisesRegex(publish_queue.QueueError, r"reviewed pull request.*scripts/bootstrap\.sh") as raised:
+            publish_queue.ensure_public_paths(["skills/example/SKILL.md", "scripts/bootstrap.sh", "adapters/shared/hooks/hook-lib.sh"])
+        self.assertIn("adapters/shared/hooks/hook-lib.sh", str(raised.exception))
+        self.assertNotIn("skills/example/SKILL.md", str(raised.exception))
 
     def test_lane_is_bounded_and_branch_is_deterministic(self) -> None:
         self.assertEqual(
