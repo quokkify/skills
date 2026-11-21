@@ -1163,6 +1163,7 @@
 <h2 id="optional-rolling-draft-queue">Optional rolling draft queue<a class="headerlink" href="#optional-rolling-draft-queue" title="Permanent link">&para;</a></h2>
 <p>A repository owner may pre-authorize completed, public-safe improvements to accumulate in a rolling draft pull request. Configure one <code>automation/skill-improvements/&lt;lane&gt;</code> branch per device or independently running agent and use <code>skill-promotion-queue</code> as the completion workflow.</p>
 <p>This opt-in replaces repeated publication prompts only. It does not authorize direct pushes to the default branch, force-push, automatic merge, or publication of private runtime state. The agent must still perform the privacy and portability audit, deterministic validation, and configured secret scanning. Independent review may be deferred until the owner handles the batch.</p>
+<p>The queue carries skill content only: <code>skills/</code>, <code>docs/</code>, <code>tests/</code>, and the root <code>README.md</code>, <code>SECURITY.md</code>, and <code>THIRD_PARTY_NOTICES.md</code>. Installers, hooks, and workflows (<code>scripts/</code>, <code>adapters/</code>, <code>.github/</code>) run on developer machines or with repository privileges, so the queue helper refuses them; change them through a reviewed pull request.</p>
 <h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
 <p>Every review ends with one of three decisions:</p>
 <ul>
