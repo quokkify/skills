@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_DIR = ROOT / "skills" / "repository" / "mr-description"
 RUBRIC = SKILL_DIR / "scripts" / "rubric.py"
+MR_LOG = SKILL_DIR / "scripts" / "mr_log.py"
 FIXTURES = ROOT / "tests" / "fixtures" / "mr_description"
 
 
@@ -156,6 +157,98 @@ class RubricTests(unittest.TestCase):
         proc = self.run_cli("{", fixture("good.md"))
         self.assertEqual(proc.returncode, 2)
         self.assertNotIn("Traceback", proc.stderr)
+
+
+class LogTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.state = self.root / "state"
+        self.draft = self.root / "draft.md"
+        self.final = self.root / "final.md"
+        self.draft.write_text("one two three four\n", encoding="utf-8")
+        self.final.write_text("one two\n", encoding="utf-8")
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def log(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(MR_LOG), args[0], "--state-dir", str(self.state), *args[1:]],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def record(self, branch: str, *, final: Path | None = None, tags: str = "length", mr: str | None = None) -> subprocess.CompletedProcess:
+        args = ["record", "--branch", branch, "--size", "medium", "--draft", str(self.draft),
+                "--final", str(final or self.final), "--tags", tags, "--rubric", "ok", "--cold-reader", "ok"]
+        if mr:
+            args += ["--mr", mr]
+        return self.log(*args)
+
+    def test_record_then_find_by_branch(self) -> None:
+        self.assertEqual(self.record("feat/a").returncode, 0)
+        proc = self.log("find", "--branch", "feat/a")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        entry = json.loads(proc.stdout)
+        self.assertEqual(entry["branch"], "feat/a")
+        self.assertIsNone(entry["mr"])
+
+    def test_attach_then_find_by_mr(self) -> None:
+        self.record("feat/a")
+        attach = self.log("attach", "--branch", "feat/a", "--mr", "group/app!7")
+        self.assertEqual(json.loads(attach.stdout)["attached"], 1)
+        entry = json.loads(self.log("find", "--mr", "group/app!7").stdout)
+        self.assertEqual(entry["branch"], "feat/a")
+
+    def test_unknown_tag_rejected(self) -> None:
+        proc = self.record("feat/a", tags="vibes")
+        self.assertEqual(proc.returncode, 2)
+        self.assertNotIn("Traceback", proc.stderr)
+
+    def test_edited_flag_and_words(self) -> None:
+        self.record("feat/a")
+        entry = json.loads(self.log("find", "--branch", "feat/a").stdout)
+        self.assertTrue(entry["edited"])
+        self.assertEqual(entry["draft_words"], 4)
+        self.assertEqual(entry["final_words"], 2)
+
+    def test_unedited_record_has_no_tags(self) -> None:
+        self.assertEqual(self.record("feat/a", final=self.draft, tags="").returncode, 0)
+        entry = json.loads(self.log("find", "--branch", "feat/a").stdout)
+        self.assertFalse(entry["edited"])
+        self.assertEqual(entry["tags"], [])
+
+    def test_stats_share_and_tag_counts(self) -> None:
+        self.record("feat/a", tags="density")
+        self.record("feat/b", tags="length")
+        self.record("feat/c", final=self.draft, tags="")
+        stats = json.loads(self.log("stats").stdout)
+        self.assertEqual(stats["count"], 3)
+        self.assertAlmostEqual(stats["accepted_unedited_share"], 1 / 3)
+        self.assertEqual(stats["tag_counts"]["density"], 1)
+        self.assertEqual(stats["tag_counts"]["length"], 1)
+
+    def test_since_last_retro(self) -> None:
+        self.record("feat/a")
+        self.record("feat/b")
+        self.assertEqual(self.log("mark-retro").returncode, 0)
+        self.record("feat/c")
+        stats = json.loads(self.log("stats").stdout)
+        self.assertEqual(stats["since_last_retro"], 1)
+        self.assertEqual(stats["count"], 3)
+
+    def test_slug_stays_inside_state_dir(self) -> None:
+        self.assertEqual(self.record("../../etc", mr="group/proj!12").returncode, 0)
+        state = self.state.resolve()
+        written = [path.resolve() for path in self.root.rglob("*") if path.is_file()]
+        outside = [path for path in written if state not in path.parents and path.parent != self.root.resolve()]
+        self.assertEqual(outside, [])
+        self.assertTrue(any(state / "texts" in path.parents for path in written))
+
+    def test_find_missing_exit_3(self) -> None:
+        self.assertEqual(self.log("find", "--branch", "nope").returncode, 3)
 
 
 if __name__ == "__main__":
