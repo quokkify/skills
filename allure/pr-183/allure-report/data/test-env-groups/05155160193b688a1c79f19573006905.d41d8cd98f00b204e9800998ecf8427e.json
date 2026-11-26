@@ -1,1 +1,1 @@
-{"id":"05155160193b688a1c79f19573006905.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_mr_description.RubricTests#test_headings_count_lines_not_words","name":"test_headings_count_lines_not_words","status":"passed","testResultsByEnv":{"default":"cfbdbe9397f29f8abc762b0c5a07a7a3"}}
+{"id":"05155160193b688a1c79f19573006905.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_mr_description.RubricTests#test_headings_count_lines_not_words","name":"test_headings_count_lines_not_words","status":"passed","testResultsByEnv":{"default":"3842c0c476bcd923d58132d42dad0497"}}
