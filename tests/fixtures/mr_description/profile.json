@@ -1,0 +1,6 @@
+{
+  "word_budget": {"words": 120, "lines": 12},
+  "headings": ["What changed", "Verification", "Needs from you"],
+  "keep_lines": ["^Tracker:", "^Closes [A-Z]+-\\d+", "^/assign", "^/label"],
+  "stop_list": ["internal-token"]
+}
