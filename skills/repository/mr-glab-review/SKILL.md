@@ -43,7 +43,7 @@ Talk to the reviewer in the reviewer's language; write comments in the profile l
 - Nothing is visible to the MR author before Phase 4 and an explicit yes. **Never publish without an explicit yes.**
 - Inline comments only on lines present in the diff (check with `position`, or `in-diff`); otherwise stage a general note whose first line names `file:line`.
 - Send one API request at a time. Handle 429 and 401 as in [`references/gitlab-api.md#errors`](references/gitlab-api.md#errors): back off on 429; on 401 check `glab api user`, and if the token fails, stop and ask the reviewer to log in again.
-- Every comment follows [`references/comment-style.md`](references/comment-style.md): [structure](references/comment-style.md#structure), [markers](references/comment-style.md#markers), and it passes the [checklist](references/comment-style.md#checklist) before the reviewer sees it.
+- Every comment follows [`references/comment-style.md`](references/comment-style.md): [structure](references/comment-style.md#structure), [severity](references/comment-style.md#severity), [markers](references/comment-style.md#markers), and it passes the [checklist](references/comment-style.md#checklist) before the reviewer sees it.
 - Keep the state file (see [Resume](#resume)) current after every change of an item.
 - Start a subagent only when the reviewer asks for one (the Brainstorm option or an explicit request).
 
@@ -74,7 +74,7 @@ Work silently; report only problems.
 
 Show a short list ordered by severity, one line per item:
 
-- 🔴 must fix before merge, 🟠 should fix, 🟡 non-blocker;
+- 🔴 before merge, 🟠 should fix, 🟡 not a blocker, ❔ question (an *uncertain* finding); this is the same scale the comment's first line shows (see [severity](references/comment-style.md#severity));
 - each line tagged *inline* or *general note*;
 - then requirement coverage, for example which listed cases have tests and which do not;
 - then the findings dropped as already raised, each with a link to its thread (`<mr web_url>#note_<note_id>`).
@@ -132,7 +132,7 @@ The state file lives outside the repository and survives the session: `<state_di
   "items": [
     {
       "id": 1,
-      "severity": "🔴|🟠|🟡",
+      "severity": "🔴|🟠|🟡|❔",
       "target": {"new_path": "src/App.java", "old_path": "src/App.java", "new_line": 12, "old_line": null},
       "status": "pending|drafted|skipped",
       "draft_id": null,
