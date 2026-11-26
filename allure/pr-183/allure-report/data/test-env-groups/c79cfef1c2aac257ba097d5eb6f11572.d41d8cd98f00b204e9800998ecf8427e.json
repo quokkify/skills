@@ -1,0 +1,1 @@
+{"id":"c79cfef1c2aac257ba097d5eb6f11572.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_shared_git_hook_does_not_chain_to_itself","name":"test_shared_git_hook_does_not_chain_to_itself","status":"passed","testResultsByEnv":{"default":"0d45a8504081ebc3d9cfa1afae510845"}}
