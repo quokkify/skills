@@ -60,7 +60,8 @@ def load_profile(profile: dict) -> dict:
         except re.error as error:
             raise ProfileError(f"invalid keep_lines pattern {pattern!r}: {error}") from error
     stop_list = [term.lower() for term in string_list(profile, "stop_list")]
-    return {"words": words, "lines": lines, "keep": keep, "stop_list": stop_list}
+    headings = string_list(profile, "headings") or DEFAULT_HEADINGS
+    return {"words": words, "lines": lines, "keep": keep, "stop_list": stop_list, "changes_heading": headings[0].strip().lower()}
 
 
 def marker_blocks(text: str) -> tuple[list[str], list[str]]:
@@ -154,8 +155,15 @@ def check(text: str, profile: dict, original: str | None = None) -> dict:
             warnings.append({"code": "bullet_identifiers", "detail": body})
         if PARENTHETICAL_RE.search(LINK_TARGET_RE.sub("]", IDENTIFIER_RE.sub("", body))):
             warnings.append({"code": "bullet_parenthetical", "detail": body})
-    if len(bullets) > MAX_BULLETS:
-        warnings.append({"code": "too_many_bullets", "detail": f"{len(bullets)} bullets; consider splitting the merge request"})
+    change_bullets = 0
+    section = None
+    for line in lines:
+        if line.startswith("#"):
+            section = line.lstrip("#").strip().lower()
+        elif section == settings["changes_heading"] and BULLET_RE.match(line):
+            change_bullets += 1
+    if change_bullets > MAX_BULLETS:
+        warnings.append({"code": "too_many_bullets", "detail": f"{change_bullets} change bullets; consider splitting the merge request"})
 
     seen: set[str] = set()
     for index, line in enumerate(lines):

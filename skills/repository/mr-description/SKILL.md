@@ -41,7 +41,7 @@ The skill runs with neutral defaults. A caller (usually a private wrapper skill 
 | `stop_list` | none: terms that must never be published |
 | `state_dir` | `${XDG_STATE_HOME:-~/.local/state}/mr-description` |
 
-Before the rubric step, write the profile to `<scratch>/profile.json` with the keys `word_budget` (`{"words": N, "lines": N}`), `headings`, `keep_lines`, `stop_list`. `style_rules` is read only by the draft step. The public skill holds no organisation data.
+Before the rubric step, write the profile to `<scratch>/profile.json` with the keys `word_budget` (`{"words": N, "lines": N}`), `headings`, `keep_lines`, `stop_list`. The rubric counts change bullets under the first heading in `headings`. `style_rules` is read only by the draft step. The public skill holds no organisation data.
 
 ## Modes
 

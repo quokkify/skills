@@ -110,6 +110,12 @@ class RubricTests(unittest.TestCase):
         profile = dict(self.profile, word_budget={"words": 120, "lines": 20})
         self.assertIn("too_many_bullets", codes(self.m.check(text, profile)["warnings"]))
 
+    def test_too_many_bullets_counts_only_first_heading_section(self) -> None:
+        text = ("Summary.\n\n## What changed\n" + "".join(f"- fact {i}\n" for i in range(5))
+                + "\n## Verification\n" + "".join(f"- check {i}\n" for i in range(3)))
+        profile = dict(self.profile, word_budget={"words": 120, "lines": 20})
+        self.assertNotIn("too_many_bullets", codes(self.m.check(text, profile)["warnings"]))
+
     def test_empty_and_duplicate_sections_warn(self) -> None:
         text = "Summary.\n\n## What changed\n\n## Verification\n- ok\n\n## Verification\n- again\n"
         warnings = codes(self.m.check(text, self.profile)["warnings"])
