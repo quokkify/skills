@@ -1,7 +1,7 @@
-Report filter tests now generate amounts from one.
+Library search tests now cover titles with accents.
 
 ## What changed
-- The `ReportFilter` amount generator in `AmountSteps` now starts at one (zero always produced an empty report and the test failed on every stand we tried).
+- The `TitleNormalizer` used by `SearchSteps` now folds accents before comparing (unfolded titles never matched and the test failed in every environment we tried).
 
 ## Verification
-- `ReportFilterTest`: 4/4 green
+- `SearchAccentTest`: 4/4 green

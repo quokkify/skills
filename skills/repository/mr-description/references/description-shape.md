@@ -38,10 +38,10 @@ Headings and language come from the profile; the defaults are shown here.
 Small MR:
 
 ```markdown
-The report "amount less than" filter is now tested with values from 1: at 0 the report is always empty, so the test always failed.
+Search results are now tested with an empty query too: the page used to crash, and no test caught it.
 
 ## Verification
-- `ReportAmountFilterTest` locally: 4/4 green
+- `SearchEmptyQueryTest` locally: 3/3 green
 - MR pipeline: green
 
 Closes SHOP-101
@@ -58,7 +58,7 @@ The admin orders page got a CSV export button. Tests check that the file downloa
 - The "download and read CSV" step moved to the shared steps class.
 
 ## Verification
-- `OrdersExportTest` on the stand: 6/6 green
+- `OrdersExportTest` in the test environment: 6/6 green
 - MR pipeline: green
 
 ## Needs from you

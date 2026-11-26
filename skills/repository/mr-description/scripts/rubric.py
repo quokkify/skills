@@ -33,23 +33,33 @@ class ProfileError(ValueError):
     """The profile cannot be used."""
 
 
+def string_list(profile: dict, key: str) -> list[str]:
+    value = profile.get(key)
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise ProfileError(f"{key} must be a list of non-empty strings")
+    return value
+
+
 def load_profile(profile: dict) -> dict:
     if not isinstance(profile, dict):
         raise ProfileError("profile must be a JSON object")
-    budget = profile.get("word_budget") or {}
+    budget = profile.get("word_budget", {})
     if not isinstance(budget, dict):
         raise ProfileError("word_budget must be an object with 'words' and 'lines'")
     words = budget.get("words", DEFAULT_WORDS)
     lines = budget.get("lines", DEFAULT_LINES)
-    if not isinstance(words, int) or not isinstance(lines, int) or words <= 0 or lines <= 0:
-        raise ProfileError("word_budget.words and word_budget.lines must be positive integers")
+    for name, value in (("words", words), ("lines", lines)):
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ProfileError(f"word_budget.{name} must be a positive integer")
     keep = []
-    for pattern in profile.get("keep_lines") or []:
+    for pattern in string_list(profile, "keep_lines"):
         try:
             keep.append(re.compile(pattern))
-        except (re.error, TypeError) as error:
+        except re.error as error:
             raise ProfileError(f"invalid keep_lines pattern {pattern!r}: {error}") from error
-    stop_list = [str(term).lower() for term in profile.get("stop_list") or [] if str(term).strip()]
+    stop_list = [term.lower() for term in string_list(profile, "stop_list")]
     return {"words": words, "lines": lines, "keep": keep, "stop_list": stop_list}
 
 
@@ -127,6 +137,9 @@ def check(text: str, profile: dict, original: str | None = None) -> dict:
     lines = visible_lines(text, blocks, settings["keep"])
     words = sum(len(content_words(line)) for line in lines if not line.startswith("#"))
     bullets = [line for line in lines if BULLET_RE.match(line)]
+
+    if words == 0:
+        failures.append({"code": "empty_description", "detail": "no visible text outside kept lines and marker blocks"})
 
     if words > settings["words"]:
         failures.append({"code": "over_budget_words", "detail": f"{words} visible words, budget {settings['words']}"})

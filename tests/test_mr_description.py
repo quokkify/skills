@@ -150,6 +150,25 @@ class RubricTests(unittest.TestCase):
         result = self.m.check(fixture("good.md"), {})
         self.assertIn("visible_words", result["stats"])
 
+    def test_profile_scalar_keep_lines_rejected(self) -> None:
+        for profile in ({"keep_lines": "^Tracker:"}, {"keep_lines": {"a": 1}}):
+            with self.assertRaises(self.m.ProfileError):
+                self.m.check("Summary.\n", profile)
+
+    def test_profile_bad_stop_list_rejected(self) -> None:
+        for profile in ({"stop_list": "xyz"}, {"stop_list": [None, 0]}):
+            with self.assertRaises(self.m.ProfileError):
+                self.m.check("Summary.\n", profile)
+
+    def test_profile_bad_word_budget_rejected(self) -> None:
+        for profile in ({"word_budget": {"words": True}}, {"word_budget": []}):
+            with self.assertRaises(self.m.ProfileError):
+                self.m.check("Summary.\n", profile)
+
+    def test_only_keep_lines_and_blocks_is_empty(self) -> None:
+        text = "Closes SHOP-1\n\n<!-- demo:start -->\nVideo: x\n<!-- demo:end -->\n"
+        self.assertIn("empty_description", codes(self.m.check(text, self.profile)["failures"]))
+
     def test_cli_ok_exit_0_and_json(self) -> None:
         proc = self.run_cli(fixture("profile.json"), fixture("good.md"))
         self.assertEqual(proc.returncode, 0, proc.stderr)
@@ -259,6 +278,56 @@ class LogTests(unittest.TestCase):
         outside = [path for path in written if state not in path.parents and path.parent != self.root.resolve()]
         self.assertEqual(outside, [])
         self.assertTrue(any(state / "texts" in path.parents for path in written))
+
+    def test_find_returns_existing_texts_path(self) -> None:
+        self.record("feat/a")
+        self.log("attach", "--branch", "feat/a", "--mr", "group/app!7")
+        entry = json.loads(self.log("find", "--mr", "group/app!7").stdout)
+        final = self.state / entry["texts"] / "final.md"
+        self.assertEqual(final.read_text(encoding="utf-8"), "one two\n")
+
+    def test_repeated_records_keep_their_own_texts(self) -> None:
+        self.record("feat/a")
+        second = self.root / "second.md"
+        second.write_text("second final\n", encoding="utf-8")
+        self.record("feat/a", final=second)
+        entries = [json.loads(line) for line in (self.state / "log.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertNotEqual(entries[0]["texts"], entries[1]["texts"])
+        self.assertEqual((self.state / entries[0]["texts"] / "final.md").read_text(encoding="utf-8"), "one two\n")
+
+    def test_colliding_slugs_do_not_share_texts(self) -> None:
+        self.record("feat/x")
+        other = self.root / "other.md"
+        other.write_text("other\n", encoding="utf-8")
+        self.record("feat_x", final=other)
+        first = json.loads(self.log("find", "--branch", "feat/x").stdout)
+        self.assertEqual((self.state / first["texts"] / "final.md").read_text(encoding="utf-8"), "one two\n")
+
+    def test_corrupt_log_lines_are_skipped(self) -> None:
+        self.state.mkdir(parents=True)
+        (self.state / "log.jsonl").write_text('{"broken\n[1]\n{"branch": "q"}\n', encoding="utf-8")
+        self.record("feat/a")
+        proc = self.log("stats")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertNotIn("Traceback", proc.stderr)
+        self.assertIn("log.jsonl:1", proc.stderr)
+        self.assertEqual(json.loads(proc.stdout)["count"], 2)
+
+    def test_post_edit_records_stay_out_of_success_metrics(self) -> None:
+        self.record("feat/a", final=self.draft, tags="")
+        proc = self.log("record", "--kind", "post-edit", "--branch", "feat/a", "--draft", str(self.draft),
+                        "--final", str(self.final), "--tags", "jargon")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        stats = json.loads(self.log("stats").stdout)
+        self.assertEqual(stats["count"], 1)
+        self.assertEqual(stats["accepted_unedited_share"], 1.0)
+        self.assertEqual(stats["since_last_retro"], 1)
+        self.assertEqual(stats["tag_counts"], {"jargon": 1})
+
+    def test_draft_record_still_requires_size(self) -> None:
+        proc = self.log("record", "--branch", "feat/a", "--draft", str(self.draft), "--final", str(self.final),
+                        "--rubric", "ok", "--cold-reader", "ok")
+        self.assertEqual(proc.returncode, 2)
 
     def test_find_missing_exit_3(self) -> None:
         self.assertEqual(self.log("find", "--branch", "nope").returncode, 3)

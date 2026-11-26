@@ -6,7 +6,7 @@ The orders page export button now has tests: they check that the CSV downloads a
 - The CSV download step moved to the shared steps class.
 
 ## Verification
-- `OrdersExportTest` on the stand: 6/6 green
+- `OrdersExportTest` in the test environment: 6/6 green
 
 ## Needs from you
 Look at the shared CSV step: other reports will use it.

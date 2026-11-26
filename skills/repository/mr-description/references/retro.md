@@ -22,7 +22,7 @@ Each retro names one bottleneck and changes one rule. Changing several rules at 
 1. `python3 <skill-dir>/scripts/mr_log.py stats --state-dir <state_dir> --last 10`.
 2. Optionally read reviewer questions on the logged MRs ("what is this?", "why?"). Show each to the author and count only the ones the author confirms as caused by the description.
 3. Name the most frequent tag. Ties: prefer the one that also appears in confirmed reviewer questions.
-4. Read the `texts/<slug>/{draft,final}.md` pairs carrying that tag. Propose **one** rule that would have produced the author's final text, with a before/after taken from those pairs.
+4. For each entry carrying that tag, read `<state_dir>/<entry texts>/draft.md` and `final.md` (the `texts` field of the entry). Propose **one** rule that would have produced the author's final text, with a before/after taken from those pairs.
 5. The author accepts, edits or rejects it. On accept, write it to the caller's `style_rules`. The file holds at most 12 rules: a new rule replaces or merges an old one.
 6. `python3 <skill-dir>/scripts/mr_log.py mark-retro --state-dir <state_dir>`.
 

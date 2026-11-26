@@ -25,6 +25,7 @@ TAGS = (
     "no-ask",
 )
 SIZES = ("small", "medium", "large")
+KINDS = ("draft", "post-edit")
 LOG_NAME = "log.jsonl"
 
 
@@ -41,11 +42,26 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def read_entries(state: Path) -> list[dict]:
+def raw_lines(state: Path) -> list[str]:
     path = state / LOG_NAME
-    if not path.exists():
-        return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+
+
+def read_entries(state: Path) -> list[dict]:
+    entries = []
+    for number, line in enumerate(raw_lines(state), start=1):
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError as error:
+            print(f"mr_log: {LOG_NAME}:{number}: skipped unreadable line ({error.msg})", file=sys.stderr)
+            continue
+        if not isinstance(entry, dict):
+            print(f"mr_log: {LOG_NAME}:{number}: skipped line that is not an object", file=sys.stderr)
+            continue
+        entries.append(entry)
+    return entries
 
 
 def write_entries(state: Path, entries: list[dict]) -> None:
@@ -69,13 +85,19 @@ def parse_tags(raw: str) -> list[str]:
 
 
 def cmd_record(args: argparse.Namespace) -> dict:
-    if args.size not in SIZES:
+    if args.kind == "draft":
+        missing = [flag for flag, value in (("--size", args.size), ("--rubric", args.rubric), ("--cold-reader", args.cold_reader)) if value is None]
+        if missing:
+            raise UsageError(f"a draft record needs {', '.join(missing)}")
+    if args.size is not None and args.size not in SIZES:
         raise UsageError(f"--size must be one of {SIZES}")
     tags = parse_tags(args.tags)
     draft = Path(args.draft).read_text(encoding="utf-8")
     final = Path(args.final).read_text(encoding="utf-8")
+    texts_rel = f"texts/{slug(args.mr or args.branch)}/{len(raw_lines(args.state_dir)) + 1:04d}"
     entry = {
         "ts": now(),
+        "kind": args.kind,
         "branch": args.branch,
         "mr": args.mr,
         "size": args.size,
@@ -85,8 +107,9 @@ def cmd_record(args: argparse.Namespace) -> dict:
         "tags": tags,
         "rubric": args.rubric,
         "cold_reader": args.cold_reader,
+        "texts": texts_rel,
     }
-    texts = args.state_dir / "texts" / slug(args.mr or args.branch)
+    texts = args.state_dir / texts_rel
     texts.mkdir(parents=True, exist_ok=True)
     (texts / "draft.md").write_text(draft, encoding="utf-8")
     (texts / "final.md").write_text(final, encoding="utf-8")
@@ -96,6 +119,10 @@ def cmd_record(args: argparse.Namespace) -> dict:
 
 def records(entries: list[dict]) -> list[dict]:
     return [entry for entry in entries if entry.get("type") != "retro"]
+
+
+def draft_records(entries: list[dict]) -> list[dict]:
+    return [entry for entry in records(entries) if entry.get("kind", "draft") == "draft"]
 
 
 def cmd_find(args: argparse.Namespace) -> dict | None:
@@ -121,21 +148,22 @@ def cmd_attach(args: argparse.Namespace) -> dict:
 
 def cmd_stats(args: argparse.Namespace) -> dict:
     entries = read_entries(args.state_dir)
-    items = records(entries)
+    window = records(entries)
     if args.last:
-        items = items[-args.last :]
+        window = window[-args.last :]
     tag_counts: dict[str, int] = {}
-    for entry in items:
-        for tag in entry.get("tags", []):
+    for entry in window:
+        for tag in entry.get("tags") or []:
             tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    items = draft_records(window)
     last_retro = max((index for index, entry in enumerate(entries) if entry.get("type") == "retro"), default=-1)
-    since = len(records(entries[last_retro + 1 :]))
+    since = len(draft_records(entries[last_retro + 1 :]))
     count = len(items)
     return {
         "count": count,
         "tag_counts": dict(sorted(tag_counts.items(), key=lambda item: (-item[1], item[0]))),
-        "accepted_unedited_share": (sum(not entry["edited"] for entry in items) / count) if count else 0.0,
-        "avg_final_words": (sum(entry["final_words"] for entry in items) / count) if count else 0.0,
+        "accepted_unedited_share": (sum(not entry.get("edited", False) for entry in items) / count) if count else 0.0,
+        "avg_final_words": (sum(entry.get("final_words", 0) for entry in items) / count) if count else 0.0,
         "since_last_retro": since,
     }
 
@@ -158,12 +186,13 @@ def build_parser() -> argparse.ArgumentParser:
     record = add("record")
     record.add_argument("--branch", required=True)
     record.add_argument("--mr")
-    record.add_argument("--size", required=True)
+    record.add_argument("--kind", default="draft", choices=KINDS)
+    record.add_argument("--size")
     record.add_argument("--draft", required=True)
     record.add_argument("--final", required=True)
     record.add_argument("--tags", default="")
-    record.add_argument("--rubric", required=True, choices=("ok", "fail"))
-    record.add_argument("--cold-reader", required=True, choices=("ok", "fixed"))
+    record.add_argument("--rubric", choices=("ok", "fail"))
+    record.add_argument("--cold-reader", choices=("ok", "fixed"))
 
     find = add("find")
     target = find.add_mutually_exclusive_group(required=True)
