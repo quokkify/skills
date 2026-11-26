@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -15,6 +16,18 @@ SKILL_DIR = ROOT / "skills" / "repository" / "mr-description"
 RUBRIC = SKILL_DIR / "scripts" / "rubric.py"
 MR_LOG = SKILL_DIR / "scripts" / "mr_log.py"
 FIXTURES = ROOT / "tests" / "fixtures" / "mr_description"
+SKILL_MD = SKILL_DIR / "SKILL.md"
+CATALOG = ROOT / "docs" / "skill-catalog.md"
+SKILL_DESCRIPTION = (
+    "Write or rewrite a GitLab merge request description that a reviewer can read in a minute — "
+    "compact, outcome first, checked by a rubric and a cold reader, and improved over time from "
+    "the author's own edits."
+)
+MACHINE_PATHS = ("/Users/", "/home/")
+EMAIL_RE = re.compile(
+    r"(?<![A-Za-z0-9._%+:/@-])[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)(?![A-Za-z0-9:-]|\.[A-Za-z0-9])"
+)
+ALLOWED_EMAIL_DOMAIN = "example.com"
 
 
 def load_module(name: str, path: Path):
@@ -249,6 +262,45 @@ class LogTests(unittest.TestCase):
 
     def test_find_missing_exit_3(self) -> None:
         self.assertEqual(self.log("find", "--branch", "nope").returncode, 3)
+
+
+class BoundaryTests(unittest.TestCase):
+    def public_files(self) -> list[Path]:
+        files = [path for path in SKILL_DIR.rglob("*") if path.is_file() and "__pycache__" not in path.parts]
+        files += [path for path in FIXTURES.rglob("*") if path.is_file()]
+        return files
+
+    def test_frontmatter_description_exact(self) -> None:
+        text = SKILL_MD.read_text(encoding="utf-8")
+        match = re.match(r"^---\nname: mr-description\ndescription: (.+)\n---\n", text)
+        self.assertIsNotNone(match, "frontmatter must declare name and description")
+        self.assertEqual(match.group(1), SKILL_DESCRIPTION)
+
+    def test_no_machine_paths_or_real_emails(self) -> None:
+        for path in self.public_files():
+            text = path.read_text(encoding="utf-8")
+            rel = path.relative_to(ROOT)
+            for machine_path in MACHINE_PATHS:
+                self.assertNotIn(machine_path, text, f"{rel} contains {machine_path}")
+            for match in EMAIL_RE.finditer(text):
+                self.assertEqual(match.group(1), ALLOWED_EMAIL_DOMAIN, f"{rel}: {match.group(0)}")
+
+    def test_skill_md_references_exist(self) -> None:
+        text = SKILL_MD.read_text(encoding="utf-8")
+        named = set(re.findall(r"(references/[\w.-]+\.md|scripts/[\w.-]+\.py)", text))
+        self.assertTrue({"scripts/rubric.py", "scripts/mr_log.py", "references/description-shape.md",
+                         "references/gitlab-api.md", "references/retro.md"} <= named, named)
+        for rel in named:
+            self.assertTrue((SKILL_DIR / rel).is_file(), rel)
+
+    def test_retro_reference_lists_every_tag(self) -> None:
+        log = load_module("mr_description_log", MR_LOG)
+        retro = (SKILL_DIR / "references" / "retro.md").read_text(encoding="utf-8")
+        for tag in log.TAGS:
+            self.assertIn(f"`{tag}`", retro)
+
+    def test_catalog_lists_skill(self) -> None:
+        self.assertIn("(../skills/repository/mr-description/SKILL.md)", CATALOG.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
