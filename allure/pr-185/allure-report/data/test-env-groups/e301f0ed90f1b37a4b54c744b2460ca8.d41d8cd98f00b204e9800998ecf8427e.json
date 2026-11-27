@@ -1,0 +1,1 @@
+{"id":"e301f0ed90f1b37a4b54c744b2460ca8.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_bootstrap_installer.BootstrapInstallerTest#test_install_skills_leaves_confirmation_to_the_user_on_a_terminal","name":"test_install_skills_leaves_confirmation_to_the_user_on_a_terminal","status":"passed","testResultsByEnv":{"default":"8f1a6fa7ff73968004ff068b0631522d"}}

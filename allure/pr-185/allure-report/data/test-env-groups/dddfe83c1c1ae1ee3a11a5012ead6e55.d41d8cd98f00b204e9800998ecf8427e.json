@@ -1,0 +1,1 @@
+{"id":"dddfe83c1c1ae1ee3a11a5012ead6e55.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_global_hooks_path_still_runs_repository_hooks_through_git","name":"test_global_hooks_path_still_runs_repository_hooks_through_git","status":"passed","testResultsByEnv":{"default":"c564f7785af5b16e8ed57ec04a68e272"}}

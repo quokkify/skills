@@ -1,0 +1,1 @@
+{"id":"171adb47276b42fe4ce5f7e988b060c1.d41d8cd98f00b204e9800998ecf8427e","fullName":"tests.test_shared_adapter_hooks.SharedAdapterHookTests#test_shared_git_hooks_run_their_own_checks_before_the_repository_hook","name":"test_shared_git_hooks_run_their_own_checks_before_the_repository_hook","status":"passed","testResultsByEnv":{"default":"1058f3b3d74492cd54bb79491adbbdbb"}}
