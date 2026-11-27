@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.18.0](https://github.com/quokkify/skills/compare/v0.17.0...v0.18.0) (2026-11-27)
+
+
+### ✨ Features
+
+* **mr-glab-review:** open review comments with status and one action ([#184](https://github.com/quokkify/skills/issues/184)) ([b79ae54](https://github.com/quokkify/skills/commit/b79ae54903f7bcfb0beb09a6ff45fbda6b1744b2))
+* **mr-glab-review:** verify each finding with a subagent before the summary ([#185](https://github.com/quokkify/skills/issues/185)) ([113c335](https://github.com/quokkify/skills/commit/113c335f46e2baf02125eefa4eb82c150f426bd9))
+* **skills:** add a skill that writes short GitLab MR descriptions ([#183](https://github.com/quokkify/skills/issues/183)) ([6375fd0](https://github.com/quokkify/skills/commit/6375fd0f1c7d67c825b06e4a75195225f005b11c))
+* **skills:** add mr-glab-review ([#167](https://github.com/quokkify/skills/issues/167)) ([a306555](https://github.com/quokkify/skills/commit/a306555b614718aa7b4c265967a05850010524a4))
+* **skills:** add variant-shootout ([#175](https://github.com/quokkify/skills/issues/175)) ([cb48ec2](https://github.com/quokkify/skills/commit/cb48ec2afa4485bd2427110100409aa451ec0a58))
+
+
+### 🐛 Bug Fixes
+
+* **bootstrap:** keep repository git hooks running and pin the skills CLI ([#177](https://github.com/quokkify/skills/issues/177)) ([b8dafde](https://github.com/quokkify/skills/commit/b8dafdebb6499f17ba9257cb0244c79c878f2e16))
+* **skills:** guard against injected text and keep code out of the queue ([#178](https://github.com/quokkify/skills/issues/178)) ([707762a](https://github.com/quokkify/skills/commit/707762abe0919e3bfc37a0d48e455e5a58726287))
+
+
+### 📦 Dependencies
+
+* **npm:** update playwright to v1.65.1 ([#170](https://github.com/quokkify/skills/issues/170)) ([2d35aa5](https://github.com/quokkify/skills/commit/2d35aa5a7406d5a460aa24f4185b8c881a17fc64))
+* **npm:** update playwright to v1.65.1 ([#176](https://github.com/quokkify/skills/issues/176)) ([6655f38](https://github.com/quokkify/skills/commit/6655f387885a65d8d1a01d3e5b99da88a0f2fad9))
+* **pip_requirements:** update markdown-it-py to v4.3.0 ([#169](https://github.com/quokkify/skills/issues/169)) ([025f188](https://github.com/quokkify/skills/commit/025f188dfb913566b1ae7fc46406d1beb88bb9bf))
+* **pip_requirements:** update mdit-py-plugins to v0.7.0 ([#171](https://github.com/quokkify/skills/issues/171)) ([413a982](https://github.com/quokkify/skills/commit/413a98270cb0b7df668926839e843b63c517fe2b))
+* **pip_requirements:** update pyyaml to v6.0.4 ([#182](https://github.com/quokkify/skills/issues/182)) ([431b69f](https://github.com/quokkify/skills/commit/431b69f28ae14d8ca50ab05020ba3371f958da73))
+
+
+### 🧹 Chores
+
+* **template:** update shared project template ([#174](https://github.com/quokkify/skills/issues/174)) ([36f17bf](https://github.com/quokkify/skills/commit/36f17bfe4fe82b2bc32cd6a97248eb2049868a86))
+* **template:** update shared project template ([#181](https://github.com/quokkify/skills/issues/181)) ([b952fdc](https://github.com/quokkify/skills/commit/b952fdc65a918e740d550f24cfb9fb652c7cf935))
+
 ## [0.17.0](https://github.com/quokkify/skills/compare/v0.16.0...v0.17.0) (2026-11-10)
 
 <!-- project-toolkit:release-notes v2 -->
