@@ -35,6 +35,7 @@ The skill runs with neutral defaults. A caller (usually a private wrapper skill 
 | `conventions` (extra review checks) | none |
 | `stop_list` (terms that must never be published) | none |
 | `state_dir` (where resume state is kept) | `${XDG_STATE_HOME:-~/.local/state}/mr-glab-review` |
+| `brainstorm` (`manual` or `auto`: whether Phase 1 checks each finding with a subagent) | `manual` |
 
 Talk to the reviewer in the reviewer's language; write comments in the profile language. Before staging any draft, check its text against `stop_list`; on a hit, show the reviewer the match and redraft. The public skill holds no organisation data: hosts, trackers, team conventions and stop-lists belong in the caller's profile.
 
@@ -45,7 +46,7 @@ Talk to the reviewer in the reviewer's language; write comments in the profile l
 - Send one API request at a time. Handle 429 and 401 as in [`references/gitlab-api.md#errors`](references/gitlab-api.md#errors): back off on 429; on 401 check `glab api user`, and if the token fails, stop and ask the reviewer to log in again.
 - Every comment follows [`references/comment-style.md`](references/comment-style.md): [structure](references/comment-style.md#structure), [severity](references/comment-style.md#severity), [markers](references/comment-style.md#markers), and it passes the [checklist](references/comment-style.md#checklist) before the reviewer sees it.
 - Keep the state file (see [Resume](#resume)) current after every change of an item.
-- Start a subagent only when the reviewer asks for one (the Brainstorm option or an explicit request).
+- Start a subagent only when the reviewer asks for one (the Brainstorm option or an explicit request), or in the Phase 1 verify pass when the profile sets `brainstorm: auto`.
 
 ## Phase 0 — Prepare
 
@@ -67,8 +68,12 @@ Work silently; report only problems.
 4. Verify every finding with evidence: search the source branch, compare with the target branch, read the requirement. A finding you cannot verify is marked *uncertain*, and its comment asks the author to double-check instead of asserting.
 5. For each inline finding, get its new-side line with `new-line`, then its full position with `position` (exit 1 = not in the diff). An empty result means a general note; when `new-line` returns several numbers, keep them all as candidates for Phase 3.
 6. Record each finding in the state file as an item with `status: "pending"`, its `position` output as `target`, and its drafted `text`.
+7. **Verify pass** (only when the profile sets `brainstorm: auto`; with `manual`, go to Phase 2):
+   - A finding is *mechanical* when its whole fix is visible on the diff line itself (call chaining, an unused import, a typo). Mechanical findings get no subagent.
+   - For every other finding, start one subagent, all of them in parallel, before Phase 2. Its brief holds the finding, its `file:line`, the evidence you already have, and exactly two questions: (a) is there a reusable pattern for the fix already in the repository, with `file:line`; (b) is the finding stronger or weaker than drafted — the code passes or fails for a different reason than it seems, the requirement says something else, or the finding is false — with evidence.
+   - Before using any claim from a report, open the cited `file:line` and confirm it; drop a claim you cannot confirm. From the confirmed claims, update the item's severity and `text` (re-running the [checklist](references/comment-style.md#checklist)), and note what changed for the Phase 2 summary.
 
-✅ Check: every finding has a `file:line` (or is a deliberate general note) and named evidence.
+✅ Check: every finding has a `file:line` (or is a deliberate general note) and named evidence; with `brainstorm: auto`, every non-mechanical finding has a verify report and every claim used from it was confirmed at its `file:line`.
 
 ## Phase 2 — Summary
 
@@ -76,6 +81,7 @@ Show a short list ordered by severity, one line per item:
 
 - 🔴 before merge, 🟠 should fix, 🟡 not a blocker, ❔ question (an *uncertain* finding); this is the same scale the comment's first line shows (see [severity](references/comment-style.md#severity));
 - each line tagged *inline* or *general note*;
+- with `brainstorm: auto`, each line whose severity or text the verify pass changed tagged *verified: changed*, with the change in a few words;
 - then requirement coverage, for example which listed cases have tests and which do not;
 - then the findings dropped as already raised, each with a link to its thread (`<mr web_url>#note_<note_id>`).
 
@@ -95,7 +101,7 @@ Ask through the runtime's structured-choice prompt when one is available (otherw
 
 - **Yes**: build the payload from the item's `position` output (`--path`, `--old-path`, `--line`, and `--old-line` when not `null`) and create the draft note immediately ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)); save the response and run `record-draft` to store its `draft_id` and set `status: "drafted"` in the state file. If the request fails, follow [`references/gitlab-api.md#errors`](references/gitlab-api.md#errors); on 400 or 422 for an inline position, show the reviewer a general-note version naming `file:line` and ask again.
 - **Edit**: apply the requested change, show the new version, ask again.
-- **Brainstorm**: start one subagent with a focused question: the options for this point and a reusable pattern already in the repository, with `file:line`. Redraft from its answer, show it and ask again. Never publish the subagent's output directly.
+- **Brainstorm**: start one subagent with a focused question: the options for this point and a reusable pattern already in the repository, with `file:line`. When the verify pass already covered the item, ask the subagent what that report did not answer instead of repeating it. Redraft from its answer, show it and ask again. Never publish the subagent's output directly.
 - **Skip**: set `status: "skipped"`; nothing is staged.
 - **Back to N**: return to item N. If it is already drafted and the reviewer changes it, delete that draft ([`references/gitlab-api.md#draft-notes`](references/gitlab-api.md#draft-notes)) and stage a new one (drafts are not edited in place).
 
